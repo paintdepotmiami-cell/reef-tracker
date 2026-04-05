@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 
 export interface Animal {
   id: string;
@@ -58,14 +58,14 @@ export interface Recommendation {
 }
 
 export async function getAnimals(type?: string): Promise<Animal[]> {
-  let q = supabase.from('reef_animals').select('*').order('name');
+  let q = getSupabase().from('reef_animals').select('*').order('name');
   if (type) q = q.eq('type', type);
   const { data } = await q;
   return data || [];
 }
 
 export async function getLatestTest(): Promise<WaterTest | null> {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from('reef_water_tests')
     .select('*')
     .order('test_date', { ascending: false })
@@ -75,7 +75,7 @@ export async function getLatestTest(): Promise<WaterTest | null> {
 }
 
 export async function getAllTests(): Promise<WaterTest[]> {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from('reef_water_tests')
     .select('*')
     .order('test_date', { ascending: false });
@@ -83,26 +83,26 @@ export async function getAllTests(): Promise<WaterTest[]> {
 }
 
 export async function getEquipment(): Promise<Equipment[]> {
-  const { data } = await supabase.from('reef_equipment').select('*').order('category');
+  const { data } = await getSupabase().from('reef_equipment').select('*').order('category');
   return data || [];
 }
 
 export async function getSupplements(): Promise<Supplement[]> {
-  const { data } = await supabase.from('reef_supplements').select('*').order('name');
+  const { data } = await getSupabase().from('reef_supplements').select('*').order('name');
   return data || [];
 }
 
 export async function createWaterTest(test: Partial<WaterTest>): Promise<WaterTest | null> {
-  const { data } = await supabase.from('reef_water_tests').insert(test).select().single();
+  const { data } = await getSupabase().from('reef_water_tests').insert(test).select().single();
   return data;
 }
 
 export async function getStats() {
   const [fish, corals, inverts, equipment] = await Promise.all([
-    supabase.from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'fish'),
-    supabase.from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'coral'),
-    supabase.from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'invertebrate'),
-    supabase.from('reef_equipment').select('*', { count: 'exact', head: true }),
+    getSupabase().from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'fish'),
+    getSupabase().from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'coral'),
+    getSupabase().from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'invertebrate'),
+    getSupabase().from('reef_equipment').select('*', { count: 'exact', head: true }),
   ]);
 
   const sumQty = (data: { quantity: number }[] | null) => data?.reduce((s, r) => s + (r.quantity || 1), 0) || 0;
