@@ -8,12 +8,17 @@ import { photosRouter } from './routes/photos';
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Check required env vars
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  console.log('Starting in degraded mode...');
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging
 app.use((req, _res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
@@ -28,8 +33,12 @@ app.use('/api/supplements', supplementsRouter);
 app.use('/api/maintenance', maintenanceRouter);
 app.use('/api/photos', photosRouter);
 
-// Start
+// Error handler
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled error:', err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 app.listen(PORT, () => {
   console.log(`Reef Tracker API running on port ${PORT}`);
-  console.log(`Health: http://localhost:${PORT}/health`);
 });
