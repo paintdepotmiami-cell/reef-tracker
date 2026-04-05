@@ -4,15 +4,14 @@ let _supabase: SupabaseClient | null = null;
 
 export function getSupabase(): SupabaseClient {
   if (!_supabase) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) throw new Error('Supabase env vars missing');
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    if (!url || !key) {
+      console.warn('Supabase env vars not available yet');
+      // Return a dummy that won't crash on import
+      return createClient('https://placeholder.supabase.co', 'placeholder');
+    }
     _supabase = createClient(url, key);
   }
   return _supabase;
 }
-
-// Keep backward compat but lazy
-export const supabase = typeof window !== 'undefined'
-  ? getSupabase()
-  : (null as unknown as SupabaseClient);
