@@ -1,18 +1,61 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a1628;
-  --foreground: #e0e8f0;
+  --bg: #041329;
+  --surface: #112036;
+  --surface-high: #1c2a41;
+  --surface-highest: #27354c;
+  --surface-low: #0d1c32;
+  --surface-lowest: #010e24;
+  --on-surface: #d6e3ff;
+  --on-surface-variant: #c5c6cd;
+  --primary: #ffb59c;
+  --accent: #FF7F50;
+  --secondary: #d7ffc5;
+  --secondary-container: #2ff801;
+  --tertiary: #4cd6fb;
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --outline: #8f9097;
+  --outline-variant: #44474d;
 }
 
 body {
-  background: linear-gradient(135deg, #0a1628 0%, #0d2137 50%, #0a1628 100%);
-  color: var(--foreground);
-  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg);
+  color: var(--on-surface);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-headline {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.glass-card {
+  background: rgba(39, 53, 76, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(185, 199, 228, 0.08);
+}
+
+.glass-panel {
+  background: rgba(39, 53, 76, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #0a1628; }
-::-webkit-scrollbar-thumb { background: #1a3050; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #2a4060; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1c2a41; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #27354c; }
+
+/* No scrollbar for horizontal scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
