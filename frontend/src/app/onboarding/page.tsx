@@ -49,37 +49,59 @@ export default function OnboardingPage() {
     return true;
   };
 
+  const [error, setError] = useState('');
+
   const handleFinish = async () => {
     if (!user) return;
     setSaving(true);
+    setError('');
 
-    const supabase = getSupabase();
+    try {
+      const supabase = getSupabase();
 
-    // Update profile
-    await supabase.from('reef_profiles').upsert({
-      id: user.id,
-      experience_level: experience,
-      location_city: city || null,
-      location_state: state || null,
-      units,
-      language,
-      onboarding_completed: true,
-      updated_at: new Date().toISOString(),
-    });
+      // Update profile (already created by trigger)
+      const { error: profileErr } = await supabase.from('reef_profiles').update({
+        experience_level: experience,
+        location_city: city || null,
+        location_state: state || null,
+        units,
+        language,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      }).eq('id', user.id);
 
-    // Create tank
-    await supabase.from('reef_tanks').insert({
-      user_id: user.id,
-      name: tankName || 'My Reef',
-      size_gallons: tankSize ? parseInt(tankSize) : null,
-      tank_type: tankType,
-      is_primary: true,
-    });
+      if (profileErr) {
+        console.error('Profile update error:', profileErr);
+        setError(`Profile: ${profileErr.message}`);
+        setSaving(false);
+        return;
+      }
 
-    await refreshProfile();
-    await refreshTank();
-    setSaving(false);
-    router.push('/');
+      // Create tank
+      const { error: tankErr } = await supabase.from('reef_tanks').insert({
+        user_id: user.id,
+        name: tankName || 'My Reef',
+        size_gallons: tankSize ? parseInt(tankSize) : null,
+        tank_type: tankType,
+        is_primary: true,
+      });
+
+      if (tankErr) {
+        console.error('Tank insert error:', tankErr);
+        setError(`Tank: ${tankErr.message}`);
+        setSaving(false);
+        return;
+      }
+
+      await refreshProfile();
+      await refreshTank();
+      router.push('/');
+    } catch (err: unknown) {
+      console.error('Onboarding error:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const next = () => {
@@ -259,6 +281,14 @@ export default function OnboardingPage() {
           )}
         </div>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="bg-[#93000a]/20 border border-[#ffb4ab]/20 rounded-xl p-3 flex items-center gap-2 mt-4">
+          <span className="material-symbols-outlined text-[#ffb4ab] text-sm">error</span>
+          <span className="text-[#ffb4ab] text-xs">{error}</span>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex gap-3 pt-8 pb-4">
