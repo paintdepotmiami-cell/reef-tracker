@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { getSupabase, isSupabasePlaceholder } from './supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -47,66 +47,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [tank, setTank] = useState<Tank | null>(null);
   const [loading, setLoading] = useState(true);
+  const initialized = useRef(false);
 
   const supabase = getSupabase();
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('reef_profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setProfile(data);
-    return data;
+    try {
+      const { data } = await supabase
+        .from('reef_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      setProfile(data);
+      return data;
+    } catch { return null; }
   };
 
   const fetchTank = async (userId: string) => {
-    const { data } = await supabase
-      .from('reef_tanks')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_primary', true)
-      .single();
-    setTank(data);
-    return data;
+    try {
+      const { data } = await supabase
+        .from('reef_tanks')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_primary', true)
+        .single();
+      setTank(data);
+      return data;
+    } catch { return null; }
   };
 
   useEffect(() => {
-    // If placeholder client (no env vars), skip auth entirely
     if (isSupabasePlaceholder()) {
-      console.warn('Supabase placeholder — skipping auth');
       setLoading(false);
       return;
     }
 
-    // Timeout wrapper — never hang more than 6s
+    // Safety timeout — never hang
     const timeout = setTimeout(() => {
-      console.warn('Auth init timeout — forcing load');
-      setLoading(false);
-    }, 6000);
-
-    const initAuth = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-
-        if (currentSession?.user) {
-          await Promise.allSettled([
-            fetchProfile(currentSession.user.id),
-            fetchTank(currentSession.user.id),
-          ]);
-        }
-      } catch (err) {
-        console.error('Auth init error:', err);
-      } finally {
-        clearTimeout(timeout);
+      if (loading) {
+        console.warn('Auth timeout — forcing load');
         setLoading(false);
       }
-    };
+    }, 4000);
 
-    initAuth();
-
+    // Use ONLY onAuthStateChange — avoids lock contention with getSession()
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -119,6 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setTank(null);
+      }
+
+      // Mark as loaded after first event (INITIAL_SESSION or SIGNED_OUT)
+      if (!initialized.current) {
+        initialized.current = true;
+        clearTimeout(timeout);
+        setLoading(false);
       }
     });
 
