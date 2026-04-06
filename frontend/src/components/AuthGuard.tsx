@@ -1,0 +1,64 @@
+'use client';
+
+import { useAuth } from '@/lib/auth';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+const PUBLIC_PATHS = ['/login'];
+
+export default function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { user, profile, loading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const isPublic = PUBLIC_PATHS.includes(pathname);
+
+    if (!user && !isPublic) {
+      router.replace('/login');
+      return;
+    }
+
+    if (user && isPublic) {
+      router.replace('/');
+      return;
+    }
+
+    // Redirect to onboarding if not completed (except on onboarding page itself)
+    if (user && profile && !profile.onboarding_completed && pathname !== '/onboarding') {
+      router.replace('/onboarding');
+      return;
+    }
+  }, [user, profile, loading, pathname, router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-5xl text-[#FF7F50] animate-pulse">waves</span>
+          <p className="text-[#c5c6cd] text-sm mt-3 font-medium tracking-wider uppercase">Loading ReefOS...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show content on public pages
+  if (PUBLIC_PATHS.includes(pathname)) {
+    return <>{children}</>;
+  }
+
+  // Don't render protected content until user is confirmed
+  if (!user) return null;
+
+  // Allow onboarding page
+  if (pathname === '/onboarding') {
+    return <>{children}</>;
+  }
+
+  // Block until onboarding is done
+  if (profile && !profile.onboarding_completed) return null;
+
+  return <>{children}</>;
+}

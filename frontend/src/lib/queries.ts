@@ -22,6 +22,8 @@ export interface Animal {
   placement_zone: string | null;
   reef_safe: string | null;
   warnings: string[] | null;
+  user_id: string | null;
+  tank_id: string | null;
 }
 
 export interface ActionItem {
@@ -108,6 +110,8 @@ export interface WaterTest {
   temperature: number | null;
   photo_url: string | null;
   notes: string | null;
+  user_id: string | null;
+  tank_id: string | null;
 }
 
 export interface Equipment {
@@ -133,6 +137,29 @@ export interface Recommendation {
   title: string;
   text: string;
   product?: string;
+}
+
+export interface Species {
+  id: string;
+  common_name: string;
+  scientific_name: string | null;
+  category: string;
+  subcategory: string | null;
+  difficulty: string | null;
+  light_need: string | null;
+  flow_need: string | null;
+  aggression: string | null;
+  growth_speed: string | null;
+  min_distance_inches: number | null;
+  placement_zone: string | null;
+  reef_safe: string | null;
+  diet: string | null;
+  max_size: string | null;
+  description: string | null;
+  care_notes: string | null;
+  fun_fact: string | null;
+  photo_url: string | null;
+  warnings: string[] | null;
 }
 
 export async function getAnimals(type?: string): Promise<Animal[]> {
@@ -193,52 +220,59 @@ export async function getStats() {
   };
 }
 
+export async function getSpecies(category?: string): Promise<Species[]> {
+  let q = getSupabase().from('reef_species').select('*').order('common_name');
+  if (category) q = q.eq('category', category);
+  const { data } = await q;
+  return data || [];
+}
+
 export function generateRecommendations(test: WaterTest): Recommendation[] {
   const recs: Recommendation[] = [];
 
   if (test.calcium != null) {
-    if (test.calcium >= 380 && test.calcium <= 450) recs.push({ param: 'calcium', level: 'ok', title: `Calcio: ${test.calcium} ppm`, text: 'Rango perfecto. Mantener Kalkwasser + Calcium Brightwell.', product: 'Kalkwasser (ATO) + Calcium (Brightwell)' });
-    else if (test.calcium < 380) recs.push({ param: 'calcium', level: 'action', title: `Calcio Bajo: ${test.calcium} ppm`, text: 'Aumentar Kalkwasser en ATO o dosis de Calcium Brightwell.', product: 'Kalkwasser + Calcium (Brightwell)' });
-    else recs.push({ param: 'calcium', level: 'warning', title: `Calcio Alto: ${test.calcium} ppm`, text: 'Reducir Calcium. Puede causar precipitacion si Alk esta alto.', product: 'Reducir Calcium (Brightwell)' });
+    if (test.calcium >= 380 && test.calcium <= 450) recs.push({ param: 'calcium', level: 'ok', title: `Calcium: ${test.calcium} ppm`, text: 'Perfect range. Maintain Kalkwasser + Calcium Brightwell.', product: 'Kalkwasser (ATO) + Calcium (Brightwell)' });
+    else if (test.calcium < 380) recs.push({ param: 'calcium', level: 'action', title: `Calcium Low: ${test.calcium} ppm`, text: 'Increase Kalkwasser in ATO or Calcium Brightwell dose.', product: 'Kalkwasser + Calcium (Brightwell)' });
+    else recs.push({ param: 'calcium', level: 'warning', title: `Calcium High: ${test.calcium} ppm`, text: 'Reduce Calcium. Can cause precipitation if Alk is also high.', product: 'Reduce Calcium (Brightwell)' });
   }
 
   if (test.alkalinity != null) {
-    if (test.alkalinity >= 7 && test.alkalinity <= 11) recs.push({ param: 'alkalinity', level: 'ok', title: `Alkalinity: ${test.alkalinity} dKH`, text: 'Buen rango. Mantener rutina.', product: 'Kalkwasser + Balance (Seachem)' });
-    else if (test.alkalinity < 7) recs.push({ param: 'alkalinity', level: 'action', title: `Alk Baja: ${test.alkalinity} dKH`, text: 'Aumentar Balance (Seachem) o Kalkwasser.', product: 'Balance (Seachem) + Kalkwasser' });
-    else recs.push({ param: 'alkalinity', level: 'warning', title: `Alk Alta: ${test.alkalinity} dKH`, text: 'Reducir dosificacion. >12 puede causar necrosis.', product: 'Reducir Balance (Seachem)' });
+    if (test.alkalinity >= 7 && test.alkalinity <= 11) recs.push({ param: 'alkalinity', level: 'ok', title: `Alkalinity: ${test.alkalinity} dKH`, text: 'Good range. Maintain routine.', product: 'Kalkwasser + Balance (Seachem)' });
+    else if (test.alkalinity < 7) recs.push({ param: 'alkalinity', level: 'action', title: `Alk Low: ${test.alkalinity} dKH`, text: 'Increase Balance (Seachem) or Kalkwasser.', product: 'Balance (Seachem) + Kalkwasser' });
+    else recs.push({ param: 'alkalinity', level: 'warning', title: `Alk High: ${test.alkalinity} dKH`, text: 'Reduce dosing. >12 can cause tissue necrosis.', product: 'Reduce Balance (Seachem)' });
   }
 
   if (test.ph != null) {
-    if (test.ph >= 8.0 && test.ph <= 8.4) recs.push({ param: 'ph', level: 'ok', title: `pH: ${test.ph}`, text: 'Rango ideal.', product: 'Kalkwasser + CO2 reactor' });
-    else if (test.ph < 8.0) recs.push({ param: 'ph', level: 'action', title: `pH Bajo: ${test.ph}`, text: 'Verificar Kalkwasser en ATO. CO2 reactor al skimmer ayuda. Asegurar ventilacion.', product: 'Kalkwasser (ATO) + CO2 reactor + Balance (Seachem)' });
-    else recs.push({ param: 'ph', level: 'warning', title: `pH Alto: ${test.ph}`, text: 'Reducir Kalkwasser. >8.5 estresa corales.', product: 'Reducir Kalkwasser' });
+    if (test.ph >= 8.0 && test.ph <= 8.4) recs.push({ param: 'ph', level: 'ok', title: `pH: ${test.ph}`, text: 'Ideal range.', product: 'Kalkwasser + CO2 reactor' });
+    else if (test.ph < 8.0) recs.push({ param: 'ph', level: 'action', title: `pH Low: ${test.ph}`, text: 'Verify Kalkwasser in ATO. CO2 reactor on skimmer helps. Ensure ventilation.', product: 'Kalkwasser (ATO) + CO2 reactor + Balance (Seachem)' });
+    else recs.push({ param: 'ph', level: 'warning', title: `pH High: ${test.ph}`, text: 'Reduce Kalkwasser. >8.5 stresses corals.', product: 'Reduce Kalkwasser' });
   }
 
   if (test.phosphate != null) {
-    if (test.phosphate <= 0.1) recs.push({ param: 'phosphate', level: 'ok', title: `Fosfato: ${test.phosphate} ppm`, text: 'Buen nivel. RowaPhos y Phosphat-E funcionan.', product: 'RowaPhos + Phosphat-E (Fauna Marin)' });
-    else recs.push({ param: 'phosphate', level: 'action', title: `Fosfato Alto: ${test.phosphate} ppm`, text: 'Cambiar RowaPhos. Aumentar Phosphat-E temporalmente.', product: 'RowaPhos (reactor) + Phosphat-E (Fauna Marin)' });
+    if (test.phosphate <= 0.1) recs.push({ param: 'phosphate', level: 'ok', title: `Phosphate: ${test.phosphate} ppm`, text: 'Good level. RowaPhos and Phosphat-E working.', product: 'RowaPhos + Phosphat-E (Fauna Marin)' });
+    else recs.push({ param: 'phosphate', level: 'action', title: `Phosphate High: ${test.phosphate} ppm`, text: 'Replace RowaPhos. Increase Phosphat-E temporarily.', product: 'RowaPhos (reactor) + Phosphat-E (Fauna Marin)' });
   }
 
   if (test.magnesium != null) {
-    if (test.magnesium >= 1250 && test.magnesium <= 1400) recs.push({ param: 'magnesium', level: 'ok', title: `Magnesio: ${test.magnesium} ppm`, text: 'Rango perfecto.', product: 'Magnesium (Brightwell)' });
-    else if (test.magnesium > 1400) recs.push({ param: 'magnesium', level: 'action', title: `Magnesio Alto: ${test.magnesium} ppm`, text: 'PAUSAR Magnesium Brightwell hasta bajar a ~1350.', product: 'PAUSAR Magnesium (Brightwell)' });
-    else recs.push({ param: 'magnesium', level: 'action', title: `Magnesio Bajo: ${test.magnesium} ppm`, text: 'Aumentar Magnesium Brightwell.', product: 'Magnesium (Brightwell)' });
+    if (test.magnesium >= 1250 && test.magnesium <= 1400) recs.push({ param: 'magnesium', level: 'ok', title: `Magnesium: ${test.magnesium} ppm`, text: 'Perfect range.', product: 'Magnesium (Brightwell)' });
+    else if (test.magnesium > 1400) recs.push({ param: 'magnesium', level: 'action', title: `Magnesium High: ${test.magnesium} ppm`, text: 'PAUSE Magnesium Brightwell until it drops to ~1350.', product: 'PAUSE Magnesium (Brightwell)' });
+    else recs.push({ param: 'magnesium', level: 'action', title: `Magnesium Low: ${test.magnesium} ppm`, text: 'Increase Magnesium Brightwell.', product: 'Magnesium (Brightwell)' });
   }
 
   if (test.nitrate != null) {
-    if (test.nitrate >= 2 && test.nitrate <= 15) recs.push({ param: 'nitrate', level: 'ok', title: `Nitrato: ${test.nitrate} ppm`, text: 'Buen nivel para mixed reef.' });
-    else if (test.nitrate < 2) recs.push({ param: 'nitrate', level: 'action', title: `Nitrato Bajo: ${test.nitrate} ppm`, text: 'Alimentar mas Reef-Roids. Reducir carbon si necesario.', product: 'Reef-Roids (Polyplab) + Restor (Brightwell)' });
-    else recs.push({ param: 'nitrate', level: 'warning', title: `Nitrato Alto: ${test.nitrate} ppm`, text: 'Aumentar cambios de agua o carbon.', product: 'Carbon reactor + cambios de agua' });
+    if (test.nitrate >= 2 && test.nitrate <= 15) recs.push({ param: 'nitrate', level: 'ok', title: `Nitrate: ${test.nitrate} ppm`, text: 'Good level for mixed reef.' });
+    else if (test.nitrate < 2) recs.push({ param: 'nitrate', level: 'action', title: `Nitrate Low: ${test.nitrate} ppm`, text: 'Feed more Reef-Roids. Reduce carbon if needed.', product: 'Reef-Roids (Polyplab) + Restor (Brightwell)' });
+    else recs.push({ param: 'nitrate', level: 'warning', title: `Nitrate High: ${test.nitrate} ppm`, text: 'Increase water changes or carbon.', product: 'Carbon reactor + water changes' });
   }
 
   if (test.ammonia != null) {
-    if (test.ammonia === 0) recs.push({ param: 'ammonia', level: 'ok', title: 'Amonio: 0 ppm', text: 'Perfecto.' });
-    else recs.push({ param: 'ammonia', level: 'action', title: `Amonio: ${test.ammonia} ppm`, text: 'Verificar skimmer Klir. Carbon reactor. No sobrealimentar.', product: 'Skimmer Klir + Carbon reactor' });
+    if (test.ammonia === 0) recs.push({ param: 'ammonia', level: 'ok', title: 'Ammonia: 0 ppm', text: 'Perfect.' });
+    else recs.push({ param: 'ammonia', level: 'action', title: `Ammonia: ${test.ammonia} ppm`, text: 'Check Klir skimmer. Carbon reactor. Do not overfeed.', product: 'Skimmer Klir + Carbon reactor' });
   }
 
   if (test.nitrite != null) {
-    if (test.nitrite === 0) recs.push({ param: 'nitrite', level: 'ok', title: 'Nitrito: 0 ppm', text: 'Perfecto.' });
-    else recs.push({ param: 'nitrite', level: 'action', title: `Nitrito: ${test.nitrite} ppm`, text: 'EMERGENCIA — cambio de agua inmediato.', product: 'Cambio de agua de emergencia' });
+    if (test.nitrite === 0) recs.push({ param: 'nitrite', level: 'ok', title: 'Nitrite: 0 ppm', text: 'Perfect.' });
+    else recs.push({ param: 'nitrite', level: 'action', title: `Nitrite: ${test.nitrite} ppm`, text: 'EMERGENCY — immediate water change needed.', product: 'Emergency water change' });
   }
 
   return recs;
