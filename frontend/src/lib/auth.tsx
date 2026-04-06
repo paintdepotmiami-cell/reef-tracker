@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getSupabase } from './supabase';
+import { getSupabase, isSupabasePlaceholder } from './supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface Profile {
@@ -72,6 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // If placeholder client (no env vars), skip auth entirely
+    if (isSupabasePlaceholder()) {
+      console.warn('Supabase placeholder — skipping auth');
+      setLoading(false);
+      return;
+    }
+
     const initAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -79,8 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(currentSession?.user ?? null);
 
         if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
-          await fetchTank(currentSession.user.id);
+          await Promise.allSettled([
+            fetchProfile(currentSession.user.id),
+            fetchTank(currentSession.user.id),
+          ]);
         }
       } catch (err) {
         console.error('Auth init error:', err);
@@ -96,8 +105,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(newSession?.user ?? null);
 
       if (newSession?.user) {
-        await fetchProfile(newSession.user.id);
-        await fetchTank(newSession.user.id);
+        await Promise.allSettled([
+          fetchProfile(newSession.user.id),
+          fetchTank(newSession.user.id),
+        ]);
       } else {
         setProfile(null);
         setTank(null);
