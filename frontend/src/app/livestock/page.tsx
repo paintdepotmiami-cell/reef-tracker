@@ -152,7 +152,63 @@ export default function LivestockPage() {
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selected.condition === 'healthy' ? 'bg-[#2ff801]/10 text-[#2ff801]' : 'bg-[#F1C40F]/10 text-[#F1C40F]'}`}>
                   {selected.condition === 'healthy' ? 'Healthy' : 'Monitor'}
                 </span>
+                {selected.difficulty && <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/5 text-[#c5c6cd]">{selected.difficulty}</span>}
               </div>
+
+              {/* Care Requirements Grid */}
+              {(selected.light_need || selected.flow_need || selected.aggression || selected.placement_zone) && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {selected.light_need && (
+                    <div className="bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#F1C40F] text-sm">light_mode</span>
+                      <div><p className="text-[9px] text-[#8f9097] uppercase">Light</p><p className="text-xs text-white font-medium">{selected.light_need}</p></div>
+                    </div>
+                  )}
+                  {selected.flow_need && (
+                    <div className="bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#4cd6fb] text-sm">waves</span>
+                      <div><p className="text-[9px] text-[#8f9097] uppercase">Flow</p><p className="text-xs text-white font-medium">{selected.flow_need}</p></div>
+                    </div>
+                  )}
+                  {selected.aggression && (
+                    <div className="bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#ffb4ab] text-sm">swords</span>
+                      <div><p className="text-[9px] text-[#8f9097] uppercase">Aggression</p><p className="text-xs text-white font-medium">{selected.aggression}</p></div>
+                    </div>
+                  )}
+                  {selected.placement_zone && (
+                    <div className="bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#2ff801] text-sm">pin_drop</span>
+                      <div><p className="text-[9px] text-[#8f9097] uppercase">Placement</p><p className="text-xs text-white font-medium">{selected.placement_zone}</p></div>
+                    </div>
+                  )}
+                  {selected.growth_speed && (
+                    <div className="bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#2ff801] text-sm">speed</span>
+                      <div><p className="text-[9px] text-[#8f9097] uppercase">Growth</p><p className="text-xs text-white font-medium">{selected.growth_speed}</p></div>
+                    </div>
+                  )}
+                  {selected.min_distance_inches && (
+                    <div className="bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#ffb4ab] text-sm">social_distance</span>
+                      <div><p className="text-[9px] text-[#8f9097] uppercase">Min Distance</p><p className="text-xs text-white font-medium">{selected.min_distance_inches}&quot;</p></div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Warnings */}
+              {selected.warnings && selected.warnings.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  {selected.warnings.map((w, i) => (
+                    <div key={i} className="flex items-start gap-2 bg-[#93000a]/10 rounded-lg p-2.5">
+                      <span className="material-symbols-outlined text-[#ffb4ab] text-sm shrink-0 mt-0.5">warning</span>
+                      <p className="text-xs text-[#ffb4ab]">{w}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {selected.description && <p className="text-sm text-[#c5c6cd] leading-relaxed">{selected.description}</p>}
               {selected.care_notes && <p className="text-sm text-[#c5c6cd] leading-relaxed">{selected.care_notes}</p>}
               <button

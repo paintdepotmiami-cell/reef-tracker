@@ -13,6 +13,84 @@ export interface Animal {
   description: string | null;
   care_notes: string | null;
   date_added: string | null;
+  difficulty: string | null;
+  light_need: string | null;
+  flow_need: string | null;
+  aggression: string | null;
+  growth_speed: string | null;
+  min_distance_inches: number | null;
+  placement_zone: string | null;
+  reef_safe: string | null;
+  warnings: string[] | null;
+}
+
+export interface ActionItem {
+  id: string;
+  type: 'param_alert' | 'maintenance' | 'compatibility' | 'consumable' | 'general';
+  priority: 'critical' | 'warning' | 'info';
+  icon: string;
+  title: string;
+  description: string;
+  action?: string;
+}
+
+export function generateTodayFeed(test: WaterTest | null, animals: Animal[]): ActionItem[] {
+  const items: ActionItem[] = [];
+
+  // 1. Parameter alerts from latest test
+  if (test) {
+    const daysSinceTest = Math.floor((Date.now() - new Date(test.test_date).getTime()) / 86400000);
+    if (daysSinceTest > 7) {
+      items.push({ id: 'test-overdue', type: 'maintenance', priority: 'critical', icon: 'science', title: 'Water test overdue', description: `Last test was ${daysSinceTest} days ago. Weekly testing recommended.`, action: 'Log parameters now' });
+    }
+    if (test.phosphate != null && test.phosphate > 0.1) {
+      items.push({ id: 'po4-high', type: 'param_alert', priority: 'critical', icon: 'priority_high', title: `Phosphate high: ${test.phosphate} ppm`, description: 'Replace RowaPhos media or increase Phosphat-E dosing. Chaeto reactor also helps export PO4.', action: 'Check reactor media' });
+    }
+    if (test.ph != null && test.ph < 8.0) {
+      items.push({ id: 'ph-low', type: 'param_alert', priority: 'warning', icon: 'water_ph', title: `pH trending low: ${test.ph}`, description: 'Verify Kalkwasser concentration in ATO. CO2 scrubber on skimmer helps. Ensure room ventilation.', action: 'Check Kalkwasser' });
+    }
+    if (test.magnesium != null && test.magnesium > 1400) {
+      items.push({ id: 'mg-high', type: 'param_alert', priority: 'warning', icon: 'lab_profile', title: `Magnesium elevated: ${test.magnesium} ppm`, description: 'Pause Magnesium dosing (Brightwell). Water changes will bring it down gradually. Re-test in 1 week.', action: 'Pause Mg dosing' });
+    }
+    if (test.nitrate != null && test.nitrate < 2) {
+      items.push({ id: 'no3-low', type: 'param_alert', priority: 'warning', icon: 'eco', title: `Nitrate too low: ${test.nitrate} ppm`, description: 'Corals need some NO3 (5-10 ppm ideal). Feed more Reef-Roids, reduce carbon, or dim chaeto light.', action: 'Increase feeding' });
+    }
+    if (test.ammonia != null && test.ammonia > 0) {
+      items.push({ id: 'nh3-detected', type: 'param_alert', priority: 'critical', icon: 'dangerous', title: `Ammonia detected: ${test.ammonia} ppm`, description: 'Check for dead animals, uneaten food, or dying coral. Verify skimmer is producing dark skimmate. Carbon reactor fresh?', action: 'Inspect tank' });
+    }
+  } else {
+    items.push({ id: 'no-test', type: 'maintenance', priority: 'critical', icon: 'science', title: 'No water test recorded', description: 'Log your first water test to get personalized recommendations.', action: 'Log parameters' });
+  }
+
+  // 2. Compatibility warnings from animals
+  const euphylliaCount = animals.filter(a => a.name.includes('Torch') || a.name.includes('Hammer')).length;
+  if (euphylliaCount > 0) {
+    const nearby = animals.filter(a => a.type === 'coral' && !a.name.includes('Torch') && !a.name.includes('Hammer') && a.min_distance_inches == null);
+    if (nearby.length > 0) {
+      items.push({ id: 'euphyllia-sweep', type: 'compatibility', priority: 'warning', icon: 'swap_horiz', title: `Euphyllia sweep risk (${euphylliaCount} colonies)`, description: 'Torch & Hammer have 4-6" sweeper tentacles. Ensure 6" minimum distance from all non-Euphyllia corals.' });
+    }
+  }
+
+  const invasive = animals.filter(a => a.growth_speed === 'Very Fast');
+  invasive.forEach(a => {
+    items.push({ id: `invasive-${a.id}`, type: 'compatibility', priority: 'info', icon: 'trending_up', title: `${a.name}: fast grower`, description: `${a.name} grows aggressively. Check if it's encroaching on valuable corals. Frag or prune if needed.` });
+  });
+
+  const bta = animals.find(a => a.name.includes('Bubble Tip'));
+  if (bta) {
+    items.push({ id: 'bta-movement', type: 'compatibility', priority: 'info', icon: 'moving', title: 'BTA can relocate', description: 'Bubble Tip Anemones move freely. If it walks toward corals, redirect with flow changes. Protect Nero 3 intakes.' });
+  }
+
+  const flameScallop = animals.find(a => a.name.includes('Flame Scallop'));
+  if (flameScallop) {
+    items.push({ id: 'scallop-feeding', type: 'maintenance', priority: 'warning', icon: 'restaurant', title: 'Flame Scallop needs feeding', description: 'Feed phytoplankton or diluted Reef-Roids 3-4x/week. Flame Scallops are difficult long-term without consistent feeding.' });
+  }
+
+  // 3. Sort by priority
+  const priorityOrder = { critical: 0, warning: 1, info: 2 };
+  items.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+  return items;
 }
 
 export interface WaterTest {
