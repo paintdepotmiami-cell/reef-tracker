@@ -12,7 +12,13 @@ export function getSupabase(): SupabaseClient {
       _isPlaceholder = true;
       _supabase = createClient('https://placeholder.supabase.co', 'placeholder-key');
     } else {
-      _supabase = createClient(url, key);
+      _supabase = createClient(url, key, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+        },
+      });
     }
   }
   return _supabase;

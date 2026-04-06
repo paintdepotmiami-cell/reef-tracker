@@ -79,6 +79,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Timeout wrapper — never hang more than 6s
+    const timeout = setTimeout(() => {
+      console.warn('Auth init timeout — forcing load');
+      setLoading(false);
+    }, 6000);
+
     const initAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -94,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error('Auth init error:', err);
       } finally {
+        clearTimeout(timeout);
         setLoading(false);
       }
     };
@@ -115,7 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
