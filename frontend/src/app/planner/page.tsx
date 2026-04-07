@@ -100,7 +100,7 @@ export default function PlannerPage() {
 
       {/* Open Planner Button */}
       <a
-        href="http://localhost:5173"
+        href="https://reefos-planner.vercel.app"
         target="_blank"
         rel="noopener noreferrer"
         className="block w-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white font-[family-name:var(--font-headline)] font-bold py-5 rounded-2xl text-base tracking-widest uppercase shadow-xl shadow-[#FF7F50]/20 active:scale-[0.97] transition-transform duration-150 text-center"
