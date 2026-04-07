@@ -16,7 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGuard>
-      <div className={showNav ? 'pb-24' : ''}>
+      <div className={showNav ? 'pb-[5.5rem]' : ''}>
         {showNav && <TopBar />}
         <main className={showNav ? 'pt-20 px-4 max-w-5xl mx-auto' : 'px-4 max-w-5xl mx-auto'}>
           {children}
