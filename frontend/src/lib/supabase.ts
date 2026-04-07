@@ -17,6 +17,7 @@ export function getSupabase(): SupabaseClient {
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: true,
+          flowType: 'implicit',
         },
       });
     }

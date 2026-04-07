@@ -99,15 +99,25 @@ export default function PlannerPage() {
       )}
 
       {/* Open Planner Button */}
-      <a
-        href="https://reefos-planner.vercel.app"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block w-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white font-[family-name:var(--font-headline)] font-bold py-5 rounded-2xl text-base tracking-widest uppercase shadow-xl shadow-[#FF7F50]/20 active:scale-[0.97] transition-transform duration-150 text-center"
+      <button
+        onClick={async () => {
+          const base = 'https://reefos-planner.vercel.app';
+          try {
+            const { data } = await getSupabase().auth.getSession();
+            if (data?.session) {
+              window.open(`${base}?token=${data.session.access_token}&refresh=${data.session.refresh_token}`, '_blank');
+            } else {
+              window.open(base, '_blank');
+            }
+          } catch {
+            window.open(base, '_blank');
+          }
+        }}
+        className="block w-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white font-[family-name:var(--font-headline)] font-bold py-5 rounded-2xl text-base tracking-widest uppercase shadow-xl shadow-[#FF7F50]/20 active:scale-[0.97] transition-transform duration-150 text-center cursor-pointer"
       >
         <span className="material-symbols-outlined text-xl align-middle mr-2">open_in_new</span>
         Open 3D Planner
-      </a>
+      </button>
 
       {/* Features */}
       <div className="space-y-3">
