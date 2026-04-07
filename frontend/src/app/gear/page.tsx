@@ -54,11 +54,13 @@ export default function GearPage() {
   const [fNotes, setFNotes] = useState('');
 
   useEffect(() => {
+    if (!user) return;
+    const timeout = setTimeout(() => setLoading(false), 6000);
     Promise.allSettled([
       getEquipment().then(e => { setCache('equipment', e); setEquipment(e); }),
       getSupplements().then(s => { setCache('supplements', s); setSupplements(s); }),
-    ]).finally(() => setLoading(false));
-  }, []);
+    ]).finally(() => { clearTimeout(timeout); setLoading(false); });
+  }, [user]);
 
   const openAdd = () => {
     setEditing(null);

@@ -43,8 +43,10 @@ export default function LivestockPage() {
   const [addSuccess, setAddSuccess] = useState(false);
 
   useEffect(() => {
-    getAnimals().then(a => { setCache('animals', a); setAnimals(a); }).finally(() => setLoading(false));
-  }, []);
+    if (!user) return;
+    const timeout = setTimeout(() => setLoading(false), 6000);
+    getAnimals().then(a => { setCache('animals', a); setAnimals(a); }).catch(() => {}).finally(() => { clearTimeout(timeout); setLoading(false); });
+  }, [user]);
 
   const openAddModal = async () => {
     setShowAdd(true);

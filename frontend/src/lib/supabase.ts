@@ -18,10 +18,10 @@ export function getSupabase(): SupabaseClient {
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'implicit',
-          // Bypass navigator.locks API — causes 5s+ hangs in some browsers
+          // Bypass navigator.locks API — causes 5s+ hangs in Chrome Incognito
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
-            return await fn();
+          lock: (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
+            return fn();
           },
         } as any,
       });

@@ -33,8 +33,10 @@ export default function LogsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    getAllTests().then(t => { setCache('allTests', t); setTests(t); }).finally(() => setLoading(false));
-  }, []);
+    if (!user) return;
+    const timeout = setTimeout(() => setLoading(false), 6000);
+    getAllTests().then(t => { setCache('allTests', t); setTests(t); }).catch(() => {}).finally(() => { clearTimeout(timeout); setLoading(false); });
+  }, [user]);
 
   const handleSave = async () => {
     setSaving(true);

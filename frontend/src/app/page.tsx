@@ -4,9 +4,20 @@ import { useEffect, useState } from 'react';
 import { getAnimals, getLatestTest, getStats, generateRecommendations, generateTodayFeed } from '@/lib/queries';
 import type { Animal, WaterTest, Recommendation, ActionItem } from '@/lib/queries';
 import { getCached, setCache } from '@/lib/cache';
+import { useAuth } from '@/lib/auth';
 import Link from 'next/link';
 
+/** Wraps a promise with a timeout — resolves with null if it takes too long */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    p,
+    new Promise<null>(resolve => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 export default function Dashboard() {
+  const { user } = useAuth();
+
   // Initialize from cache for instant page transitions
   const [test, setTest] = useState<WaterTest | null>(getCached<WaterTest | null>('latestTest'));
   const [recs, setRecs] = useState<Recommendation[]>(() => {
@@ -19,25 +30,38 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(!getCached('stats'));
 
   useEffect(() => {
+    if (!user) return; // Wait for auth to be ready
+
     let animals: Animal[] = getCached<Animal[]>('animals') || [];
     let latestTest: WaterTest | null = getCached<WaterTest | null>('latestTest');
 
-    // Use allSettled so one failing query doesn't block everything
+    // Safety timeout — never hang more than 6 seconds
+    const forceLoad = setTimeout(() => {
+      console.warn('Dashboard timeout — forcing render');
+      setLoading(false);
+    }, 6000);
+
+    // Each query has its own 5s timeout so one slow query can't block everything
     Promise.allSettled([
-      getAnimals().then(a => { animals = a; setCache('animals', a); }),
-      getLatestTest().then(t => {
-        latestTest = t;
-        setCache('latestTest', t);
-        setTest(t);
-        if (t) setRecs(generateRecommendations(t));
+      withTimeout(getAnimals(), 5000).then(a => { if (a) { animals = a; setCache('animals', a); } }),
+      withTimeout(getLatestTest(), 5000).then(t => {
+        if (t !== undefined) {
+          latestTest = t;
+          setCache('latestTest', t);
+          setTest(t);
+          if (t) setRecs(generateRecommendations(t));
+        }
       }),
-      getStats().then(s => { setCache('stats', s); setStats(s); }).catch(() => {}),
+      withTimeout(getStats(), 5000).then(s => { if (s) { setCache('stats', s); setStats(s); } }).catch(() => {}),
     ]).then(() => {
       const f = generateTodayFeed(latestTest, animals);
       setCache('todayFeed', f);
       setFeed(f);
-    }).finally(() => setLoading(false));
-  }, []);
+    }).finally(() => {
+      clearTimeout(forceLoad);
+      setLoading(false);
+    });
+  }, [user]);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
