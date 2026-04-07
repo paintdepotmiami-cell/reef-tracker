@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { getAllTests, createWaterTest } from '@/lib/queries';
 import type { WaterTest } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
+import dynamic from 'next/dynamic';
+
+const ParamSparkline = dynamic(() => import('@/components/ParamSparkline'), { ssr: false });
 
 const PARAMS = [
   { key: 'alkalinity', label: 'Alkalinity', unit: 'dKH', placeholder: '8.3', step: '0.1' },
@@ -143,6 +146,39 @@ export default function LogsPage() {
         {saving ? 'Saving...' : 'Save Log'}
         <span className="material-symbols-outlined text-xl">save</span>
       </button>
+
+      {/* Sparkline Trends */}
+      {tests.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-[family-name:var(--font-headline)] text-sm tracking-[0.2em] text-[#c5c6cd] uppercase font-bold">Trends</h3>
+            <span className="text-[10px] text-[#c5c6cd]/50">{tests.length} test{tests.length !== 1 ? 's' : ''} logged</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { key: 'alkalinity' as keyof WaterTest, label: 'Alk', unit: 'dKH', min: 7, max: 11, color: '#FF7F50' },
+              { key: 'calcium' as keyof WaterTest, label: 'Calcium', unit: 'ppm', min: 380, max: 450, color: '#4cd6fb' },
+              { key: 'magnesium' as keyof WaterTest, label: 'Magnesium', unit: 'ppm', min: 1250, max: 1400, color: '#ffb59c' },
+              { key: 'phosphate' as keyof WaterTest, label: 'PO4', unit: 'ppm', min: 0, max: 0.1, color: '#2ff801' },
+              { key: 'nitrate' as keyof WaterTest, label: 'NO3', unit: 'ppm', min: 2, max: 15, color: '#d7ffc5' },
+              { key: 'ph' as keyof WaterTest, label: 'pH', unit: '', min: 8.0, max: 8.4, color: '#c5c6cd' },
+            ].map(p => (
+              <ParamSparkline
+                key={p.key}
+                label={p.label}
+                unit={p.unit}
+                min={p.min}
+                max={p.max}
+                color={p.color}
+                data={tests.map(t => ({
+                  date: t.test_date,
+                  value: t[p.key] as number | null,
+                }))}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Recent Records */}
       {tests.length > 0 && (
