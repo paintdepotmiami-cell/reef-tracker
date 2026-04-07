@@ -82,15 +82,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Safety timeout — never hang
+    // Safety timeout — never hang (reduced to 2s for snappy UX)
     const timeout = setTimeout(() => {
-      if (loading) {
+      if (!initialized.current) {
         console.warn('Auth timeout — forcing load');
+        initialized.current = true;
         setLoading(false);
       }
-    }, 4000);
+    }, 2000);
 
-    // Use ONLY onAuthStateChange — avoids lock contention with getSession()
+    // Also try getSession as a fallback for environments where onAuthStateChange is slow
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (!initialized.current && !s) {
+        // No session — resolve immediately instead of waiting for event
+        initialized.current = true;
+        clearTimeout(timeout);
+        setLoading(false);
+      }
+    }).catch(() => {});
+
+    // Use onAuthStateChange for reactive updates
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
