@@ -1,14 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAnimals } from '@/lib/queries';
-import type { Animal } from '@/lib/queries';
+import { getAnimals, getSpecies } from '@/lib/queries';
+import type { Animal, Species } from '@/lib/queries';
+import { getSupabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 
 const TABS = [
   { key: 'fish', label: 'Fish', icon: 'set_meal' },
   { key: 'coral', label: 'Corals', icon: 'waves' },
   { key: 'invertebrate', label: 'Inverts', icon: 'water_drop' },
 ];
+
+const CATEGORY_MAP: Record<string, string> = { fish: 'fish', coral: 'coral', invertebrate: 'invertebrate' };
 
 const BADGE_COLORS: Record<string, string> = {
   Soft: 'bg-[#2ff801]/10 text-[#2ff801]',
@@ -20,15 +24,96 @@ const BADGE_COLORS: Record<string, string> = {
 };
 
 export default function LivestockPage() {
+  const { user, tank } = useAuth();
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [tab, setTab] = useState('fish');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Animal | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Add livestock modal
+  const [showAdd, setShowAdd] = useState(false);
+  const [speciesList, setSpeciesList] = useState<Species[]>([]);
+  const [speciesSearch, setSpeciesSearch] = useState('');
+  const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
+  const [addName, setAddName] = useState('');
+  const [addQty, setAddQty] = useState('1');
+  const [adding, setAdding] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
+
   useEffect(() => {
     getAnimals().then(setAnimals).finally(() => setLoading(false));
   }, []);
+
+  const openAddModal = async () => {
+    setShowAdd(true);
+    setSelectedSpecies(null);
+    setSpeciesSearch('');
+    setAddName('');
+    setAddQty('1');
+    setAddSuccess(false);
+    if (speciesList.length === 0) {
+      const species = await getSpecies();
+      setSpeciesList(species.filter(s => s.category !== 'pest'));
+    }
+  };
+
+  const filteredSpecies = speciesList
+    .filter(s => {
+      const catMap: Record<string, string> = { fish: 'fish', coral: 'coral', invertebrate: 'invertebrate' };
+      return s.category === catMap[tab];
+    })
+    .filter(s => !speciesSearch ||
+      s.common_name.toLowerCase().includes(speciesSearch.toLowerCase()) ||
+      s.scientific_name?.toLowerCase().includes(speciesSearch.toLowerCase()) ||
+      s.subcategory?.toLowerCase().includes(speciesSearch.toLowerCase())
+    )
+    .slice(0, 20);
+
+  const selectSpecies = (sp: Species) => {
+    setSelectedSpecies(sp);
+    setAddName(sp.common_name);
+  };
+
+  const handleAdd = async () => {
+    if (!user || !selectedSpecies) return;
+    setAdding(true);
+
+    const { error } = await getSupabase().from('reef_animals').insert({
+      user_id: user.id,
+      tank_id: tank?.id || null,
+      name: addName || selectedSpecies.common_name,
+      species: selectedSpecies.scientific_name,
+      type: tab as 'fish' | 'coral' | 'invertebrate',
+      subtype: selectedSpecies.subcategory,
+      quantity: parseInt(addQty) || 1,
+      condition: 'healthy',
+      difficulty: selectedSpecies.difficulty,
+      light_need: selectedSpecies.light_need,
+      flow_need: selectedSpecies.flow_need,
+      aggression: selectedSpecies.aggression,
+      growth_speed: selectedSpecies.growth_speed,
+      min_distance_inches: selectedSpecies.min_distance_inches,
+      placement_zone: selectedSpecies.placement_zone,
+      reef_safe: selectedSpecies.reef_safe,
+      description: selectedSpecies.description,
+      care_notes: selectedSpecies.care_notes,
+      warnings: selectedSpecies.warnings,
+      date_added: new Date().toISOString().split('T')[0],
+    });
+
+    if (!error) {
+      setAddSuccess(true);
+      // Refresh animals list
+      const updated = await getAnimals();
+      setAnimals(updated);
+      setTimeout(() => {
+        setShowAdd(false);
+        setAddSuccess(false);
+      }, 1500);
+    }
+    setAdding(false);
+  };
 
   const filtered = animals
     .filter(a => a.type === tab)
@@ -43,9 +128,18 @@ export default function LivestockPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">Your collection</p>
-        <h1 className="text-3xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Livestock</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">Your collection</p>
+          <h1 className="text-3xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Livestock</h1>
+        </div>
+        <button
+          onClick={openAddModal}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white rounded-xl font-[family-name:var(--font-headline)] font-bold text-sm shadow-lg shadow-[#FF7F50]/20 active:scale-95 transition-transform"
+        >
+          <span className="material-symbols-outlined text-lg">add</span>
+          Add
+        </button>
       </div>
 
       {/* Search */}
@@ -217,6 +311,193 @@ export default function LivestockPage() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD LIVESTOCK MODAL */}
+      {showAdd && (
+        <div className="fixed inset-0 bg-black/85 z-[60] flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
+          <div className="bg-gradient-to-b from-[#112036] to-[#041329] rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-[#ffb59c]/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-6 space-y-5">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-[family-name:var(--font-headline)] font-bold text-white">Add Livestock</h2>
+                  <p className="text-xs text-[#c5c6cd] mt-0.5">Search from 160+ species</p>
+                </div>
+                <button onClick={() => setShowAdd(false)} className="w-8 h-8 rounded-full bg-[#1c2a41] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#c5c6cd] text-sm">close</span>
+                </button>
+              </div>
+
+              {/* Success */}
+              {addSuccess && (
+                <div className="bg-[#2ff801]/10 border border-[#2ff801]/20 rounded-xl p-4 flex items-center gap-3">
+                  <span className="material-symbols-outlined text-[#2ff801]">check_circle</span>
+                  <span className="text-[#2ff801] font-semibold text-sm">Added to your tank!</span>
+                </div>
+              )}
+
+              {/* Category tabs in modal */}
+              <div className="flex gap-2">
+                {TABS.map(t => (
+                  <button
+                    key={t.key}
+                    onClick={() => { setTab(t.key); setSelectedSpecies(null); setSpeciesSearch(''); }}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                      tab === t.key ? 'bg-[#FF7F50] text-white' : 'bg-[#1c2a41] text-[#c5c6cd]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">{t.icon}</span>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {!selectedSpecies ? (
+                <>
+                  {/* Species Search */}
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
+                    <input
+                      type="text"
+                      value={speciesSearch}
+                      onChange={e => setSpeciesSearch(e.target.value)}
+                      className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent transition-all text-sm"
+                      placeholder={`Search ${tab === 'fish' ? 'fish' : tab === 'coral' ? 'corals' : 'invertebrates'}...`}
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Species Results */}
+                  <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
+                    {filteredSpecies.map(sp => (
+                      <button
+                        key={sp.id}
+                        onClick={() => selectSpecies(sp)}
+                        className="w-full bg-[#0d1c32] hover:bg-[#112036] rounded-xl p-3.5 flex items-center gap-3 transition-colors text-left"
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          sp.difficulty === 'Easy' ? 'bg-[#2ff801]/10' :
+                          sp.difficulty === 'Moderate' ? 'bg-[#F1C40F]/10' :
+                          sp.difficulty === 'Hard' ? 'bg-[#FF7F50]/10' :
+                          'bg-[#ffb4ab]/10'
+                        }`}>
+                          <span className={`material-symbols-outlined text-lg ${
+                            sp.difficulty === 'Easy' ? 'text-[#2ff801]' :
+                            sp.difficulty === 'Moderate' ? 'text-[#F1C40F]' :
+                            sp.difficulty === 'Hard' ? 'text-[#FF7F50]' :
+                            'text-[#ffb4ab]'
+                          }`}>
+                            {tab === 'fish' ? 'set_meal' : tab === 'coral' ? 'waves' : 'water_drop'}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-[family-name:var(--font-headline)] text-sm font-semibold text-white truncate">{sp.common_name}</p>
+                          <p className="text-[10px] text-[#FF7F50]/60 italic truncate">{sp.scientific_name}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {sp.subcategory && (
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${BADGE_COLORS[sp.subcategory] || 'bg-white/5 text-[#c5c6cd]'}`}>
+                              {sp.subcategory}
+                            </span>
+                          )}
+                          <span className={`text-[9px] font-medium ${
+                            sp.difficulty === 'Easy' ? 'text-[#2ff801]' :
+                            sp.difficulty === 'Moderate' ? 'text-[#F1C40F]' :
+                            sp.difficulty === 'Hard' ? 'text-[#FF7F50]' :
+                            'text-[#ffb4ab]'
+                          }`}>{sp.difficulty}</span>
+                        </div>
+                      </button>
+                    ))}
+                    {filteredSpecies.length === 0 && (
+                      <div className="text-center py-8 text-[#c5c6cd] text-sm">
+                        <span className="material-symbols-outlined text-3xl text-[#1c2a41] mb-2 block">search_off</span>
+                        No species found. Try a different search.
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Selected Species Details */}
+                  <div className="bg-[#0d1c32] rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-[family-name:var(--font-headline)] font-bold text-white">{selectedSpecies.common_name}</p>
+                        <p className="text-xs text-[#FF7F50]/60 italic">{selectedSpecies.scientific_name}</p>
+                      </div>
+                      <button onClick={() => setSelectedSpecies(null)} className="text-[#4cd6fb] text-xs font-semibold hover:underline">Change</button>
+                    </div>
+                    {selectedSpecies.description && (
+                      <p className="text-xs text-[#c5c6cd] leading-relaxed">{selectedSpecies.description}</p>
+                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      {selectedSpecies.difficulty && (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          selectedSpecies.difficulty === 'Easy' ? 'bg-[#2ff801]/10 text-[#2ff801]' :
+                          selectedSpecies.difficulty === 'Moderate' ? 'bg-[#F1C40F]/10 text-[#F1C40F]' :
+                          'bg-[#FF7F50]/10 text-[#FF7F50]'
+                        }`}>{selectedSpecies.difficulty}</span>
+                      )}
+                      {selectedSpecies.reef_safe && (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          selectedSpecies.reef_safe === 'Yes' ? 'bg-[#2ff801]/10 text-[#2ff801]' :
+                          selectedSpecies.reef_safe === 'Caution' ? 'bg-[#F1C40F]/10 text-[#F1C40F]' :
+                          'bg-[#ffb4ab]/10 text-[#ffb4ab]'
+                        }`}>Reef: {selectedSpecies.reef_safe}</span>
+                      )}
+                      {selectedSpecies.max_size && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-[#c5c6cd]">Max: {selectedSpecies.max_size}</span>}
+                    </div>
+                    {selectedSpecies.warnings && selectedSpecies.warnings.length > 0 && (
+                      <div className="flex items-start gap-2 bg-[#93000a]/10 rounded-lg p-2.5">
+                        <span className="material-symbols-outlined text-[#ffb4ab] text-xs shrink-0 mt-0.5">warning</span>
+                        <p className="text-[10px] text-[#ffb4ab]">{selectedSpecies.warnings[0]}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Custom Name & Quantity */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <label className="font-[family-name:var(--font-headline)] text-[9px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-1.5">Name (optional)</label>
+                      <input
+                        type="text"
+                        value={addName}
+                        onChange={e => setAddName(e.target.value)}
+                        className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-2.5 px-3 text-white text-sm focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent"
+                        placeholder={selectedSpecies.common_name}
+                      />
+                    </div>
+                    <div>
+                      <label className="font-[family-name:var(--font-headline)] text-[9px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-1.5">Qty</label>
+                      <input
+                        type="number"
+                        value={addQty}
+                        onChange={e => setAddQty(e.target.value)}
+                        min="1"
+                        className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-2.5 px-3 text-white text-sm text-center focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Add Button */}
+                  <button
+                    onClick={handleAdd}
+                    disabled={adding}
+                    className="w-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white font-[family-name:var(--font-headline)] font-bold py-3.5 rounded-xl text-sm tracking-widest uppercase shadow-xl shadow-[#FF7F50]/20 active:scale-[0.98] transition-transform duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {adding ? (
+                      <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Adding...</>
+                    ) : (
+                      <><span className="material-symbols-outlined text-sm">add</span> Add to My Tank</>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
