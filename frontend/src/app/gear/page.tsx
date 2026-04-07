@@ -209,6 +209,25 @@ export default function GearPage() {
         </button>
       </div>
 
+      {/* Flow Optimizer CTA */}
+      {tab === 'equipment' && equipment.some(e => e.category === 'circulation') && (
+        <Link
+          href="/flow"
+          className="block bg-gradient-to-r from-[#4cd6fb]/10 to-[#041329] rounded-2xl p-4 border border-[#4cd6fb]/20 active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#4cd6fb]/15 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[#4cd6fb]">water</span>
+            </div>
+            <div className="flex-1">
+              <p className="font-[family-name:var(--font-headline)] font-bold text-white text-sm">Flow Optimizer</p>
+              <p className="text-[10px] text-[#c5c6cd] mt-0.5">AI analysis of pump placement based on your {equipment.filter(e => e.category === 'circulation').length} pumps &amp; coral flow needs</p>
+            </div>
+            <span className="material-symbols-outlined text-[#4cd6fb]">arrow_forward</span>
+          </div>
+        </Link>
+      )}
+
       {/* Equipment List */}
       {tab === 'equipment' && (
         <div className="space-y-6">
