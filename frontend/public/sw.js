@@ -1,21 +1,11 @@
-const CACHE_NAME = 'reefos-v1';
-const PRECACHE = [
-  '/',
-  '/livestock',
-  '/logs',
-  '/planner',
-  '/profile',
-];
+const CACHE_NAME = 'reefos-v3';
 
-// Install: precache app shell
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
-  );
+// Install: skip waiting to activate immediately
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean all old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -25,39 +15,32 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for static
+// Fetch: network-first for everything, cache as fallback for offline
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+
+  // Skip non-GET, Supabase, and chrome-extension requests
+  if (request.method !== 'GET') return;
   const url = new URL(request.url);
+  if (url.hostname.includes('supabase') || url.protocol === 'chrome-extension:') return;
 
-  // Skip non-GET and Supabase API calls
-  if (request.method !== 'GET' || url.hostname.includes('supabase')) return;
-
-  // Network-first for navigations
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
+        // Cache successful responses for offline fallback
+        if (response.ok && (request.mode === 'navigate' || url.pathname.match(/\.(js|css|png|svg|woff2?)$/))) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
-    );
-    return;
-  }
-
-  // Cache-first for static assets
-  if (url.pathname.match(/\.(js|css|png|jpg|svg|woff2?)$/)) {
-    event.respondWith(
-      caches.match(request).then((cached) =>
-        cached || fetch(request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return response;
-        })
-      )
-    );
-    return;
-  }
+        }
+        return response;
+      })
+      .catch(() => {
+        // Offline fallback
+        return caches.match(request).then((cached) => {
+          if (cached) return cached;
+          if (request.mode === 'navigate') return caches.match('/');
+          return new Response('', { status: 408 });
+        });
+      })
+  );
 });
