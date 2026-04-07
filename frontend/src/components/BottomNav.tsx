@@ -7,6 +7,7 @@ const tabs = [
   { href: '/', icon: 'dashboard', label: 'Dashboard' },
   { href: '/livestock', icon: 'sailing', label: 'Livestock' },
   { href: '/logs', icon: 'insert_chart', label: 'Logs' },
+  { href: '/planner', icon: 'view_in_ar', label: 'Planner' },
   { href: '/profile', icon: 'person', label: 'Profile' },
 ];
 

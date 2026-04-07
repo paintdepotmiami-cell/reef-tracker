@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getAllTests, createWaterTest } from '@/lib/queries';
 import type { WaterTest } from '@/lib/queries';
+import { useAuth } from '@/lib/auth';
 
 const PARAMS = [
   { key: 'alkalinity', label: 'Alkalinity', unit: 'dKH', placeholder: '8.3', step: '0.1' },
@@ -19,6 +20,7 @@ const EXTRA_PARAMS = [
 ];
 
 export default function LogsPage() {
+  const { user, tank } = useAuth();
   const [tests, setTests] = useState<WaterTest[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,7 +34,11 @@ export default function LogsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const data: Record<string, number | string> = { test_date: new Date().toISOString().split('T')[0] };
+    const data: Record<string, number | string | null> = {
+      test_date: new Date().toISOString().split('T')[0],
+      user_id: user?.id || null,
+      tank_id: tank?.id || null,
+    };
     [...PARAMS, ...EXTRA_PARAMS].forEach(p => {
       if (form[p.key]) data[p.key] = parseFloat(form[p.key]);
     });
