@@ -5,6 +5,7 @@ import { getAnimals, getSpecies } from '@/lib/queries';
 import type { Animal, Species } from '@/lib/queries';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
+import { getCached, setCache } from '@/lib/cache';
 
 const TABS = [
   { key: 'fish', label: 'Fish', icon: 'set_meal' },
@@ -25,15 +26,15 @@ const BADGE_COLORS: Record<string, string> = {
 
 export default function LivestockPage() {
   const { user, tank } = useAuth();
-  const [animals, setAnimals] = useState<Animal[]>([]);
+  const [animals, setAnimals] = useState<Animal[]>(getCached<Animal[]>('animals') || []);
   const [tab, setTab] = useState('fish');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Animal | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!getCached('animals'));
 
   // Add livestock modal
   const [showAdd, setShowAdd] = useState(false);
-  const [speciesList, setSpeciesList] = useState<Species[]>([]);
+  const [speciesList, setSpeciesList] = useState<Species[]>(getCached<Species[]>('species') || []);
   const [speciesSearch, setSpeciesSearch] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
   const [addName, setAddName] = useState('');
@@ -42,7 +43,7 @@ export default function LivestockPage() {
   const [addSuccess, setAddSuccess] = useState(false);
 
   useEffect(() => {
-    getAnimals().then(setAnimals).finally(() => setLoading(false));
+    getAnimals().then(a => { setCache('animals', a); setAnimals(a); }).finally(() => setLoading(false));
   }, []);
 
   const openAddModal = async () => {
@@ -54,7 +55,9 @@ export default function LivestockPage() {
     setAddSuccess(false);
     if (speciesList.length === 0) {
       const species = await getSpecies();
-      setSpeciesList(species.filter(s => s.category !== 'pest'));
+      const filtered = species.filter(s => s.category !== 'pest');
+      setCache('species', filtered);
+      setSpeciesList(filtered);
     }
   };
 

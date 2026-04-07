@@ -9,6 +9,7 @@ import {
 } from '@/lib/queries';
 import type { Equipment, Supplement } from '@/lib/queries';
 import Link from 'next/link';
+import { getCached, setCache } from '@/lib/cache';
 
 const EQ_CATEGORIES = [
   { key: 'lighting', icon: 'light_mode', color: 'text-[#F1C40F]', bg: 'bg-[#F1C40F]/10' },
@@ -34,9 +35,9 @@ function getCatMeta(cat: string | null) {
 export default function GearPage() {
   const { user, tank } = useAuth();
   const [tab, setTab] = useState<'equipment' | 'supplements'>('equipment');
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [supplements, setSupplements] = useState<Supplement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [equipment, setEquipment] = useState<Equipment[]>(getCached<Equipment[]>('equipment') || []);
+  const [supplements, setSupplements] = useState<Supplement[]>(getCached<Supplement[]>('supplements') || []);
+  const [loading, setLoading] = useState(!getCached('equipment'));
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -54,8 +55,8 @@ export default function GearPage() {
 
   useEffect(() => {
     Promise.allSettled([
-      getEquipment().then(setEquipment),
-      getSupplements().then(setSupplements),
+      getEquipment().then(e => { setCache('equipment', e); setEquipment(e); }),
+      getSupplements().then(s => { setCache('supplements', s); setSupplements(s); }),
     ]).finally(() => setLoading(false));
   }, []);
 

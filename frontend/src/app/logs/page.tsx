@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getAllTests, createWaterTest } from '@/lib/queries';
 import type { WaterTest } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
+import { getCached, setCache } from '@/lib/cache';
 import dynamic from 'next/dynamic';
 
 const ParamSparkline = dynamic(() => import('@/components/ParamSparkline'), { ssr: false });
@@ -24,15 +25,15 @@ const EXTRA_PARAMS = [
 
 export default function LogsPage() {
   const { user, tank } = useAuth();
-  const [tests, setTests] = useState<WaterTest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tests, setTests] = useState<WaterTest[]>(getCached<WaterTest[]>('allTests') || []);
+  const [loading, setLoading] = useState(!getCached('allTests'));
   const [saving, setSaving] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    getAllTests().then(setTests).finally(() => setLoading(false));
+    getAllTests().then(t => { setCache('allTests', t); setTests(t); }).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {

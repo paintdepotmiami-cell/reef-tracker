@@ -3,25 +3,39 @@
 import { useEffect, useState } from 'react';
 import { getAnimals, getLatestTest, getStats, generateRecommendations, generateTodayFeed } from '@/lib/queries';
 import type { Animal, WaterTest, Recommendation, ActionItem } from '@/lib/queries';
+import { getCached, setCache } from '@/lib/cache';
+import Link from 'next/link';
 
 export default function Dashboard() {
-  const [test, setTest] = useState<WaterTest | null>(null);
-  const [recs, setRecs] = useState<Recommendation[]>([]);
-  const [feed, setFeed] = useState<ActionItem[]>([]);
-  const [stats, setStats] = useState({ fish: 0, corals: 0, inverts: 0, equipment: 0 });
-  const [loading, setLoading] = useState(true);
+  // Initialize from cache for instant page transitions
+  const [test, setTest] = useState<WaterTest | null>(getCached<WaterTest | null>('latestTest'));
+  const [recs, setRecs] = useState<Recommendation[]>(() => {
+    const t = getCached<WaterTest | null>('latestTest');
+    return t ? generateRecommendations(t) : [];
+  });
+  const [feed, setFeed] = useState<ActionItem[]>(getCached<ActionItem[]>('todayFeed') || []);
+  const [stats, setStats] = useState(getCached<{ fish: number; corals: number; inverts: number; equipment: number }>('stats') || { fish: 0, corals: 0, inverts: 0, equipment: 0 });
+  // Only show loading spinner if no cached data
+  const [loading, setLoading] = useState(!getCached('stats'));
 
   useEffect(() => {
-    let animals: Animal[] = [];
-    let latestTest: WaterTest | null = null;
+    let animals: Animal[] = getCached<Animal[]>('animals') || [];
+    let latestTest: WaterTest | null = getCached<WaterTest | null>('latestTest');
 
     // Use allSettled so one failing query doesn't block everything
     Promise.allSettled([
-      getAnimals().then(a => { animals = a; }),
-      getLatestTest().then(t => { latestTest = t; setTest(t); if (t) setRecs(generateRecommendations(t)); }),
-      getStats().then(setStats).catch(() => {}),
+      getAnimals().then(a => { animals = a; setCache('animals', a); }),
+      getLatestTest().then(t => {
+        latestTest = t;
+        setCache('latestTest', t);
+        setTest(t);
+        if (t) setRecs(generateRecommendations(t));
+      }),
+      getStats().then(s => { setCache('stats', s); setStats(s); }).catch(() => {}),
     ]).then(() => {
-      setFeed(generateTodayFeed(latestTest, animals));
+      const f = generateTodayFeed(latestTest, animals);
+      setCache('todayFeed', f);
+      setFeed(f);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -54,16 +68,16 @@ export default function Dashboard() {
       {/* Stats Bento Grid */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { icon: 'set_meal', label: 'Fish', value: stats.fish, color: 'text-[#4cd6fb]' },
-          { icon: 'waves', label: 'Corals', value: stats.corals, color: 'text-[#FF7F50]' },
-          { icon: 'water_drop', label: 'Inverts', value: stats.inverts, color: 'text-[#2ff801]' },
-          { icon: 'settings_input_component', label: 'Equipment', value: stats.equipment, color: 'text-[#ffb59c]' },
+          { icon: 'set_meal', label: 'Fish', value: stats.fish, color: 'text-[#4cd6fb]', href: '/livestock' },
+          { icon: 'waves', label: 'Corals', value: stats.corals, color: 'text-[#FF7F50]', href: '/livestock' },
+          { icon: 'water_drop', label: 'Inverts', value: stats.inverts, color: 'text-[#2ff801]', href: '/livestock' },
+          { icon: 'settings_input_component', label: 'Equipment', value: stats.equipment, color: 'text-[#ffb59c]', href: '/gear' },
         ].map(s => (
-          <div key={s.label} className="glass-card p-5 rounded-2xl flex flex-col gap-1 relative overflow-hidden group">
+          <Link key={s.label} href={s.href} className="glass-card p-5 rounded-2xl flex flex-col gap-1 relative overflow-hidden group active:scale-95 transition-transform">
             <span className={`material-symbols-outlined ${s.color} absolute -right-2 -top-2 opacity-10 text-6xl group-hover:scale-110 transition-transform`}>{s.icon}</span>
             <span className="text-[#c5c6cd] text-xs uppercase tracking-widest">{s.label}</span>
             <span className="text-3xl font-[family-name:var(--font-headline)] font-bold text-white">{s.value}</span>
-          </div>
+          </Link>
         ))}
       </section>
 
