@@ -377,9 +377,18 @@ export default function LivestockPage() {
                       <button
                         key={sp.id}
                         onClick={() => selectSpecies(sp)}
-                        className="w-full bg-[#0d1c32] hover:bg-[#112036] rounded-xl p-3.5 flex items-center gap-3 transition-colors text-left"
+                        className="w-full bg-[#0d1c32] hover:bg-[#112036] rounded-xl p-3 flex items-center gap-3 transition-colors text-left"
                       >
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        {sp.photo_url ? (
+                          <img
+                            src={sp.photo_url}
+                            alt={sp.common_name}
+                            className="w-12 h-12 rounded-xl object-cover shrink-0"
+                            loading="lazy"
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+                          />
+                        ) : null}
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${sp.photo_url ? 'hidden' : ''} ${
                           sp.difficulty === 'Easy' ? 'bg-[#2ff801]/10' :
                           sp.difficulty === 'Moderate' ? 'bg-[#F1C40F]/10' :
                           sp.difficulty === 'Hard' ? 'bg-[#FF7F50]/10' :
@@ -424,7 +433,16 @@ export default function LivestockPage() {
               ) : (
                 <>
                   {/* Selected Species Details */}
-                  <div className="bg-[#0d1c32] rounded-xl p-4 space-y-3">
+                  <div className="bg-[#0d1c32] rounded-xl overflow-hidden space-y-0">
+                    {selectedSpecies.photo_url && (
+                      <img
+                        src={selectedSpecies.photo_url}
+                        alt={selectedSpecies.common_name}
+                        className="w-full h-40 object-cover"
+                        loading="lazy"
+                      />
+                    )}
+                    <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-[family-name:var(--font-headline)] font-bold text-white">{selectedSpecies.common_name}</p>
@@ -458,6 +476,7 @@ export default function LivestockPage() {
                         <p className="text-[10px] text-[#ffb4ab]">{selectedSpecies.warnings[0]}</p>
                       </div>
                     )}
+                    </div>
                   </div>
 
                   {/* Custom Name & Quantity */}
