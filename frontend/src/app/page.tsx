@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAnimals, getLatestTest, getStats, generateRecommendations, generateTodayFeed } from '@/lib/queries';
+import { getAnimals, getLatestTest, getAllTests, getStats, generateRecommendations, generateTodayFeed } from '@/lib/queries';
 import type { Animal, WaterTest, Recommendation, ActionItem } from '@/lib/queries';
 import { getCached, setCache } from '@/lib/cache';
 import { useAuth } from '@/lib/auth';
+import { analyzeTrends } from '@/lib/trend-analysis';
 import Link from 'next/link';
 
 /** Wraps a promise with a timeout — resolves with null if it takes too long */
@@ -41,6 +42,8 @@ export default function Dashboard() {
       setLoading(false);
     }, 6000);
 
+    let allTests: WaterTest[] = getCached<WaterTest[]>('allTests') || [];
+
     // Each query has its own 5s timeout so one slow query can't block everything
     Promise.allSettled([
       withTimeout(getAnimals(), 5000).then(a => { if (a) { animals = a; setCache('animals', a); } }),
@@ -52,11 +55,21 @@ export default function Dashboard() {
           if (t) setRecs(generateRecommendations(t));
         }
       }),
+      withTimeout(getAllTests(), 5000).then(t => { if (t) { allTests = t; setCache('allTests', t); } }).catch(() => {}),
       withTimeout(getStats(), 5000).then(s => { if (s) { setCache('stats', s); setStats(s); } }).catch(() => {}),
     ]).then(() => {
-      const f = generateTodayFeed(latestTest, animals);
-      setCache('todayFeed', f);
-      setFeed(f);
+      // Combine basic feed + trend intelligence
+      const basicFeed = generateTodayFeed(latestTest, animals);
+      const trendReport = analyzeTrends(allTests);
+      // Merge: trend items first (they're more intelligent), then basic items (deduped)
+      const trendIds = new Set(trendReport.actionItems.map(i => i.id));
+      const basicFiltered = basicFeed.filter(i => !trendIds.has(i.id));
+      const combinedFeed = [...trendReport.actionItems, ...basicFiltered];
+      // Sort by priority
+      const priorityOrder = { critical: 0, warning: 1, info: 2 };
+      combinedFeed.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+      setCache('todayFeed', combinedFeed);
+      setFeed(combinedFeed);
     }).finally(() => {
       clearTimeout(forceLoad);
       setLoading(false);

@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getAnimals, getSpecies } from '@/lib/queries';
 import type { Animal, Species } from '@/lib/queries';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { getCached, setCache } from '@/lib/cache';
+import { checkCompatibility, type CompatibilityResult } from '@/lib/compatibility';
 
 const TABS = [
   { key: 'fish', label: 'Fish', icon: 'set_meal' },
@@ -483,6 +484,63 @@ export default function LivestockPage() {
                     )}
                     </div>
                   </div>
+
+                  {/* Compatibility Advisor */}
+                  {(() => {
+                    const compat = checkCompatibility(selectedSpecies, animals, tank?.size_gallons || null);
+                    const levelColor = compat.level === 'safe' ? '#2ff801' : compat.level === 'caution' ? '#F1C40F' : compat.level === 'risky' ? '#FF7F50' : '#ffb4ab';
+                    const levelBg = compat.level === 'safe' ? 'bg-[#2ff801]/10' : compat.level === 'caution' ? 'bg-[#F1C40F]/10' : compat.level === 'risky' ? 'bg-[#FF7F50]/10' : 'bg-[#ffb4ab]/10';
+                    const levelIcon = compat.level === 'safe' ? 'check_circle' : compat.level === 'caution' ? 'warning' : compat.level === 'risky' ? 'error' : 'dangerous';
+                    const levelText = compat.level === 'safe' ? 'Compatible' : compat.level === 'caution' ? 'Caution' : compat.level === 'risky' ? 'Risky' : 'Not Recommended';
+
+                    return (
+                      <div className={`rounded-xl border overflow-hidden ${
+                        compat.level === 'safe' ? 'border-[#2ff801]/20' :
+                        compat.level === 'caution' ? 'border-[#F1C40F]/20' :
+                        'border-[#ffb4ab]/20'
+                      }`}>
+                        {/* Header */}
+                        <div className={`${levelBg} px-3 py-2 flex items-center gap-2`}>
+                          <span className="material-symbols-outlined text-sm" style={{ color: levelColor }}>{levelIcon}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: levelColor }}>{levelText}</span>
+                          <span className="ml-auto text-[10px] font-bold" style={{ color: levelColor }}>{compat.score}/100</span>
+                        </div>
+
+                        {/* Issues */}
+                        {compat.issues.length > 0 && (
+                          <div className="p-2.5 space-y-1.5">
+                            {compat.issues.slice(0, 4).map((issue, idx) => (
+                              <div key={idx} className="flex items-start gap-2">
+                                <span className={`material-symbols-outlined text-xs shrink-0 mt-0.5 ${
+                                  issue.severity === 'critical' ? 'text-[#ffb4ab]' :
+                                  issue.severity === 'warning' ? 'text-[#F1C40F]' : 'text-[#4cd6fb]'
+                                }`}>{issue.icon}</span>
+                                <div>
+                                  <p className="text-[10px] font-semibold text-white">{issue.title}</p>
+                                  <p className="text-[9px] text-[#c5c6cd] leading-relaxed">{issue.description}</p>
+                                </div>
+                              </div>
+                            ))}
+                            {compat.issues.length > 4 && (
+                              <p className="text-[9px] text-[#8f9097] pl-5">+{compat.issues.length - 4} more issues</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Tips */}
+                        {compat.tips.length > 0 && compat.issues.length === 0 && (
+                          <div className="p-2.5">
+                            {compat.tips.slice(0, 2).map((tip, idx) => (
+                              <p key={idx} className="text-[9px] text-[#c5c6cd] leading-relaxed flex items-start gap-1.5">
+                                <span className="material-symbols-outlined text-[#2ff801] text-xs shrink-0 mt-0.5">lightbulb</span>
+                                {tip}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Custom Name & Quantity */}
                   <div className="grid grid-cols-3 gap-3">
