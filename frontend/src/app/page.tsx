@@ -13,16 +13,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     let animals: Animal[] = [];
-    Promise.all([
+    let latestTest: WaterTest | null = null;
+
+    // Use allSettled so one failing query doesn't block everything
+    Promise.allSettled([
       getAnimals().then(a => { animals = a; }),
-      getLatestTest().then(t => { setTest(t); if (t) setRecs(generateRecommendations(t)); }),
-      getStats().then(setStats),
+      getLatestTest().then(t => { latestTest = t; setTest(t); if (t) setRecs(generateRecommendations(t)); }),
+      getStats().then(setStats).catch(() => {}),
     ]).then(() => {
-      const latestTest = test;
-      // Re-read test from state after all settled
-      getLatestTest().then(t => {
-        setFeed(generateTodayFeed(t, animals));
-      });
+      setFeed(generateTodayFeed(latestTest, animals));
     }).finally(() => setLoading(false));
   }, []);
 

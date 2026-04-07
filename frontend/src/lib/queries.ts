@@ -203,20 +203,23 @@ export async function createWaterTest(test: Partial<WaterTest>): Promise<WaterTe
 }
 
 export async function getStats() {
-  const [fish, corals, inverts, equipment] = await Promise.all([
-    getSupabase().from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'fish'),
-    getSupabase().from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'coral'),
-    getSupabase().from('reef_animals').select('quantity', { count: 'exact' }).eq('type', 'invertebrate'),
-    getSupabase().from('reef_equipment').select('*', { count: 'exact', head: true }),
+  const [fish, corals, inverts, equipment] = await Promise.allSettled([
+    getSupabase().from('reef_animals').select('quantity').eq('type', 'fish'),
+    getSupabase().from('reef_animals').select('quantity').eq('type', 'coral'),
+    getSupabase().from('reef_animals').select('quantity').eq('type', 'invertebrate'),
+    getSupabase().from('reef_equipment').select('id'),
   ]);
 
-  const sumQty = (data: { quantity: number }[] | null) => data?.reduce((s, r) => s + (r.quantity || 1), 0) || 0;
+  const sumQty = (result: PromiseSettledResult<{ data: { quantity: number }[] | null }>) =>
+    result.status === 'fulfilled' ? result.value.data?.reduce((s, r) => s + (r.quantity || 1), 0) || 0 : 0;
+
+  const eqCount = equipment.status === 'fulfilled' ? (equipment.value.data?.length || 0) : 0;
 
   return {
-    fish: sumQty(fish.data as { quantity: number }[] | null),
-    corals: sumQty(corals.data as { quantity: number }[] | null),
-    inverts: sumQty(inverts.data as { quantity: number }[] | null),
-    equipment: equipment.count || 0,
+    fish: sumQty(fish as PromiseSettledResult<{ data: { quantity: number }[] | null }>),
+    corals: sumQty(corals as PromiseSettledResult<{ data: { quantity: number }[] | null }>),
+    inverts: sumQty(inverts as PromiseSettledResult<{ data: { quantity: number }[] | null }>),
+    equipment: eqCount,
   };
 }
 
