@@ -197,6 +197,36 @@ export async function getSupplements(): Promise<Supplement[]> {
   return data || [];
 }
 
+export async function createEquipment(eq: Partial<Equipment>): Promise<Equipment | null> {
+  const { data } = await getSupabase().from('reef_equipment').insert(eq).select().single();
+  return data;
+}
+
+export async function updateEquipment(id: string, eq: Partial<Equipment>): Promise<Equipment | null> {
+  const { data } = await getSupabase().from('reef_equipment').update(eq).eq('id', id).select().single();
+  return data;
+}
+
+export async function deleteEquipment(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('reef_equipment').delete().eq('id', id);
+  return !error;
+}
+
+export async function createSupplement(sup: Partial<Supplement>): Promise<Supplement | null> {
+  const { data } = await getSupabase().from('reef_supplements').insert(sup).select().single();
+  return data;
+}
+
+export async function updateSupplement(id: string, sup: Partial<Supplement>): Promise<Supplement | null> {
+  const { data } = await getSupabase().from('reef_supplements').update(sup).eq('id', id).select().single();
+  return data;
+}
+
+export async function deleteSupplement(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('reef_supplements').delete().eq('id', id);
+  return !error;
+}
+
 export async function createWaterTest(test: Partial<WaterTest>): Promise<WaterTest | null> {
   const { data } = await getSupabase().from('reef_water_tests').insert(test).select().single();
   return data;

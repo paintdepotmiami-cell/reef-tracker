@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { profile, tank, user, signOut } = useAuth();
@@ -29,6 +30,18 @@ export default function ProfilePage() {
       </div>
 
       <div className="space-y-3">
+        {/* Equipment & Supplements — dedicated link */}
+        <Link href="/gear" className="bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-[#112036] transition-colors block">
+          <div className="w-10 h-10 rounded-xl bg-[#FF7F50]/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#FF7F50]">settings_input_component</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-medium text-sm">Equipment & Supplements</p>
+            <p className="text-[#c5c6cd] text-xs">Manage gear, dosing & products</p>
+          </div>
+          <span className="material-symbols-outlined text-[#c5c6cd]/40">chevron_right</span>
+        </Link>
+
         {[
           { icon: 'water', label: 'Tank Setup', desc: tank ? `${tank.size_gallons || '—'} gal, ${tank.tank_type === 'mixed' ? 'Mixed Reef' : tank.tank_type === 'reef' ? 'Reef' : tank.tank_type === 'fish_only' ? 'Fish Only' : 'Nano'}` : 'Not configured' },
           { icon: 'school', label: 'Experience', desc: profile?.experience_level ? profile.experience_level.charAt(0).toUpperCase() + profile.experience_level.slice(1) : 'Not set' },
