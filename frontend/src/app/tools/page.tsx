@@ -22,6 +22,7 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
       { href: '/bioload', icon: 'balance', color: '#FF7F50', title: 'Bioload Calculator', desc: 'Check fish capacity & stocking timeline', live: true },
       { href: '/trends', icon: 'monitoring', color: '#d7ffc5', title: 'Trend Graphs', desc: 'Track parameters over time with safe zones', live: true },
       { href: '/maintenance', icon: 'task_alt', color: '#F1C40F', title: 'Maintenance', desc: 'Track & schedule all tank maintenance tasks', live: true },
+      { href: '/volume-calc', icon: 'straighten', color: '#4cd6fb', title: 'Volume & Weight', desc: 'Calculate capacity, weight & viability', live: true },
       { href: '#', icon: 'restaurant', color: '#8f9097', title: 'Feeding Schedule', desc: 'Plan & track coral and fish feeding', live: false },
     ],
   },
