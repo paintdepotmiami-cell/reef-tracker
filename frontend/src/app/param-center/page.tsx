@@ -332,21 +332,24 @@ function ActionCard({ action, index }: { action: ActionItem; index: number }) {
         </div>
       </div>
 
-      {/* Product Recommendation (monetization placeholder) */}
+      {/* Product Recommendation → Add to Wishlist */}
       {action.product && (
-        <div className="ml-9 bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-3 border border-[#1c2a41]/50">
-          <div className="w-8 h-8 rounded-lg bg-[#FF7F50]/10 flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[#FF7F50] text-sm">shopping_cart</span>
+        <Link
+          href={`/wishlist?add=${encodeURIComponent(action.product.brand + ' ' + action.product.name)}`}
+          className="ml-9 bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-3 border border-[#1c2a41]/50 active:scale-[0.98] transition-transform block"
+        >
+          <div className="w-8 h-8 rounded-lg bg-[#4cd6fb]/10 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[#4cd6fb] text-sm">science</span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-[11px] font-medium">{action.product.brand} {action.product.name}</p>
             <p className="text-[#c5c6cd]/40 text-[10px]">{action.product.why}</p>
           </div>
-          {/* Monetization placeholder — will become affiliate link at 10K users */}
-          <div className="shrink-0 px-3 py-1.5 rounded-lg bg-[#FF7F50]/15 text-[#FF7F50] text-[10px] font-bold">
-            Buy
+          <div className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#4cd6fb]/15 text-[#4cd6fb] text-[10px] font-bold">
+            <span className="material-symbols-outlined text-xs">add</span>
+            Wishlist
           </div>
-        </div>
+        </Link>
       )}
     </div>
   );
