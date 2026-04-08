@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ReefOS Dashboard — Mockup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        background: "#041329",
+        surface: "#0d1c32",
+        "surface-high": "#1c2a41",
+        "surface-variant": "#27354c",
+        primary: "#ffb59c",
+        accent: "#FF7F50",
+        secondary: "#2ff801",
+        tertiary: "#4cd6fb",
+        error: "#ffb4ab",
+        "error-container": "#93000a",
+        "on-background": "#d6e3ff",
+        "on-surface": "#c5c6cd",
+        muted: "#8f9097",
+      },
+      fontFamily: {
+        headline: ["Space Grotesk"],
+        body: ["Inter"],
+      },
+    },
+  },
+}
+</script>
+<style>
+  body { min-height: 100dvh; }
+  .glass {
+    background: rgba(39, 53, 76, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-card {
+    background: rgba(39, 53, 76, 0.4);
+    backdrop-filter: blur(16px);
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .radial-ring {
+    position: relative;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+</head>
+
+<body class="bg-background text-on-background font-body px-5 pt-6 pb-32 max-w-md mx-auto space-y-10">
+
+<!-- ============================================ -->
+<!-- SECTION 1: WATER PARAMETERS (Chemistry Hub)  -->
+<!-- ============================================ -->
+<section id="section-water-params" class="space-y-4">
+  <div class="flex items-end justify-between">
+    <div>
+      <p class="text-primary text-xs font-bold tracking-[0.2em] uppercase font-headline">Chemistry Hub</p>
+      <h2 class="text-2xl font-headline font-bold text-white mt-1">Water Parameters</h2>
+      <p class="text-muted text-xs mt-0.5">April 6, 2026</p>
+    </div>
+    <a href="#" class="text-tertiary text-sm font-semibold flex items-center gap-1 hover:underline">
+      History <span class="material-symbols-outlined text-sm">arrow_forward</span>
+    </a>
+  </div>
+
+  <!-- Big 3: Calcium, Alkalinity, Magnesium -->
+  <div class="grid grid-cols-3 gap-3">
+
+    <!-- Calcium — OK (green) -->
+    <div class="glass p-5 rounded-[24px] flex flex-col items-center gap-2">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[114px] h-[114px] border-[3px] border-secondary/15 rounded-full"></div>
+        <div class="radial-ring" style="width:100px;height:100px;background:conic-gradient(#2ff801 82%,#1c2a41 82%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 6px - 1px),#000 calc(100% - 6px));mask:radial-gradient(farthest-side,#0000 calc(100% - 6px - 1px),#000 calc(100% - 6px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-2xl font-headline font-bold text-on-background">443</span>
+          <span class="text-[9px] text-muted font-bold uppercase tracking-widest">ppm</span>
+        </div>
+      </div>
+      <div class="text-center space-y-1.5">
+        <h4 class="text-sm font-headline font-bold text-secondary">Calcium</h4>
+        <div class="bg-surface rounded-lg px-3 py-1.5">
+          <p class="text-[8px] text-muted/70 font-bold uppercase tracking-wider">Rango Aceptable</p>
+          <p class="text-xs font-medium text-secondary">380 – 450 ppm</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alkalinity — WARNING (orange, value near low end) -->
+    <div class="glass p-5 rounded-[24px] flex flex-col items-center gap-2">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[114px] h-[114px] border-[3px] border-[#F1C40F]/15 rounded-full"></div>
+        <div class="radial-ring" style="width:100px;height:100px;background:conic-gradient(#F1C40F 32%,#1c2a41 32%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 6px - 1px),#000 calc(100% - 6px));mask:radial-gradient(farthest-side,#0000 calc(100% - 6px - 1px),#000 calc(100% - 6px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-2xl font-headline font-bold text-on-background">6.8</span>
+          <span class="text-[9px] text-muted font-bold uppercase tracking-widest">dKH</span>
+        </div>
+      </div>
+      <div class="text-center space-y-1.5">
+        <h4 class="text-sm font-headline font-bold text-[#F1C40F]">Alk</h4>
+        <div class="bg-surface rounded-lg px-3 py-1.5 border border-[#F1C40F]/20">
+          <p class="text-[8px] text-muted/70 font-bold uppercase tracking-wider">Rango Aceptable</p>
+          <p class="text-xs font-medium text-[#F1C40F]">7 – 11 dKH</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Magnesium — CRITICAL (red, too high) -->
+    <div class="glass p-5 rounded-[24px] flex flex-col items-center gap-2">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[114px] h-[114px] border-[3px] border-[#ff6b6b]/15 rounded-full"></div>
+        <div class="radial-ring" style="width:100px;height:100px;background:conic-gradient(#ff6b6b 88%,#1c2a41 88%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 6px - 1px),#000 calc(100% - 6px));mask:radial-gradient(farthest-side,#0000 calc(100% - 6px - 1px),#000 calc(100% - 6px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-2xl font-headline font-bold text-on-background">1450</span>
+          <span class="text-[9px] text-muted font-bold uppercase tracking-widest">ppm</span>
+        </div>
+      </div>
+      <div class="text-center space-y-1.5">
+        <h4 class="text-sm font-headline font-bold text-[#ff6b6b]">Mg</h4>
+        <div class="bg-surface rounded-lg px-3 py-1.5 border border-[#ff6b6b]/20">
+          <p class="text-[8px] text-muted/70 font-bold uppercase tracking-wider">Rango Aceptable</p>
+          <p class="text-xs font-medium text-[#ff6b6b]">1250 – 1400 ppm</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary params: pH, PO4, NO3, NH3, NO2 — compact -->
+  <div class="flex justify-between gap-1 px-1">
+    <!-- pH — OK -->
+    <div class="flex flex-col items-center">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[86px] h-[86px] border-[2px] border-secondary/15 rounded-full"></div>
+        <div class="radial-ring" style="width:72px;height:72px;background:conic-gradient(#2ff801 54%,#1c2a41 54%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px));mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-[17px] font-headline font-bold text-on-background">8.2</span>
+        </div>
+      </div>
+      <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mt-0.5">pH</span>
+      <span class="text-[7px] text-secondary/40">8.0–8.4</span>
+    </div>
+    <!-- PO4 — OK -->
+    <div class="flex flex-col items-center">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[86px] h-[86px] border-[2px] border-secondary/15 rounded-full"></div>
+        <div class="radial-ring" style="width:72px;height:72px;background:conic-gradient(#2ff801 18%,#1c2a41 18%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px));mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-[17px] font-headline font-bold text-on-background">0.06</span>
+          <span class="text-[7px] text-muted">ppm</span>
+        </div>
+      </div>
+      <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mt-0.5">PO4</span>
+      <span class="text-[7px] text-secondary/40">&lt;0.1</span>
+    </div>
+    <!-- NO3 — OK -->
+    <div class="flex flex-col items-center">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[86px] h-[86px] border-[2px] border-secondary/15 rounded-full"></div>
+        <div class="radial-ring" style="width:72px;height:72px;background:conic-gradient(#2ff801 20%,#1c2a41 20%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px));mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-[17px] font-headline font-bold text-on-background">8</span>
+          <span class="text-[7px] text-muted">ppm</span>
+        </div>
+      </div>
+      <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mt-0.5">NO3</span>
+      <span class="text-[7px] text-secondary/40">2–15</span>
+    </div>
+    <!-- NH3 — OK -->
+    <div class="flex flex-col items-center">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[86px] h-[86px] border-[2px] border-secondary/15 rounded-full"></div>
+        <div class="radial-ring" style="width:72px;height:72px;background:conic-gradient(#2ff801 0%,#1c2a41 0%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px));mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-[17px] font-headline font-bold text-on-background">0</span>
+          <span class="text-[7px] text-muted">ppm</span>
+        </div>
+      </div>
+      <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mt-0.5">NH3</span>
+      <span class="text-[7px] text-secondary/40">0</span>
+    </div>
+    <!-- NO2 — OK -->
+    <div class="flex flex-col items-center">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-[86px] h-[86px] border-[2px] border-secondary/15 rounded-full"></div>
+        <div class="radial-ring" style="width:72px;height:72px;background:conic-gradient(#2ff801 0%,#1c2a41 0%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px));mask:radial-gradient(farthest-side,#0000 calc(100% - 5px - 1px),#000 calc(100% - 5px))"></div>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-[17px] font-headline font-bold text-on-background">0</span>
+          <span class="text-[7px] text-muted">ppm</span>
+        </div>
+      </div>
+      <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mt-0.5">NO2</span>
+      <span class="text-[7px] text-secondary/40">0</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 2: STATS BENTO GRID                  -->
+<!-- ============================================ -->
+<section id="section-stats" class="grid grid-cols-4 gap-3">
+  <a href="#" class="glass-card p-3 rounded-xl flex flex-col items-center gap-0.5 active:scale-95 transition-transform">
+    <span class="material-symbols-outlined text-tertiary text-lg">set_meal</span>
+    <span class="text-xl font-headline font-bold text-white">7</span>
+    <span class="text-on-surface text-[9px] uppercase tracking-widest">Fish</span>
+  </a>
+  <a href="#" class="glass-card p-3 rounded-xl flex flex-col items-center gap-0.5 active:scale-95 transition-transform">
+    <span class="material-symbols-outlined text-accent text-lg">waves</span>
+    <span class="text-xl font-headline font-bold text-white">24</span>
+    <span class="text-on-surface text-[9px] uppercase tracking-widest">Corals</span>
+  </a>
+  <a href="#" class="glass-card p-3 rounded-xl flex flex-col items-center gap-0.5 active:scale-95 transition-transform">
+    <span class="material-symbols-outlined text-secondary text-lg">water_drop</span>
+    <span class="text-xl font-headline font-bold text-white">10</span>
+    <span class="text-on-surface text-[9px] uppercase tracking-widest">Inverts</span>
+  </a>
+  <a href="#" class="glass-card p-3 rounded-xl flex flex-col items-center gap-0.5 active:scale-95 transition-transform">
+    <span class="material-symbols-outlined text-primary text-lg">settings_input_component</span>
+    <span class="text-xl font-headline font-bold text-white">20</span>
+    <span class="text-on-surface text-[9px] uppercase tracking-widest">Gear</span>
+  </a>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 3: LIFE SUPPORT (Consumable Gauges)  -->
+<!-- ============================================ -->
+<section id="section-consumables" class="space-y-4">
+  <div>
+    <p class="text-primary text-xs font-bold tracking-[0.2em] uppercase font-headline">Life Support</p>
+    <h2 class="text-2xl font-headline font-bold text-white mt-1">Equipment Status</h2>
+  </div>
+  <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+
+    <!-- RowaPhos — OVERDUE (red) -->
+    <button class="glass p-4 rounded-[20px] flex flex-col items-center text-center gap-3 min-w-[130px] active:scale-95 transition-transform">
+      <div class="relative flex items-center justify-center">
+        <div class="radial-ring" style="width:80px;height:80px;background:conic-gradient(#ff6b6b 100%,#1c2a41 100%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px))"></div>
+        <span class="absolute material-symbols-outlined text-2xl text-[#ff6b6b]">filter_alt</span>
+      </div>
+      <div>
+        <p class="font-headline font-bold text-xs text-white">RowaPhos</p>
+        <p class="text-[10px] text-muted mt-0.5">4d overdue</p>
+      </div>
+      <span class="px-3 py-1 rounded-full bg-[#ff6b6b]/10 text-[#ff6b6b] text-[9px] font-bold uppercase tracking-widest">Reemplazar</span>
+    </button>
+
+    <!-- Carbon — WARNING (orange) -->
+    <button class="glass p-4 rounded-[20px] flex flex-col items-center text-center gap-3 min-w-[130px] active:scale-95 transition-transform">
+      <div class="relative flex items-center justify-center">
+        <div class="radial-ring" style="width:80px;height:80px;background:conic-gradient(#F1C40F 75%,#1c2a41 75%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px))"></div>
+        <span class="absolute material-symbols-outlined text-2xl text-[#F1C40F]">opacity</span>
+      </div>
+      <div>
+        <p class="font-headline font-bold text-xs text-white">Carbon</p>
+        <p class="text-[10px] text-muted mt-0.5">5d remaining</p>
+      </div>
+      <span class="px-3 py-1 rounded-full bg-[#F1C40F]/10 text-[#F1C40F] text-[9px] font-bold uppercase tracking-widest">Proximo</span>
+    </button>
+
+    <!-- Hanna Checkers — OK (green) -->
+    <button class="glass p-4 rounded-[20px] flex flex-col items-center text-center gap-3 min-w-[130px] active:scale-95 transition-transform">
+      <div class="relative flex items-center justify-center">
+        <div class="radial-ring" style="width:80px;height:80px;background:conic-gradient(#2ff801 30%,#1c2a41 30%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px))"></div>
+        <span class="absolute material-symbols-outlined text-2xl text-[#2ff801]">science</span>
+      </div>
+      <div>
+        <p class="font-headline font-bold text-xs text-white">Hanna Cal.</p>
+        <p class="text-[10px] text-muted mt-0.5">20d remaining</p>
+      </div>
+      <span class="px-3 py-1 rounded-full bg-[#2ff801]/10 text-[#2ff801] text-[9px] font-bold uppercase tracking-widest">Optimo</span>
+    </button>
+
+    <!-- Frag Corals — OK (green) -->
+    <button class="glass p-4 rounded-[20px] flex flex-col items-center text-center gap-3 min-w-[130px] active:scale-95 transition-transform">
+      <div class="relative flex items-center justify-center">
+        <div class="radial-ring" style="width:80px;height:80px;background:conic-gradient(#2ff801 15%,#1c2a41 15%);-webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,#0000 calc(100% - 7px - 1px),#000 calc(100% - 7px))"></div>
+        <span class="absolute material-symbols-outlined text-2xl text-[#2ff801]">build</span>
+      </div>
+      <div>
+        <p class="font-headline font-bold text-xs text-white">Frag Corals</p>
+        <p class="text-[10px] text-muted mt-0.5">Changed 4d ago</p>
+      </div>
+      <span class="px-3 py-1 rounded-full bg-[#2ff801]/10 text-[#2ff801] text-[9px] font-bold uppercase tracking-widest">Optimo</span>
+    </button>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 4: TODAY FEED (Action Center)        -->
+<!-- ============================================ -->
+<section id="section-today" class="space-y-4">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-headline font-bold text-white">Today</h2>
+    <span class="px-2.5 py-0.5 bg-error-container/30 text-error rounded-full text-[10px] font-bold flex items-center gap-1">
+      <span class="material-symbols-outlined text-xs">warning</span>
+      3 actions needed
+    </span>
+  </div>
+
+  <div class="space-y-3">
+    <!-- Critical item -->
+    <div class="bg-surface rounded-xl p-4 flex items-start gap-4 border-l-4 border-error">
+      <div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-error">filter_alt</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-white text-sm">Replace RowaPhos — 4 days overdue</p>
+        <p class="text-xs text-on-surface mt-1 leading-relaxed">Every 30 days. Tap to mark complete.</p>
+        <button class="mt-2 text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1 hover:underline">
+          Mark done <span class="material-symbols-outlined text-xs">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Warning item -->
+    <div class="bg-surface rounded-xl p-4 flex items-start gap-4 border-l-4 border-[#F1C40F]">
+      <div class="w-10 h-10 rounded-xl bg-[#F1C40F]/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[#F1C40F]">lab_profile</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-white text-sm">Magnesium elevated: 1450 ppm</p>
+        <p class="text-xs text-on-surface mt-1 leading-relaxed">Pause Magnesium dosing (Brightwell). Water changes will bring it down gradually.</p>
+        <button class="mt-2 text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1 hover:underline">
+          Pause Mg dosing <span class="material-symbols-outlined text-xs">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Info item -->
+    <div class="bg-surface rounded-xl p-4 flex items-start gap-4 border-l-4 border-tertiary">
+      <div class="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-tertiary">swap_horiz</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-white text-sm">Euphyllia sweep risk (2 colonies)</p>
+        <p class="text-xs text-on-surface mt-1 leading-relaxed">Torch & Hammer have 4-6" sweeper tentacles. Ensure 6" minimum distance from all non-Euphyllia corals.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 5: MAINTENANCE TRACKER               -->
+<!-- ============================================ -->
+<section id="section-maintenance" class="space-y-4">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-headline font-bold text-primary">Maintenance</h2>
+    <span class="px-2.5 py-0.5 bg-error-container/30 text-error rounded-full text-[10px] font-bold">3 overdue</span>
+  </div>
+
+  <!-- Overdue -->
+  <div class="space-y-2">
+    <p class="text-[10px] font-bold text-error uppercase tracking-widest flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-error shadow-[0_0_6px_#ffb4ab]"></span>
+      Overdue
+    </p>
+    <button class="w-full bg-surface rounded-xl p-4 flex items-center gap-4 border-l-4 border-error text-left active:scale-[0.98] transition-all">
+      <div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-error">filter_alt</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-white text-sm">Replace RowaPhos</p>
+        <p class="text-[10px] text-error mt-0.5">4 days overdue · every 30d</p>
+      </div>
+      <div class="w-8 h-8 rounded-full border-2 border-error/30 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-error/40 text-sm">check</span>
+      </div>
+    </button>
+    <button class="w-full bg-surface rounded-xl p-4 flex items-center gap-4 border-l-4 border-error text-left active:scale-[0.98] transition-all">
+      <div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-error">science</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-white text-sm">Water Test</p>
+        <p class="text-[10px] text-error mt-0.5">1 day overdue · every 7d</p>
+      </div>
+      <div class="w-8 h-8 rounded-full border-2 border-error/30 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-error/40 text-sm">check</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- Today -->
+  <div class="space-y-2">
+    <p class="text-[10px] font-bold text-[#F1C40F] uppercase tracking-widest flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-[#F1C40F] shadow-[0_0_6px_#F1C40F]"></span>
+      Today
+    </p>
+    <button class="w-full bg-surface rounded-xl p-4 flex items-center gap-4 border-l-4 border-[#F1C40F] text-left active:scale-[0.98] transition-all">
+      <div class="w-10 h-10 rounded-xl bg-[#F1C40F]/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[#F1C40F]">cleaning_services</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-white text-sm">Clean Glass</p>
+        <p class="text-[10px] text-[#F1C40F]/70 mt-0.5">Due today · every 3d</p>
+      </div>
+      <div class="w-8 h-8 rounded-full border-2 border-[#F1C40F]/30 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[#F1C40F]/40 text-sm">check</span>
+      </div>
+    </button>
+    <button class="w-full bg-surface rounded-xl p-4 flex items-center gap-4 border-l-4 border-[#F1C40F] text-left active:scale-[0.98] transition-all">
+      <div class="w-10 h-10 rounded-xl bg-[#F1C40F]/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[#F1C40F]">restaurant</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-white text-sm">Feed Reef-Roids</p>
+        <p class="text-[10px] text-[#F1C40F]/70 mt-0.5">Due today · every 3d</p>
+      </div>
+      <div class="w-8 h-8 rounded-full border-2 border-[#F1C40F]/30 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[#F1C40F]/40 text-sm">check</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- Upcoming -->
+  <div class="space-y-2">
+    <p class="text-[10px] font-bold text-secondary uppercase tracking-widest flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_6px_#2ff801]"></span>
+      Upcoming
+    </p>
+    <div class="bg-surface rounded-xl p-4 flex items-center gap-4 border-l-4 border-secondary/30">
+      <div class="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-secondary/60">water_drop</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-on-surface text-sm">Water Change</p>
+        <p class="text-[10px] text-secondary/50 mt-0.5">In 2 days · every 7d</p>
+      </div>
+    </div>
+    <div class="bg-surface rounded-xl p-4 flex items-center gap-4 border-l-4 border-secondary/30">
+      <div class="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-secondary/60">colorize</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-headline font-medium text-on-surface text-sm">Dose Trace Elements</p>
+        <p class="text-[10px] text-secondary/50 mt-0.5">In 4 days · every 7d</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- BOTTOM NAV (reference)                       -->
+<!-- ============================================ -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center h-[4.5rem] px-2 pb-[env(safe-area-inset-bottom,0.5rem)] bg-[#041329]/90 backdrop-blur-2xl z-50 rounded-t-3xl shadow-[0_-8px_32px_rgba(1,14,36,0.6)]">
+  <a href="#" class="flex flex-col items-center justify-center gap-0.5 min-w-12 text-accent scale-105">
+    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1">dashboard</span>
+    <span class="font-body font-medium text-[9px] tracking-tight">Dashboard</span>
+  </a>
+  <a href="#" class="flex flex-col items-center justify-center gap-0.5 min-w-12 text-slate-500 hover:text-white transition-all">
+    <span class="material-symbols-outlined text-[22px]">sailing</span>
+    <span class="font-body font-medium text-[9px] tracking-tight">Livestock</span>
+  </a>
+  <a href="#" class="flex flex-col items-center justify-center gap-0.5 min-w-12 text-slate-500 hover:text-white transition-all">
+    <span class="material-symbols-outlined text-[22px]">insert_chart</span>
+    <span class="font-body font-medium text-[9px] tracking-tight">Logs</span>
+  </a>
+  <a href="#" class="flex flex-col items-center justify-center gap-0.5 min-w-12 text-slate-500 hover:text-white transition-all">
+    <span class="material-symbols-outlined text-[22px]">view_in_ar</span>
+    <span class="font-body font-medium text-[9px] tracking-tight">Planner</span>
+  </a>
+  <a href="#" class="flex flex-col items-center justify-center gap-0.5 min-w-12 text-slate-500 hover:text-white transition-all">
+    <span class="material-symbols-outlined text-[22px]">person</span>
+    <span class="font-body font-medium text-[9px] tracking-tight">Profile</span>
+  </a>
+</nav>
+
+</body>
+</html>

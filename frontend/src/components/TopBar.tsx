@@ -6,16 +6,16 @@ export default function TopBar() {
   const { profile, tank } = useAuth();
 
   return (
-    <header className="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#041329]/80 backdrop-blur-xl">
+    <header className="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#041329]/80 backdrop-blur-xl shadow-[0_8px_24px_rgba(1,14,36,0.3)]">
       <div className="flex items-center gap-3">
         <span className="material-symbols-outlined text-[#FF7F50]">waves</span>
         <div>
-          <span className="font-[family-name:var(--font-headline)] font-bold tracking-[0.15em] text-[#FF7F50] text-lg uppercase">
+          <span className="font-[family-name:var(--font-headline)] font-extrabold italic tracking-tight text-[#FF7F50] text-xl">
             ReefOS
           </span>
           {tank && (
-            <p className="text-[9px] text-[#c5c6cd]/60 -mt-1 tracking-wider">
-              {tank.name}{tank.size_gallons ? ` · ${tank.size_gallons}gal` : ''}
+            <p className="text-[9px] text-[#c5c6cd]/60 -mt-0.5 tracking-wider">
+              {tank.name}{tank.size_gallons ? ` \u00b7 ${tank.size_gallons}gal` : ''}
             </p>
           )}
         </div>

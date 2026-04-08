@@ -24,6 +24,7 @@ interface Tank {
   tank_type: string;
   photo_url: string | null;
   is_primary: boolean;
+  created_at: string;
 }
 
 interface AuthContextType {

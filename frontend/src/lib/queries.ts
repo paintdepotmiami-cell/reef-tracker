@@ -162,6 +162,70 @@ export interface Species {
   warnings: string[] | null;
 }
 
+export interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+  category: string;
+  image_url: string | null;
+  content: string;
+  reading_time: number;
+  published: boolean;
+  created_at: string;
+}
+
+export interface WishlistItem {
+  id: string;
+  user_id: string;
+  species_id: string;
+  notes: string | null;
+  priority: string;
+  created_at: string;
+  // joined
+  species?: Species;
+}
+
+export async function getArticles(category?: string): Promise<Article[]> {
+  let q = getSupabase().from('reef_articles').select('*').eq('published', true).order('created_at', { ascending: false });
+  if (category) q = q.eq('category', category);
+  const { data } = await q;
+  return data || [];
+}
+
+export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  const { data } = await getSupabase()
+    .from('reef_articles')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+  return data;
+}
+
+export async function getWishlist(): Promise<WishlistItem[]> {
+  const { data } = await getSupabase()
+    .from('reef_wishlist')
+    .select('*, species:reef_species(*)')
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+
+export async function addToWishlist(speciesId: string, priority = 'medium', notes?: string): Promise<WishlistItem | null> {
+  const { data: { user } } = await getSupabase().auth.getUser();
+  if (!user) return null;
+  const { data } = await getSupabase()
+    .from('reef_wishlist')
+    .upsert({ user_id: user.id, species_id: speciesId, priority, notes }, { onConflict: 'user_id,species_id' })
+    .select()
+    .single();
+  return data;
+}
+
+export async function removeFromWishlist(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('reef_wishlist').delete().eq('id', id);
+  return !error;
+}
+
 export async function getAnimals(type?: string): Promise<Animal[]> {
   let q = getSupabase().from('reef_animals').select('*').order('name');
   if (type) q = q.eq('type', type);
@@ -227,9 +291,179 @@ export async function deleteSupplement(id: string): Promise<boolean> {
   return !error;
 }
 
+export interface MaintenanceTask {
+  id: string;
+  user_id: string | null;
+  tank_id: string | null;
+  task_name: string;
+  category: string; // water_change, testing, cleaning, dosing, feeding, equipment, other
+  interval_days: number;
+  last_completed_at: string | null;
+  next_due_at: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export async function getMaintenanceTasks(): Promise<MaintenanceTask[]> {
+  const { data } = await getSupabase()
+    .from('reef_maintenance_tasks')
+    .select('*')
+    .order('next_due_at', { ascending: true });
+  return data || [];
+}
+
+export async function completeMaintenanceTask(id: string): Promise<MaintenanceTask | null> {
+  // First get the task to know the interval
+  const { data: task } = await getSupabase()
+    .from('reef_maintenance_tasks')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (!task) return null;
+
+  const now = new Date();
+  const nextDue = new Date(now.getTime() + task.interval_days * 86400000);
+
+  const { data } = await getSupabase()
+    .from('reef_maintenance_tasks')
+    .update({
+      last_completed_at: now.toISOString(),
+      next_due_at: nextDue.toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  return data;
+}
+
+export async function createMaintenanceTask(task: Partial<MaintenanceTask>): Promise<MaintenanceTask | null> {
+  const { data } = await getSupabase()
+    .from('reef_maintenance_tasks')
+    .insert(task)
+    .select()
+    .single();
+  return data;
+}
+
+export async function deleteMaintenanceTask(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('reef_maintenance_tasks').delete().eq('id', id);
+  return !error;
+}
+
 export async function createWaterTest(test: Partial<WaterTest>): Promise<WaterTest | null> {
   const { data } = await getSupabase().from('reef_water_tests').insert(test).select().single();
   return data;
+}
+
+// --- Products ---
+
+export interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  category: string;
+  subcategory: string | null;
+  description: string | null;
+  affects_params: string[];
+  dosing_unit: string | null;
+  dosing_instructions: string | null;
+  image_url: string | null;
+  buy_url: string | null;
+  popularity: number;
+  created_at: string;
+}
+
+export interface UserProduct {
+  id: string;
+  user_id: string;
+  product_id: string;
+  tank_id: string | null;
+  status: string;
+  daily_dose: number | null;
+  dose_unit: string | null;
+  notes: string | null;
+  created_at: string;
+  product?: Product; // joined
+}
+
+export interface DoseLog {
+  id: string;
+  user_id: string;
+  product_id: string;
+  tank_id: string | null;
+  amount: number;
+  unit: string;
+  dosed_at: string;
+  product?: Product; // joined
+}
+
+export async function getProducts(category?: string): Promise<Product[]> {
+  let q = getSupabase().from('reef_products').select('*').order('popularity', { ascending: false });
+  if (category) q = q.eq('category', category);
+  const { data } = await q;
+  return data || [];
+}
+
+export async function searchProducts(query: string): Promise<Product[]> {
+  const { data } = await getSupabase()
+    .from('reef_products')
+    .select('*')
+    .or(`name.ilike.%${query}%,brand.ilike.%${query}%,description.ilike.%${query}%`)
+    .order('popularity', { ascending: false })
+    .limit(20);
+  return data || [];
+}
+
+export async function getUserProducts(): Promise<UserProduct[]> {
+  const { data } = await getSupabase()
+    .from('reef_user_products')
+    .select('*, product:reef_products(*)')
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+
+export async function addUserProduct(product_id: string, user_id: string, tank_id?: string): Promise<UserProduct | null> {
+  const { data } = await getSupabase()
+    .from('reef_user_products')
+    .insert({ product_id, user_id, tank_id: tank_id || null })
+    .select('*, product:reef_products(*)')
+    .single();
+  return data;
+}
+
+export async function updateUserProduct(id: string, updates: Partial<UserProduct>): Promise<UserProduct | null> {
+  const { data } = await getSupabase()
+    .from('reef_user_products')
+    .update(updates)
+    .eq('id', id)
+    .select('*, product:reef_products(*)')
+    .single();
+  return data;
+}
+
+export async function removeUserProduct(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('reef_user_products').delete().eq('id', id);
+  return !error;
+}
+
+export async function logDose(product_id: string, user_id: string, amount: number, unit: string, tank_id?: string): Promise<DoseLog | null> {
+  const { data } = await getSupabase()
+    .from('reef_dose_logs')
+    .insert({ product_id, user_id, amount, unit, tank_id: tank_id || null })
+    .select()
+    .single();
+  return data;
+}
+
+export async function getDoseLogs(limit = 50): Promise<DoseLog[]> {
+  const { data } = await getSupabase()
+    .from('reef_dose_logs')
+    .select('*, product:reef_products(name, brand, image_url)')
+    .order('dosed_at', { ascending: false })
+    .limit(limit);
+  return data || [];
 }
 
 export async function getStats() {

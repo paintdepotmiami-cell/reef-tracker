@@ -165,7 +165,7 @@ export default function GearPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/profile" className="w-9 h-9 rounded-xl bg-[#1c2a41] flex items-center justify-center shrink-0">
+        <Link href="/my-reef" className="w-9 h-9 rounded-xl bg-[#1c2a41] flex items-center justify-center shrink-0">
           <span className="material-symbols-outlined text-[#c5c6cd] text-lg">arrow_back</span>
         </Link>
         <div className="flex-1">

@@ -1,7 +1,6 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
-import Link from 'next/link';
 
 export default function ProfilePage() {
   const { profile, tank, user, signOut } = useAuth();
@@ -22,33 +21,24 @@ export default function ProfilePage() {
         <div>
           <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-lg">{profile?.display_name || 'Reefer'}</h3>
           <p className="text-[#c5c6cd] text-sm">
-            {tank ? `${tank.name}${tank.size_gallons ? ` · ${tank.size_gallons} gal` : ''}` : 'No tank set up'}
-            {profile?.location_city && ` · ${profile.location_city}, ${profile.location_state}`}
+            {tank ? `${tank.name}${tank.size_gallons ? ` \u00b7 ${tank.size_gallons} gal` : ''}` : 'No tank set up'}
+            {profile?.location_city && ` \u00b7 ${profile.location_city}, ${profile.location_state}`}
           </p>
           <p className="text-[#8f9097] text-xs mt-0.5">{user?.email}</p>
         </div>
       </div>
 
       <div className="space-y-3">
-        {/* Equipment & Supplements — dedicated link */}
-        <Link href="/gear" className="bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-[#112036] transition-colors block">
-          <div className="w-10 h-10 rounded-xl bg-[#FF7F50]/10 flex items-center justify-center">
-            <span className="material-symbols-outlined text-[#FF7F50]">settings_input_component</span>
-          </div>
-          <div className="flex-1">
-            <p className="text-white font-medium text-sm">Equipment & Supplements</p>
-            <p className="text-[#c5c6cd] text-xs">Manage gear, dosing & products</p>
-          </div>
-          <span className="material-symbols-outlined text-[#c5c6cd]/40">chevron_right</span>
-        </Link>
+        <p className="text-[10px] font-bold text-[#c5c6cd]/50 uppercase tracking-widest pt-2">Tank & Account</p>
 
         {[
-          { icon: 'water', label: 'Tank Setup', desc: tank ? `${tank.size_gallons || '—'} gal, ${tank.tank_type === 'mixed' ? 'Mixed Reef' : tank.tank_type === 'reef' ? 'Reef' : tank.tank_type === 'fish_only' ? 'Fish Only' : 'Nano'}` : 'Not configured' },
+          { icon: 'water', label: 'Tank Setup', desc: tank ? `${tank.size_gallons || '\u2014'} gal, ${tank.tank_type === 'mixed' ? 'Mixed Reef' : tank.tank_type === 'reef' ? 'Reef' : tank.tank_type === 'fish_only' ? 'Fish Only' : 'Nano'}` : 'Not configured' },
           { icon: 'school', label: 'Experience', desc: profile?.experience_level ? profile.experience_level.charAt(0).toUpperCase() + profile.experience_level.slice(1) : 'Not set' },
-          { icon: 'straighten', label: 'Units', desc: profile?.units === 'metric' ? 'Metric (L, °C, cm)' : 'Imperial (gal, °F, in)' },
+          { icon: 'straighten', label: 'Units', desc: profile?.units === 'metric' ? 'Metric (L, \u00b0C, cm)' : 'Imperial (gal, \u00b0F, in)' },
           { icon: 'language', label: 'Language', desc: profile?.language === 'es' ? 'Espanol' : profile?.language === 'pt' ? 'Portugues' : 'English' },
           { icon: 'notifications', label: 'Notifications', desc: 'Coming soon' },
-          { icon: 'info', label: 'About ReefOS', desc: 'v2.0.0 — Session 2' },
+          { icon: 'settings_remote', label: 'IoT / Devices', desc: 'Coming soon' },
+          { icon: 'info', label: 'About ReefOS', desc: 'v3.1.0 \u2014 Navigation Update' },
         ].map(item => (
           <div key={item.label} className="bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-[#112036] transition-colors">
             <div className="w-10 h-10 rounded-xl bg-[#1c2a41] flex items-center justify-center">
