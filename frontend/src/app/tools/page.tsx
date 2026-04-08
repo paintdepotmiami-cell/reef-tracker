@@ -20,7 +20,8 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
       { href: '/cycle', icon: 'cycle', color: '#4cd6fb', title: 'Cycle Tracker', desc: 'Monitor NH3, NO2 & NO3 during tank cycling', live: true },
       { href: '/bioload', icon: 'balance', color: '#FF7F50', title: 'Bioload Calculator', desc: 'Check fish capacity & stocking timeline', live: true },
       { href: '/trends', icon: 'monitoring', color: '#d7ffc5', title: 'Trend Graphs', desc: 'Track parameters over time with safe zones', live: true },
-      { href: '#', icon: 'restaurant', color: '#F1C40F', title: 'Feeding Schedule', desc: 'Plan & track coral and fish feeding', live: false },
+      { href: '/maintenance', icon: 'task_alt', color: '#F1C40F', title: 'Maintenance', desc: 'Track & schedule all tank maintenance tasks', live: true },
+      { href: '#', icon: 'restaurant', color: '#8f9097', title: 'Feeding Schedule', desc: 'Plan & track coral and fish feeding', live: false },
     ],
   },
   {
@@ -37,8 +38,9 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     icon: 'support',
     tools: [
       { href: '/pest-id', icon: 'bug_report', color: '#FF7F50', title: 'Pest Identifier', desc: 'Identify pests & diseases with expert protocols', live: true },
+      { href: '/quarantine', icon: 'local_hospital', color: '#4cd6fb', title: 'Hospital / QT', desc: 'Disease protocols, meds & quarantine setup', live: true },
       { href: '/sos', icon: 'emergency', color: '#ffb4ab', title: 'Emergency SOS', desc: 'Diagnose & fix common reef problems fast', live: true },
-      { href: '#', icon: 'power_off', color: '#F1C40F', title: 'Power Outage Mode', desc: 'Emergency protocol when you lose electricity', live: false },
+      { href: '/power-outage', icon: 'power_off', color: '#ff4444', title: 'Power Outage', desc: 'Emergency protocol when you lose electricity', live: true },
     ],
   },
 ];
