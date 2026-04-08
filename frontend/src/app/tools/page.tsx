@@ -16,6 +16,7 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     label: 'Manage',
     icon: 'tune',
     tools: [
+      { href: '/param-center', icon: 'monitoring', color: '#FF7F50', title: 'Param Center', desc: '360° action plans for ALL 10 parameters', live: true },
       { href: '/dosing', icon: 'science', color: '#2ff801', title: 'Dosing Calculator', desc: 'Calculate Alk, Ca & Mg doses for your tank', live: true },
       { href: '/cycle', icon: 'cycle', color: '#4cd6fb', title: 'Cycle Tracker', desc: 'Monitor NH3, NO2 & NO3 during tank cycling', live: true },
       { href: '/bio-accelerator', icon: 'biotech', color: '#2ff801', title: 'Bio Accelerator', desc: 'Bacteria dosing, cycling methods & recovery', live: true },
