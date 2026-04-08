@@ -17,7 +17,7 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     icon: 'tune',
     tools: [
       { href: '/dosing', icon: 'science', color: '#2ff801', title: 'Dosing Calculator', desc: 'Calculate Alk, Ca & Mg doses for your tank', live: true },
-      { href: '#', icon: 'cycle', color: '#4cd6fb', title: 'Cycle Tracker', desc: 'Monitor NH3, NO2 & NO3 during tank cycling', live: false },
+      { href: '/cycle', icon: 'cycle', color: '#4cd6fb', title: 'Cycle Tracker', desc: 'Monitor NH3, NO2 & NO3 during tank cycling', live: true },
       { href: '#', icon: 'restaurant', color: '#F1C40F', title: 'Feeding Schedule', desc: 'Plan & track coral and fish feeding', live: false },
     ],
   },

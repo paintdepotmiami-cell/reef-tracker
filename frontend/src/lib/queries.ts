@@ -352,6 +352,69 @@ export async function deleteMaintenanceTask(id: string): Promise<boolean> {
   return !error;
 }
 
+/**
+ * Auto-generate maintenance task templates for a new tank.
+ * Called after onboarding or manually from settings.
+ * Covers daily, weekly, biweekly, monthly, quarterly, and biannual tasks.
+ */
+export async function generateMaintenanceTemplates(userId: string, tankId?: string): Promise<number> {
+  const now = new Date();
+  const templates: Partial<MaintenanceTask>[] = [
+    // DAILY
+    { task_name: 'Feed fish', category: 'feeding', interval_days: 1, notes: '1-2 small feedings per day. Only what they eat in 2 minutes. Alternate frozen and dry foods.' },
+    { task_name: 'Check temperature', category: 'testing', interval_days: 1, notes: 'Target 76-80°F (24-27°C). Check heater/chiller if off range.' },
+    { task_name: 'Visual inspection', category: 'maintenance', interval_days: 1, notes: 'Look for: stressed animals, pests, dead livestock, equipment issues, unusual behavior.' },
+    { task_name: 'Check ATO reservoir', category: 'water_management', interval_days: 1, notes: 'Refill RO/DI water reservoir if low. ATO should maintain stable salinity.' },
+
+    // WEEKLY
+    { task_name: 'Water change (10-20%)', category: 'water_change', interval_days: 7, notes: 'Replace 10-20% of tank volume with fresh saltwater at 35 ppt, matched temp. Siphon detritus.' },
+    { task_name: 'Clean glass/acrylic', category: 'cleaning', interval_days: 7, notes: 'Use magnetic cleaner or algae scraper. Be careful near silicone seals.' },
+    { task_name: 'Test water parameters', category: 'testing', interval_days: 7, notes: 'Core 3: Alkalinity, Calcium, Phosphate. Log results in ReefOS.' },
+    { task_name: 'Empty skimmer cup', category: 'cleaning', interval_days: 7, notes: 'Dark, concentrated skimmate = good. Clean the neck for optimal foam production.' },
+
+    // BIWEEKLY (14 days)
+    { task_name: 'Clean filter socks/pads', category: 'filtration', interval_days: 14, notes: 'Remove, rinse or replace filter socks. Dirty socks become nitrate factories.' },
+    { task_name: 'Check salinity', category: 'testing', interval_days: 14, notes: 'Target 35 ppt (1.026 SG). Use refractometer for accuracy. Calibrate monthly.' },
+    { task_name: 'Feed corals (Reef-Roids/Restor)', category: 'feeding', interval_days: 14, notes: 'Target feed corals with pipette. Turn off pumps for 15 min. Amino acids help coloration.' },
+
+    // MONTHLY (30 days)
+    { task_name: 'Deep clean skimmer', category: 'cleaning', interval_days: 30, notes: 'Remove skimmer body, soak in vinegar/water. Clean pump impeller. Reassemble.' },
+    { task_name: 'Clean powerheads/wavemakers', category: 'cleaning', interval_days: 30, notes: 'Soak in 1:1 vinegar/water for 30 min. Clean impeller and housing. Remove coralline buildup.' },
+    { task_name: 'Test Calcium & Magnesium', category: 'testing', interval_days: 30, notes: 'Ca: 380-450 ppm, Mg: 1250-1400 ppm. Adjust dosing if needed.' },
+    { task_name: 'Inspect equipment', category: 'equipment', interval_days: 30, notes: 'Check heater, return pump, wavemakers, ATO sensor, dosing pump lines for wear.' },
+
+    // QUARTERLY (90 days)
+    { task_name: 'Replace carbon media', category: 'filtration', interval_days: 90, notes: 'Activated carbon saturates in 3-4 weeks of use, but reactor replacement every ~3 months if running intermittently.' },
+    { task_name: 'Replace GFO/RowaPhos', category: 'filtration', interval_days: 90, notes: 'GFO exhausts over time. Replace when phosphate starts rising despite reactor running.' },
+    { task_name: 'Calibrate test equipment', category: 'testing', interval_days: 90, notes: 'Calibrate refractometer with calibration fluid. Check Hanna Checker reagent expiry dates.' },
+    { task_name: 'Clean return pump', category: 'cleaning', interval_days: 90, notes: 'Remove and soak in vinegar solution. Clean impeller. Check flow rate.' },
+    { task_name: 'Harvest chaeto/macroalgae', category: 'filtration', interval_days: 90, notes: 'Remove 50% of chaeto mass. This exports nutrients from the system. Discard harvested portion.' },
+
+    // BIANNUAL (180 days)
+    { task_name: 'Replace RO membrane', category: 'equipment', interval_days: 180, notes: 'Check TDS output. Replace membrane if TDS rejection drops below 95%. Replace sediment and carbon prefilters.' },
+    { task_name: 'Deep clean sump', category: 'cleaning', interval_days: 180, notes: 'Drain sump partially. Vacuum detritus from baffles and chambers. Clean return plumbing.' },
+    { task_name: 'ICP-OES water analysis', category: 'testing', interval_days: 180, notes: 'Send water sample to Triton or ATI for comprehensive elemental analysis. Reveals trace element depletion and heavy metal buildup.' },
+  ];
+
+  const tasks = templates.map(t => ({
+    ...t,
+    user_id: userId,
+    tank_id: tankId || null,
+    next_due_at: new Date(now.getTime() + (t.interval_days || 1) * 86400000).toISOString(),
+  }));
+
+  const { data, error } = await getSupabase()
+    .from('reef_maintenance_tasks')
+    .insert(tasks)
+    .select();
+
+  if (error) {
+    console.error('Failed to create maintenance templates:', error);
+    return 0;
+  }
+  return data?.length || 0;
+}
+
 export async function createWaterTest(test: Partial<WaterTest>): Promise<WaterTest | null> {
   const { data } = await getSupabase().from('reef_water_tests').insert(test).select().single();
   return data;

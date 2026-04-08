@@ -7,7 +7,7 @@ const tabs = [
   { href: '/', icon: 'home', label: 'Home', match: ['/'] },
   { href: '/my-reef', icon: 'water_drop', label: 'My Reef', match: ['/my-reef', '/livestock', '/gear', '/planner', '/flow', '/products'] },
   { href: '/logs', icon: 'history_edu', label: 'Logs', match: ['/logs'] },
-  { href: '/tools', icon: 'handyman', label: 'Tools', match: ['/tools', '/library', '/dosing', '/sos', '/articles'] },
+  { href: '/tools', icon: 'handyman', label: 'Tools', match: ['/tools', '/library', '/dosing', '/cycle', '/sos', '/articles'] },
   { href: '/profile', icon: 'account_circle', label: 'Profile', match: ['/profile'] },
 ];
 
