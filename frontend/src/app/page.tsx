@@ -11,6 +11,7 @@ import Link from 'next/link';
 import ParamGauge from '@/components/ParamGauge';
 import ConsumableGauge from '@/components/ConsumableGauge';
 import CycleStatusCard from '@/components/CycleStatus';
+import ContextVideos from '@/components/ContextVideos';
 import { analyzeCycle } from '@/lib/cycle-engine';
 
 function getCategoryIcon(category: string): string {
@@ -543,6 +544,9 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* ReefOS Videos */}
+      <ContextVideos page="/" />
     </div>
   );
 }

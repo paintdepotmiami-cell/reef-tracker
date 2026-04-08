@@ -18,6 +18,8 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     tools: [
       { href: '/dosing', icon: 'science', color: '#2ff801', title: 'Dosing Calculator', desc: 'Calculate Alk, Ca & Mg doses for your tank', live: true },
       { href: '/cycle', icon: 'cycle', color: '#4cd6fb', title: 'Cycle Tracker', desc: 'Monitor NH3, NO2 & NO3 during tank cycling', live: true },
+      { href: '/bioload', icon: 'balance', color: '#FF7F50', title: 'Bioload Calculator', desc: 'Check fish capacity & stocking timeline', live: true },
+      { href: '/trends', icon: 'monitoring', color: '#d7ffc5', title: 'Trend Graphs', desc: 'Track parameters over time with safe zones', live: true },
       { href: '#', icon: 'restaurant', color: '#F1C40F', title: 'Feeding Schedule', desc: 'Plan & track coral and fish feeding', live: false },
     ],
   },
@@ -27,12 +29,14 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     tools: [
       { href: '/library', icon: 'menu_book', color: '#4cd6fb', title: 'Species Library', desc: 'Browse 180+ species with photos & care guides', live: true },
       { href: '/articles', icon: 'article', color: '#ffb59c', title: 'Articles & Guides', desc: 'Lighting, refugium, Balling method & more', live: true },
+      { href: '/videos', icon: 'smart_display', color: '#ff0000', title: 'ReefOS Videos', desc: 'YouTube tutorials, guides & tips', live: true },
     ],
   },
   {
     label: 'Help',
     icon: 'support',
     tools: [
+      { href: '/pest-id', icon: 'bug_report', color: '#FF7F50', title: 'Pest Identifier', desc: 'Identify pests & diseases with expert protocols', live: true },
       { href: '/sos', icon: 'emergency', color: '#ffb4ab', title: 'Emergency SOS', desc: 'Diagnose & fix common reef problems fast', live: true },
       { href: '#', icon: 'power_off', color: '#F1C40F', title: 'Power Outage Mode', desc: 'Emergency protocol when you lose electricity', live: false },
     ],

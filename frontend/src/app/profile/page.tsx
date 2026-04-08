@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { profile, tank, user, signOut } = useAuth();
@@ -35,10 +36,10 @@ export default function ProfilePage() {
           { icon: 'water', label: 'Tank Setup', desc: tank ? `${tank.size_gallons || '\u2014'} gal, ${tank.tank_type === 'mixed' ? 'Mixed Reef' : tank.tank_type === 'reef' ? 'Reef' : tank.tank_type === 'fish_only' ? 'Fish Only' : 'Nano'}` : 'Not configured' },
           { icon: 'school', label: 'Experience', desc: profile?.experience_level ? profile.experience_level.charAt(0).toUpperCase() + profile.experience_level.slice(1) : 'Not set' },
           { icon: 'straighten', label: 'Units', desc: profile?.units === 'metric' ? 'Metric (L, \u00b0C, cm)' : 'Imperial (gal, \u00b0F, in)' },
-          { icon: 'language', label: 'Language', desc: profile?.language === 'es' ? 'Espanol' : profile?.language === 'pt' ? 'Portugues' : 'English' },
+          { icon: 'language', label: 'Language', desc: profile?.language === 'es' ? 'Español' : profile?.language === 'pt' ? 'Português' : 'English' },
           { icon: 'notifications', label: 'Notifications', desc: 'Coming soon' },
           { icon: 'settings_remote', label: 'IoT / Devices', desc: 'Coming soon' },
-          { icon: 'info', label: 'About ReefOS', desc: 'v3.1.0 \u2014 Navigation Update' },
+          { icon: 'info', label: 'About ReefOS', desc: 'v4.0.0 \u2014 Setup Wizard' },
         ].map(item => (
           <div key={item.label} className="bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-[#112036] transition-colors">
             <div className="w-10 h-10 rounded-xl bg-[#1c2a41] flex items-center justify-center">
@@ -51,6 +52,22 @@ export default function ProfilePage() {
             <span className="material-symbols-outlined text-[#c5c6cd]/40">chevron_right</span>
           </div>
         ))}
+      </div>
+
+      {/* New Tank Setup */}
+      <div className="space-y-3">
+        <p className="text-[10px] font-bold text-[#c5c6cd]/50 uppercase tracking-widest pt-2">Multi-Tank</p>
+        <Link href="/onboarding"
+          className="bg-gradient-to-r from-[#FF7F50]/10 to-[#d35e32]/10 border border-[#FF7F50]/20 rounded-xl p-4 flex items-center gap-4 hover:border-[#FF7F50]/40 transition-colors block">
+          <div className="w-10 h-10 rounded-xl bg-[#FF7F50]/15 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#FF7F50]">add_circle</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-medium text-sm">New Tank Setup</p>
+            <p className="text-[#c5c6cd] text-xs">Add a quarantine, frag, or upgrade tank</p>
+          </div>
+          <span className="material-symbols-outlined text-[#FF7F50]">arrow_forward</span>
+        </Link>
       </div>
 
       {/* Sign Out */}

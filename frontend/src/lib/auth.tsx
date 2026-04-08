@@ -22,8 +22,12 @@ interface Tank {
   name: string;
   size_gallons: number | null;
   tank_type: string;
+  sump_type: string | null;
+  reef_goal: string | null;
   photo_url: string | null;
   is_primary: boolean;
+  cycle_started_at: string | null;
+  setup_completed_at: string | null;
   created_at: string;
 }
 
