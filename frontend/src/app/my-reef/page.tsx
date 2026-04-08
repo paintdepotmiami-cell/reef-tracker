@@ -57,7 +57,7 @@ export default function MyReefPage() {
       icon: 'inventory_2',
       color: '#F1C40F',
       title: 'Products & Supplements',
-      desc: 'Browse 59 products, track what you use & dose',
+      desc: 'Browse 67 products + AI recommendations for your reef',
       badge: null,
     },
     {
