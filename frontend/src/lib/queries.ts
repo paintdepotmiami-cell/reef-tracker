@@ -372,6 +372,9 @@ export interface Product {
   image_url: string | null;
   buy_url: string | null;
   popularity: number;
+  rating: number | null;
+  pros: string[] | null;
+  cons: string[] | null;
   created_at: string;
 }
 

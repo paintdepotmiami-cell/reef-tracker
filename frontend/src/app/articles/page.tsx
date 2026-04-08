@@ -166,44 +166,79 @@ export default function ArticlesPage() {
 function ArticleCard({ article }: { article: Article }) {
   const colors = CATEGORY_COLORS[article.category] || { bg: 'bg-white/10', text: 'text-[#c5c6cd]' };
   const label = CATEGORY_LABELS[article.category] || article.category;
+  const [imgError, setImgError] = useState(false);
+  const hasImage = article.image_url && !imgError;
 
   return (
     <Link
       href={`/articles/${article.slug}`}
-      className="bg-[#0d1c32] rounded-2xl p-5 flex gap-4 active:scale-[0.98] transition-transform block group"
+      className="bg-[#0d1c32] rounded-2xl overflow-hidden active:scale-[0.98] transition-transform block group"
     >
-      {/* Icon circle */}
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${colors.bg}`}>
-        <span className={`material-symbols-outlined text-2xl ${colors.text}`}>
-          {article.category === 'beginner' ? 'school' :
-           article.category === 'chemistry' ? 'science' :
-           article.category === 'coral_care' ? 'waves' :
-           article.category === 'fish_care' ? 'set_meal' :
-           article.category === 'equipment' ? 'settings_input_component' :
-           'build'}
-        </span>
-      </div>
+      {/* Hero Image */}
+      {hasImage && (
+        <div className="relative w-full h-40 overflow-hidden">
+          <img
+            src={article.image_url!}
+            alt={article.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImgError(true)}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0d1c32] via-transparent to-transparent" />
+          {/* Category badge on image */}
+          <div className="absolute top-3 left-3">
+            <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider backdrop-blur-sm ${colors.bg} ${colors.text}`}>
+              {label}
+            </span>
+          </div>
+          {/* Reading time on image */}
+          <div className="absolute top-3 right-3">
+            <span className="px-2 py-1 rounded-full text-[9px] font-medium text-white/80 bg-black/40 backdrop-blur-sm flex items-center gap-1">
+              <span className="material-symbols-outlined text-[10px]">schedule</span>
+              {article.reading_time} min
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${colors.bg} ${colors.text}`}>
-            {label}
-          </span>
-          <span className="text-[10px] text-[#8f9097] flex items-center gap-1">
-            <span className="material-symbols-outlined text-[10px]">schedule</span>
-            {article.reading_time} min
-          </span>
-        </div>
-        <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-sm leading-tight group-hover:text-[#FF7F50] transition-colors">
-          {article.title}
-        </h3>
-        {article.summary && (
-          <p className="text-[#c5c6cd] text-xs mt-1 line-clamp-2">{article.summary}</p>
+      <div className={`p-4 flex items-start gap-3 ${hasImage ? 'pt-3' : ''}`}>
+        {/* Icon circle — only show when no image */}
+        {!hasImage && (
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${colors.bg}`}>
+            <span className={`material-symbols-outlined text-xl ${colors.text}`}>
+              {article.category === 'beginner' ? 'school' :
+               article.category === 'chemistry' ? 'science' :
+               article.category === 'coral_care' ? 'waves' :
+               article.category === 'fish_care' ? 'set_meal' :
+               article.category === 'equipment' ? 'settings_input_component' :
+               'build'}
+            </span>
+          </div>
         )}
-      </div>
 
-      <span className="material-symbols-outlined text-[#c5c6cd]/40 self-center shrink-0">chevron_right</span>
+        <div className="flex-1 min-w-0">
+          {/* Show category/time inline only when no hero image */}
+          {!hasImage && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${colors.bg} ${colors.text}`}>
+                {label}
+              </span>
+              <span className="text-[10px] text-[#8f9097] flex items-center gap-1">
+                <span className="material-symbols-outlined text-[10px]">schedule</span>
+                {article.reading_time} min
+              </span>
+            </div>
+          )}
+          <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-sm leading-tight group-hover:text-[#FF7F50] transition-colors">
+            {article.title}
+          </h3>
+          {article.summary && (
+            <p className="text-[#c5c6cd] text-xs mt-1 line-clamp-2">{article.summary}</p>
+          )}
+        </div>
+
+        <span className="material-symbols-outlined text-[#c5c6cd]/40 self-center shrink-0">chevron_right</span>
+      </div>
     </Link>
   );
 }

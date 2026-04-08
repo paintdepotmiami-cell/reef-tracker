@@ -125,6 +125,17 @@ export default function ArticleDetailPage() {
         )}
       </div>
 
+      {/* Hero Infographic */}
+      {article.image_url && (
+        <div className="my-5 rounded-2xl overflow-hidden border border-[#1c2a41]">
+          <img
+            src={article.image_url}
+            alt={article.title}
+            className="w-full h-auto"
+          />
+        </div>
+      )}
+
       {/* Divider */}
       <div className="h-px bg-gradient-to-r from-[#FF7F50]/30 via-[#4cd6fb]/20 to-transparent mb-6" />
 
