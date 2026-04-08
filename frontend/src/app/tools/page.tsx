@@ -21,6 +21,7 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
       { href: '/bio-accelerator', icon: 'biotech', color: '#2ff801', title: 'Bio Accelerator', desc: 'Bacteria dosing, cycling methods & recovery', live: true },
       { href: '/bioload', icon: 'balance', color: '#FF7F50', title: 'Bioload Calculator', desc: 'Check fish capacity & stocking timeline', live: true },
       { href: '/trends', icon: 'monitoring', color: '#d7ffc5', title: 'Trend Graphs', desc: 'Track parameters over time with safe zones', live: true },
+      { href: '/alerts', icon: 'notifications', color: '#ff4444', title: 'Smart Alerts', desc: 'Chemistry, salinity & maintenance notifications', live: true },
       { href: '/maintenance', icon: 'task_alt', color: '#F1C40F', title: 'Maintenance', desc: 'Track & schedule all tank maintenance tasks', live: true },
       { href: '/volume-calc', icon: 'straighten', color: '#4cd6fb', title: 'Volume & Weight', desc: 'Calculate capacity, weight & viability', live: true },
       { href: '#', icon: 'restaurant', color: '#8f9097', title: 'Feeding Schedule', desc: 'Plan & track coral and fish feeding', live: false },
@@ -31,6 +32,7 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     icon: 'school',
     tools: [
       { href: '/library', icon: 'menu_book', color: '#4cd6fb', title: 'Species Library', desc: 'Browse 180+ species with photos & care guides', live: true },
+      { href: '/sump-guide', icon: 'plumbing', color: '#FF7F50', title: 'Sump Guide', desc: 'Interactive 3-chamber sump diagram & setup', live: true },
       { href: '/articles', icon: 'article', color: '#ffb59c', title: 'Articles & Guides', desc: 'Lighting, refugium, Balling method & more', live: true },
       { href: '/videos', icon: 'smart_display', color: '#ff0000', title: 'ReefOS Videos', desc: 'YouTube tutorials, guides & tips', live: true },
     ],
