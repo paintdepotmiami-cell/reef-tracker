@@ -151,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setProfile(null);
     setTank(null);
+    window.location.href = '/login';
   };
 
   const refreshProfile = async () => {
