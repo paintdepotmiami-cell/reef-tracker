@@ -702,6 +702,23 @@ export default function GearPage() {
       {/* ═══ Supplements List ═══ */}
       {tab === 'supplements' && (
         <div className="space-y-6">
+          {/* Dosing Pump Config CTA */}
+          <Link
+            href="/dosing-config"
+            className="block bg-gradient-to-r from-[#2ff801]/10 to-[#041329] rounded-2xl p-4 border border-[#2ff801]/20 active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#2ff801]/15 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[#2ff801]">precision_manufacturing</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-[family-name:var(--font-headline)] font-bold text-white text-sm">Dosing Pump Manager</p>
+                <p className="text-[10px] text-[#c5c6cd] mt-0.5">Configure channels, mL/day, products & auto-dosing schedule</p>
+              </div>
+              <span className="material-symbols-outlined text-[#2ff801]">arrow_forward</span>
+            </div>
+          </Link>
+
           {Object.keys(supGrouped).length === 0 && (
             <div className="text-center py-16">
               <span className="material-symbols-outlined text-5xl text-[#1c2a41] mb-3 block">science</span>

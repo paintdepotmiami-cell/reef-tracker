@@ -218,7 +218,7 @@ export default function DosingPage() {
           <div className="flex items-center gap-2 mb-2">
             <span className="material-symbols-outlined text-[#4cd6fb] text-lg">precision_manufacturing</span>
             <p className="text-white text-sm font-semibold">Auto-Dosing Active</p>
-            <span className="ml-auto text-[9px] bg-[#4cd6fb]/20 text-[#4cd6fb] px-2 py-0.5 rounded-full font-bold uppercase">{dosingConfig?.pump_model || 'Dosing Pump'}</span>
+            <Link href="/dosing-config" className="ml-auto text-[9px] bg-[#4cd6fb]/20 text-[#4cd6fb] px-2 py-0.5 rounded-full font-bold uppercase active:scale-95 transition-transform">{dosingConfig?.pump_model || 'Dosing Pump'} →</Link>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {autoDosing.map(d => (
@@ -233,7 +233,7 @@ export default function DosingPage() {
       ) : (
         <div className="bg-[#1c2a41]/50 border border-[#1c2a41] rounded-2xl p-3 flex items-center gap-3">
           <span className="material-symbols-outlined text-[#8f9097] text-base">info</span>
-          <p className="text-[#8f9097] text-xs">No auto-dosing configured. Set up a dosing pump in <Link href="/gear" className="text-[#FF7F50] underline">Gear</Link> for smarter recommendations.</p>
+          <p className="text-[#8f9097] text-xs">No auto-dosing configured. <Link href="/dosing-config" className="text-[#FF7F50] underline">Set up your dosing pump</Link> for smarter recommendations.</p>
         </div>
       )}
 
