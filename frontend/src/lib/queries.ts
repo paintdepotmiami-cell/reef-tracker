@@ -433,7 +433,8 @@ export async function generateMaintenanceTemplates(userId: string, tankId?: stri
 }
 
 export async function createWaterTest(test: Partial<WaterTest>): Promise<WaterTest | null> {
-  const { data } = await getSupabase().from('reef_water_tests').insert(test).select().single();
+  const { data, error } = await getSupabase().from('reef_water_tests').insert(test).select().single();
+  if (error) { console.error('createWaterTest error:', error); return null; }
   return data;
 }
 

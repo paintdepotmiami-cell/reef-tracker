@@ -166,9 +166,17 @@ export default function LogsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Upload photo with 8s timeout — don't block save if upload hangs
       let photoUrl: string | null = null;
       if (photos.length > 0) {
-        photoUrl = await uploadPhotos();
+        try {
+          photoUrl = await Promise.race([
+            uploadPhotos(),
+            new Promise<null>(resolve => setTimeout(() => resolve(null), 8000)),
+          ]);
+        } catch {
+          console.warn('Photo upload skipped');
+        }
       }
       const data: Record<string, number | string | null> = {
         test_date: new Date().toISOString().split('T')[0],
@@ -186,6 +194,8 @@ export default function LogsPage() {
         clearAllPhotos();
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        console.error('createWaterTest returned null');
       }
     } catch (err) {
       console.error('Save failed:', err);
