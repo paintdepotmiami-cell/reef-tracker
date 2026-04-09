@@ -156,9 +156,9 @@ export default function DosingPage() {
     <div className="space-y-6 pb-28">
       {/* Header */}
       <div>
-        <Link href="/tools" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">
+        <Link href="/param-center" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">
           <span className="material-symbols-outlined text-sm">arrow_back</span>
-          Tools
+          Params
         </Link>
         <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">Chemistry</p>
         <h1 className="text-3xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Smart Dosing</h1>

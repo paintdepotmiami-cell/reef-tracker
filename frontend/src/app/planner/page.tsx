@@ -25,11 +25,9 @@ export default function PlannerPage() {
         }
       } catch {}
 
-      // Pass tank dimensions if available
-      if (tank) {
-        if (tank.length_in) params.set('length', String(tank.length_in));
-        if (tank.width_in) params.set('width', String(tank.width_in));
-        if (tank.height_in) params.set('height', String(tank.height_in));
+      // Pass tank gallons if available (dimensions not stored yet)
+      if (tank?.size_gallons) {
+        params.set('gallons', String(tank.size_gallons));
       }
 
       // Embed mode

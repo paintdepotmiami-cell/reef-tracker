@@ -88,9 +88,9 @@ export default function AlertsPage() {
     <div className="space-y-6 pb-28">
       {/* Header */}
       <div>
-        <Link href="/tools" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">
+        <Link href="/param-center" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">
           <span className="material-symbols-outlined text-sm">arrow_back</span>
-          Tools
+          Params
         </Link>
         <div className="flex items-center gap-3 mb-1">
           <div className="w-12 h-12 rounded-2xl bg-[#FF7F50]/15 flex items-center justify-center relative">

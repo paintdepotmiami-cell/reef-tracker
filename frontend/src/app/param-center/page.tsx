@@ -73,20 +73,29 @@ export default function ParamCenterPage() {
     <div className="space-y-6 pb-28">
       {/* Header */}
       <div>
-        <Link href="/tools" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">
-          <span className="material-symbols-outlined text-sm">arrow_back</span>
-          Tools
+        <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#FF7F50] text-xs font-medium uppercase">360° Analysis</p>
+        <h1 className="text-3xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Params</h1>
+        <p className="text-[#c5c6cd] text-sm mt-1">Action plans for every parameter</p>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-4 gap-2">
+        <Link href="/logs" className="bg-[#0d1c32] p-3 rounded-xl flex flex-col items-center gap-1.5 active:scale-95 transition-all">
+          <span className="material-symbols-outlined text-xl text-[#FF7F50]">science</span>
+          <span className="text-[9px] text-[#c5c6cd] font-bold uppercase tracking-wider">Log Test</span>
         </Link>
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-[#FF7F50]/15 flex items-center justify-center">
-            <span className="material-symbols-outlined text-[#FF7F50] text-2xl">monitoring</span>
-          </div>
-          <div>
-            <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#FF7F50] text-xs font-medium uppercase">360° Analysis</p>
-            <h1 className="text-2xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Param Center</h1>
-          </div>
-        </div>
-        <p className="text-[#c5c6cd] text-sm">Complete action plans for every parameter</p>
+        <Link href="/trends" className="bg-[#0d1c32] p-3 rounded-xl flex flex-col items-center gap-1.5 active:scale-95 transition-all">
+          <span className="material-symbols-outlined text-xl text-[#4cd6fb]">monitoring</span>
+          <span className="text-[9px] text-[#c5c6cd] font-bold uppercase tracking-wider">Trends</span>
+        </Link>
+        <Link href="/dosing" className="bg-[#0d1c32] p-3 rounded-xl flex flex-col items-center gap-1.5 active:scale-95 transition-all">
+          <span className="material-symbols-outlined text-xl text-[#2ff801]">colorize</span>
+          <span className="text-[9px] text-[#c5c6cd] font-bold uppercase tracking-wider">Dosing</span>
+        </Link>
+        <Link href="/alerts" className="bg-[#0d1c32] p-3 rounded-xl flex flex-col items-center gap-1.5 active:scale-95 transition-all">
+          <span className="material-symbols-outlined text-xl text-[#F1C40F]">notifications</span>
+          <span className="text-[9px] text-[#c5c6cd] font-bold uppercase tracking-wider">Alerts</span>
+        </Link>
       </div>
 
       {/* Test Banner */}
