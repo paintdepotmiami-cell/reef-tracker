@@ -574,7 +574,8 @@ export async function getStats() {
 export async function getSpecies(category?: string): Promise<Species[]> {
   let q = getSupabase().from('reef_species').select('*').order('common_name');
   if (category) q = q.eq('category', category);
-  const { data } = await q;
+  const { data, error } = await q;
+  if (error) console.error('[getSpecies] error:', error.message);
   return data || [];
 }
 

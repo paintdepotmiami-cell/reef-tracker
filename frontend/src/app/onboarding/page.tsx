@@ -330,7 +330,7 @@ export default function SetupWizard() {
   // Load species + products databases for manual selection
   useEffect(() => {
     if (tankStatus === 'existing') {
-      getSpecies().then(data => setSpeciesDb(data as typeof speciesDb));
+      getSpecies().then(data => setSpeciesDb((data || []) as typeof speciesDb));
       getProducts().then(data => setProductsDb((data || []).map(p => ({ name: p.name, brand: p.brand, category: p.category }))));
     }
   }, [tankStatus]);
