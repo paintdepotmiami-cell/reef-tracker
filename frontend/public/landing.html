@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReefOS — The All-in-One Reef Tank App for Tracking, Stability & Growth</title>
+  <meta name="description" content="Track water parameters, manage livestock, get AI-powered recommendations, and run your saltwater aquarium like a system. Free reef tank management app.">
+  <meta name="keywords" content="reef tank app, saltwater aquarium app, reef aquarium management, coral tank tracker, water parameter tracker, reef keeping app, aquarium management software">
+  <meta name="author" content="ReefOS">
+  <link rel="canonical" href="https://reefos.net/">
+  <link rel="icon" href="/icons/icon-192.png">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="ReefOS — The All-in-One Reef Tank App">
+  <meta property="og:description" content="Track parameters, manage livestock, and run your reef like a system. Free forever.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://reefos.net/">
+  <meta property="og:image" content="https://reefos.net/og-image.jpg">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ReefOS — Reef Tank App">
+  <meta name="twitter:description" content="AI-powered reef aquarium management. Free forever.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #010e24;
+      --card: #0d1c32;
+      --input: #041329;
+      --accent: #FF7F50;
+      --accent2: #4cd6fb;
+      --green: #2ff801;
+      --text: #c5c6cd;
+      --text-light: #8f9097;
+      --white: #ffffff;
+      --border: rgba(255,255,255,0.06);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .headline { font-family: 'Manrope', sans-serif; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 24px;
+      background: rgba(1,14,36,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 900; font-size: 20px;
+      color: var(--white);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--white); }
+    .nav-cta {
+      background: var(--accent) !important; color: var(--white) !important;
+      padding: 8px 20px; border-radius: 8px; font-weight: 700 !important;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .nav-cta:hover { transform: scale(1.05); opacity: 0.9; }
+
+    @media (max-width: 768px) {
+      .nav-links a:not(.nav-cta) { display: none; }
+    }
+
+    /* SECTIONS */
+    section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+
+    /* HERO */
+    .hero {
+      padding-top: 140px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 100px;
+      background: rgba(255,127,80,0.1); border: 1px solid rgba(255,127,80,0.2);
+      color: var(--accent); font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 6vw, 56px);
+      font-weight: 900; color: var(--white);
+      line-height: 1.1; margin-bottom: 20px;
+      max-width: 800px; margin-left: auto; margin-right: auto;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--text); max-width: 640px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+    .hero-ctas {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; border-radius: 12px;
+      background: var(--accent); color: var(--white);
+      font-size: 16px; font-weight: 700;
+      text-decoration: none; transition: all 0.2s;
+      border: none; cursor: pointer;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(255,127,80,0.3); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; border-radius: 12px;
+      background: transparent; color: var(--text);
+      font-size: 16px; font-weight: 600;
+      text-decoration: none; transition: all 0.2s;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent2); color: var(--white); }
+
+    /* HERO SCREENSHOT */
+    .hero-screenshot {
+      max-width: 340px; margin: 0 auto;
+      border-radius: 32px; overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+      background: var(--card);
+      aspect-ratio: 375/812;
+      position: relative;
+    }
+    .hero-screenshot img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .hero-screenshot .placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+      color: var(--text-light); font-size: 14px;
+    }
+    .hero-screenshot .placeholder .material-symbols-outlined { font-size: 48px; color: var(--accent); }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      max-width: 900px; margin: 0 auto;
+    }
+    .stat { text-align: center; }
+    .stat-number {
+      font-family: 'Manrope', sans-serif;
+      font-size: 36px; font-weight: 900; color: var(--accent);
+    }
+    .stat-label { font-size: 13px; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* PROBLEM */
+    .problem { text-align: center; }
+    .problem h2 {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 900; color: var(--white);
+      margin-bottom: 16px;
+    }
+    .problem > p { max-width: 600px; margin: 0 auto 40px; color: var(--text); }
+    .problem-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px; max-width: 800px; margin: 0 auto 48px;
+    }
+    .problem-card {
+      padding: 24px; border-radius: 16px;
+      background: rgba(255,107,107,0.05); border: 1px solid rgba(255,107,107,0.1);
+      text-align: left;
+    }
+    .problem-card .icon { font-size: 28px; color: #ff6b6b; margin-bottom: 12px; }
+    .problem-card h3 { color: #ffb4ab; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .problem-card p { font-size: 13px; color: var(--text-light); }
+
+    .solution-box {
+      max-width: 700px; margin: 0 auto;
+      padding: 32px; border-radius: 20px;
+      background: rgba(47,248,1,0.03); border: 1px solid rgba(47,248,1,0.12);
+    }
+    .solution-box h3 {
+      color: var(--green); font-size: 18px; font-weight: 800; margin-bottom: 16px;
+    }
+    .solution-box ul { list-style: none; }
+    .solution-box li {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0; color: var(--text); font-size: 15px;
+    }
+    .solution-box li .material-symbols-outlined { color: var(--green); font-size: 20px; }
+
+    /* FEATURES */
+    .features { text-align: center; }
+    .features h2 {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 900; color: var(--white);
+      margin-bottom: 12px;
+    }
+    .features > p { max-width: 600px; margin: 0 auto 48px; }
+    .feature-grid {
+      display: grid; gap: 24px; max-width: 900px; margin: 0 auto;
+    }
+    .feature-card {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+      align-items: center;
+      padding: 32px; border-radius: 20px;
+      background: var(--card); border: 1px solid var(--border);
+      text-align: left;
+    }
+    .feature-card:nth-child(even) { direction: rtl; }
+    .feature-card:nth-child(even) > * { direction: ltr; }
+    .feature-text h3 {
+      color: var(--white); font-size: 20px; font-weight: 800; margin-bottom: 8px;
+    }
+    .feature-text h3 .material-symbols-outlined {
+      font-size: 22px; vertical-align: middle; margin-right: 8px;
+      color: var(--accent);
+    }
+    .feature-text p { font-size: 14px; color: var(--text); line-height: 1.7; }
+    .feature-text .tag {
+      display: inline-block; margin-top: 12px;
+      padding: 4px 12px; border-radius: 6px;
+      background: rgba(76,214,251,0.1); color: var(--accent2);
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .feature-screenshot {
+      border-radius: 16px; overflow: hidden;
+      background: var(--input); aspect-ratio: 375/500;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .feature-screenshot img { width: 100%; height: 100%; object-fit: cover; }
+    .feature-screenshot .placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px;
+      color: var(--text-light); font-size: 12px;
+    }
+
+    @media (max-width: 700px) {
+      .feature-card { grid-template-columns: 1fr; }
+      .feature-card:nth-child(even) { direction: ltr; }
+    }
+
+    /* DIFFERENTIATOR */
+    .diff { text-align: center; }
+    .diff h2 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 900; color: var(--white); margin-bottom: 12px;
+    }
+    .diff > p { max-width: 600px; margin: 0 auto 40px; }
+    .diff-table {
+      max-width: 700px; margin: 0 auto;
+      border-radius: 16px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .diff-table table { width: 100%; border-collapse: collapse; }
+    .diff-table th {
+      padding: 16px 20px; font-size: 13px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .diff-table th:first-child { background: rgba(255,107,107,0.08); color: #ffb4ab; text-align: left; }
+    .diff-table th:last-child { background: rgba(47,248,1,0.06); color: var(--green); text-align: left; }
+    .diff-table td {
+      padding: 14px 20px; font-size: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .diff-table td:first-child { color: var(--text-light); }
+    .diff-table td:last-child { color: var(--white); font-weight: 600; }
+
+    /* AUDIENCE */
+    .audience { text-align: center; }
+    .audience h2 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 900; color: var(--white); margin-bottom: 40px;
+    }
+    .audience-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px; max-width: 900px; margin: 0 auto;
+    }
+    .audience-card {
+      padding: 28px; border-radius: 16px;
+      background: var(--card); border: 1px solid var(--border);
+      text-align: left;
+    }
+    .audience-card .level {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .audience-card h3 { color: var(--white); font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .audience-card p { font-size: 13px; color: var(--text-light); }
+
+    /* PRICING */
+    .pricing { text-align: center; }
+    .pricing h2 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 900; color: var(--white); margin-bottom: 12px;
+    }
+    .price-card {
+      max-width: 500px; margin: 32px auto 0;
+      padding: 40px; border-radius: 24px;
+      background: var(--card); border: 1px solid var(--border);
+      position: relative; overflow: hidden;
+    }
+    .price-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .price-amount {
+      font-family: 'Manrope', sans-serif;
+      font-size: 56px; font-weight: 900; color: var(--white);
+    }
+    .price-period { font-size: 18px; color: var(--text-light); font-weight: 600; }
+    .price-subtitle { color: var(--green); font-size: 14px; font-weight: 700; margin: 8px 0 24px; }
+    .price-features { list-style: none; text-align: left; margin-bottom: 32px; }
+    .price-features li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; font-size: 14px; color: var(--text);
+    }
+    .price-features .material-symbols-outlined { color: var(--green); font-size: 18px; }
+
+    /* SEO BLOCK */
+    .seo-block {
+      max-width: 800px; margin: 0 auto;
+      padding: 48px 24px;
+    }
+    .seo-block h2 {
+      font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 16px;
+    }
+    .seo-block p {
+      font-size: 15px; color: var(--text-light); line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    /* FAQ */
+    .faq { max-width: 700px; margin: 0 auto; }
+    .faq h2 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 900; color: var(--white);
+      text-align: center; margin-bottom: 40px;
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+    }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; width: 100%; background: none; border: none;
+      color: var(--white); font-size: 16px; font-weight: 600;
+      text-align: left; padding: 0;
+    }
+    .faq-q .material-symbols-outlined { color: var(--text-light); transition: transform 0.3s; font-size: 20px; }
+    .faq-a {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s;
+      font-size: 14px; color: var(--text-light); line-height: 1.7;
+    }
+    .faq-item.open .faq-a { max-height: 200px; padding-top: 12px; }
+    .faq-item.open .faq-q .material-symbols-outlined { transform: rotate(180deg); }
+
+    /* TECH BAR */
+    .tech-bar {
+      display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+      padding: 32px 24px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      max-width: 800px; margin: 0 auto;
+    }
+    .tech-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--text-light); font-weight: 600;
+    }
+    .tech-item .material-symbols-outlined { font-size: 18px; color: var(--accent2); }
+
+    /* FINAL CTA */
+    .final-cta {
+      text-align: center;
+      padding: 80px 24px 120px;
+    }
+    .final-cta h2 {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 900; color: var(--white);
+      margin-bottom: 16px; max-width: 600px; margin-left: auto; margin-right: auto;
+    }
+    .final-cta p { color: var(--text); margin-bottom: 32px; }
+
+    /* FOOTER */
+    footer {
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    footer p { font-size: 13px; color: var(--text-light); }
+    footer a { color: var(--accent2); text-decoration: none; }
+
+    /* ANIMATIONS */
+    .fade-in {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">Reef<span>OS</span></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="/login" class="nav-cta">Start Free</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="material-symbols-outlined" style="font-size:14px">auto_awesome</span>
+      Free forever &middot; No credit card
+    </div>
+    <h1 class="headline">The All-in-One <em>Reef Tank App</em> for Tracking, Stability & Growth</h1>
+    <p>Track 8 water parameters, manage 180+ species, get AI-powered recommendations, and stop guessing what your reef needs. Built by reefers, for reefers.</p>
+    <div class="hero-ctas">
+      <a href="/login" class="btn-primary">
+        <span class="material-symbols-outlined" style="font-size:18px">rocket_launch</span>
+        Start Free
+      </a>
+      <a href="#features" class="btn-secondary">
+        <span class="material-symbols-outlined" style="font-size:18px">play_circle</span>
+        See How It Works
+      </a>
+    </div>
+    <div class="hero-screenshot" style="max-width:900px;aspect-ratio:16/9;border-radius:20px;">
+      <img src="/screenshots/dashboard.png" alt="ReefOS Dashboard — reef tank management app showing alerts, water parameters, and daily actions" loading="eager">
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar fade-in">
+    <div class="stat">
+      <div class="stat-number headline">8+</div>
+      <div class="stat-label">Parameters Tracked</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number headline">180+</div>
+      <div class="stat-label">Species Database</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number headline">550+</div>
+      <div class="stat-label">Equipment & Supplements</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number headline">35</div>
+      <div class="stat-label">Smart Tools</div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section class="problem fade-in">
+    <h2 class="headline">Most Reef Tanks Fail Because of Instability</h2>
+    <p>You test. You dose. You still lose corals. The problem isn't effort — it's disconnected tools and guesswork.</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="icon material-symbols-outlined">trending_down</div>
+        <h3>Unstable Parameters</h3>
+        <p>Alk swings you didn't catch. Calcium drift nobody warned you about. Parameters slip between tests.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon material-symbols-outlined">edit_note</div>
+        <h3>Scattered Tracking</h3>
+        <p>Spreadsheets, apps, notebooks, memory. Your reef data is everywhere except where you need it.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon material-symbols-outlined">psychology</div>
+        <h3>Information Overload</h3>
+        <p>Forums say one thing, YouTube another. Too much noise, not enough actionable advice for YOUR tank.</p>
+      </div>
+    </div>
+    <div class="solution-box fade-in">
+      <h3>ReefOS turns your reef into a managed system</h3>
+      <ul>
+        <li><span class="material-symbols-outlined">check_circle</span> One place for all your reef data</li>
+        <li><span class="material-symbols-outlined">check_circle</span> AI that reads your tests and tells you what to do</li>
+        <li><span class="material-symbols-outlined">check_circle</span> Alerts before problems become emergencies</li>
+        <li><span class="material-symbols-outlined">check_circle</span> Built specifically for saltwater reef aquariums</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features fade-in" id="features">
+    <h2 class="headline">Everything Your Reef Needs. One App.</h2>
+    <p>From daily parameter tracking to emergency protocols — ReefOS covers the full lifecycle of reef keeping.</p>
+
+    <div class="feature-grid">
+
+      <!-- Feature 1: Parameter Tracking -->
+      <div class="feature-card fade-in">
+        <div class="feature-text">
+          <h3><span class="material-symbols-outlined">science</span>Smart Parameter Tracking</h3>
+          <p>Log Alkalinity, Calcium, Magnesium, Nitrate, Phosphate, pH, Ammonia, and Nitrite. Take a photo of your test kit and AI reads the values automatically. See trends, get alerts, know exactly when to dose.</p>
+          <span class="tag">AI-Powered OCR</span>
+        </div>
+        <div class="feature-screenshot" style="aspect-ratio:16/9">
+          <img src="/screenshots/params.png" alt="ReefOS parameter center showing water chemistry analysis with issue detection" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Feature 2: Livestock -->
+      <div class="feature-card fade-in">
+        <div class="feature-text">
+          <h3><span class="material-symbols-outlined">pets</span>Livestock Management</h3>
+          <p>Track every fish, coral, and invertebrate. Check compatibility before you buy. Monitor health status with smart biological states — from quarantine countdowns to stress diagnostics.</p>
+          <span class="tag">180+ Species Database</span>
+        </div>
+        <div class="feature-screenshot" style="aspect-ratio:16/9">
+          <img src="/screenshots/livestock.png" alt="ReefOS livestock manager showing fish collection with health status" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Feature 3: 3D Planner -->
+      <div class="feature-card fade-in">
+        <div class="feature-text">
+          <h3><span class="material-symbols-outlined">view_in_ar</span>3D Reef Planner</h3>
+          <p>Design your tank layout in 3D. Visualize flow patterns, PAR distribution, and pump placement. Get AI-powered placement advice for corals based on light and flow requirements.</p>
+          <span class="tag">Flow & PAR Simulation</span>
+        </div>
+        <div class="feature-screenshot" style="aspect-ratio:16/9">
+          <img src="/screenshots/planner.png" alt="ReefOS 3D planner showing flow simulation and pump placement" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Feature 4: Cycle Tracker -->
+      <div class="feature-card fade-in">
+        <div class="feature-text">
+          <h3><span class="material-symbols-outlined">autorenew</span>Cycling Guide & Tracker</h3>
+          <p>Track your nitrogen cycle from day one. ReefOS detects your cycling phase automatically, shows progress, and tells you exactly when it's safe to add livestock. No more guesswork.</p>
+          <span class="tag">Automatic Phase Detection</span>
+        </div>
+        <div class="feature-screenshot" style="aspect-ratio:16/9">
+          <img src="/screenshots/cycle.png" alt="ReefOS cycle tracker showing tank maturity progress and nitrogen parameters" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Feature 5: AI + Tools -->
+      <div class="feature-card fade-in">
+        <div class="feature-text">
+          <h3><span class="material-symbols-outlined">auto_awesome</span>AI Recognition & 35 Tools</h3>
+          <p>Point your camera at any fish, coral, or equipment — AI identifies it instantly. Plus: dosing calculator, feeding plans, flow optimizer, emergency SOS, pest ID, quarantine protocols, and 25+ more tools.</p>
+          <span class="tag">Complete Toolkit</span>
+        </div>
+        <div class="feature-screenshot" style="aspect-ratio:16/9">
+          <img src="/screenshots/dashboard.png" alt="ReefOS dashboard with alerts and daily reef management actions" loading="lazy">
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- APP SHOWCASE -->
+  <section class="fade-in" style="text-align:center">
+    <h2 class="headline" style="font-size:clamp(24px,4vw,36px);font-weight:900;color:var(--white);margin-bottom:12px;">See It in Action</h2>
+    <p style="max-width:600px;margin:0 auto 40px;">Real screenshots from a real reef tank. This is what your ReefOS looks like on day one.</p>
+    <div style="display:flex;gap:16px;overflow-x:auto;padding:0 0 20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;">
+      <div style="min-width:min(80vw,500px);scroll-snap-align:center;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);border:1px solid var(--border);flex-shrink:0;">
+        <img src="/screenshots/dashboard.png" alt="ReefOS Dashboard" style="width:100%;display:block;" loading="lazy">
+      </div>
+      <div style="min-width:min(80vw,500px);scroll-snap-align:center;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);border:1px solid var(--border);flex-shrink:0;">
+        <img src="/screenshots/params.png" alt="ReefOS Parameter Center" style="width:100%;display:block;" loading="lazy">
+      </div>
+      <div style="min-width:min(80vw,500px);scroll-snap-align:center;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);border:1px solid var(--border);flex-shrink:0;">
+        <img src="/screenshots/livestock.png" alt="ReefOS Livestock Manager" style="width:100%;display:block;" loading="lazy">
+      </div>
+      <div style="min-width:min(80vw,500px);scroll-snap-align:center;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);border:1px solid var(--border);flex-shrink:0;">
+        <img src="/screenshots/planner.png" alt="ReefOS 3D Planner" style="width:100%;display:block;" loading="lazy">
+      </div>
+      <div style="min-width:min(80vw,500px);scroll-snap-align:center;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);border:1px solid var(--border);flex-shrink:0;">
+        <img src="/screenshots/cycle.png" alt="ReefOS Cycle Tracker" style="width:100%;display:block;" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- DIFFERENTIATOR -->
+  <section class="diff fade-in">
+    <h2 class="headline">Not Just Tracking — Decision Intelligence</h2>
+    <p>Other apps log numbers. ReefOS tells you what those numbers mean and what to do next.</p>
+    <div class="diff-table">
+      <table>
+        <thead>
+          <tr><th>Other Apps</th><th>ReefOS</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Manual parameter entry only</td><td>AI reads your test photos</td></tr>
+          <tr><td>Just charts and graphs</td><td>Actionable alerts & daily plans</td></tr>
+          <tr><td>Generic fish database</td><td>Compatibility + health tracking</td></tr>
+          <tr><td>No equipment tracking</td><td>550+ equipment & supplement catalog</td></tr>
+          <tr><td>No emergency tools</td><td>SOS, pest ID, quarantine protocols</td></tr>
+          <tr><td>Paid subscriptions</td><td>100% free, forever</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- AUDIENCE -->
+  <section class="audience fade-in">
+    <h2 class="headline">Built for Every Reefer</h2>
+    <div class="audience-grid">
+      <div class="audience-card">
+        <div class="level" style="color: var(--green);">Beginner</div>
+        <h3>Your first tank? We've got you.</h3>
+        <p>Cycling guides, stocking timelines, step-by-step acclimation, and alerts that prevent the mistakes every beginner makes.</p>
+      </div>
+      <div class="audience-card">
+        <div class="level" style="color: var(--accent2);">Intermediate</div>
+        <h3>Level up your reef game.</h3>
+        <p>Trend analysis, dosing calculators, flow optimization, and AI recommendations based on your specific tank parameters.</p>
+      </div>
+      <div class="audience-card">
+        <div class="level" style="color: var(--accent);">Advanced</div>
+        <h3>Run your reef like a system.</h3>
+        <p>Full parameter intelligence, consumable tracking, livestock health states, and the 3D planner for precise aquascaping.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing fade-in" id="pricing">
+    <h2 class="headline">Simple Pricing</h2>
+    <p>No trials. No paywalls. No "premium" tiers.</p>
+    <div class="price-card">
+      <div class="price-amount headline">$0</div>
+      <div class="price-period">Forever</div>
+      <div class="price-subtitle">All features included. No catch.</div>
+      <ul class="price-features">
+        <li><span class="material-symbols-outlined">check_circle</span> Unlimited parameter logging</li>
+        <li><span class="material-symbols-outlined">check_circle</span> AI test photo recognition</li>
+        <li><span class="material-symbols-outlined">check_circle</span> Full species & product database</li>
+        <li><span class="material-symbols-outlined">check_circle</span> All 35 smart tools</li>
+        <li><span class="material-symbols-outlined">check_circle</span> Livestock management & compatibility</li>
+        <li><span class="material-symbols-outlined">check_circle</span> Alerts, trends, and dosing</li>
+        <li><span class="material-symbols-outlined">check_circle</span> 3D reef planner</li>
+        <li><span class="material-symbols-outlined">check_circle</span> Emergency SOS & diagnostics</li>
+      </ul>
+      <a href="/login" class="btn-primary" style="width:100%;justify-content:center;">
+        <span class="material-symbols-outlined" style="font-size:18px">rocket_launch</span>
+        Get Started Free
+      </a>
+    </div>
+  </section>
+
+  <!-- SEO BLOCK -->
+  <div class="seo-block">
+    <h2 class="headline">The Best Free Reef Tank App for Saltwater Aquarium Management</h2>
+    <p>ReefOS is a free reef tank management app designed for saltwater aquarium hobbyists at every level. Whether you're cycling your first tank or maintaining an advanced SPS-dominant mixed reef, ReefOS gives you the tools to track water parameters, manage livestock, monitor equipment, and make data-driven decisions about your reef aquarium.</p>
+    <p>Unlike basic aquarium tracker apps, ReefOS uses artificial intelligence to read your water test results from photos, identify fish and corals with your camera, generate personalized dosing recommendations, and alert you before small parameter shifts become tank-threatening emergencies. With a database of over 180 reef species, 550+ equipment and supplement products, and 35 specialized reef-keeping tools, ReefOS is the most comprehensive saltwater aquarium app available — and it's completely free.</p>
+    <p>ReefOS works as a progressive web app (PWA) on any device — iPhone, Android, tablet, or desktop. Your reef data syncs to the cloud in real-time, so you can check your tank status from anywhere. Whether you need a reef parameter tracker, coral compatibility checker, fish feeding schedule, tank cycling guide, or emergency reef troubleshooter, ReefOS has you covered.</p>
+  </div>
+
+  <!-- FAQ -->
+  <section class="faq fade-in" id="faq">
+    <h2 class="headline">Frequently Asked Questions</h2>
+
+    <div class="faq-item">
+      <button class="faq-q">What parameters does ReefOS track?<span class="material-symbols-outlined">expand_more</span></button>
+      <div class="faq-a">Alkalinity (dKH), Calcium (ppm), Magnesium (ppm), Nitrate, Phosphate, pH, Ammonia, and Nitrite. Each parameter has trend analysis, safe ranges, and actionable alerts.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">How does the AI test recognition work?<span class="material-symbols-outlined">expand_more</span></button>
+      <div class="faq-a">Take a photo of your test kit results (Hanna Checker, API kit, etc.) and ReefOS uses Google Gemini AI to read the values automatically. It fills in all detected parameters — no manual typing needed.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Is ReefOS really free?<span class="material-symbols-outlined">expand_more</span></button>
+      <div class="faq-a">Yes, 100%. All features are free with no paywalls, premium tiers, or usage limits. We believe every reefer deserves good tools regardless of budget.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Does it work on iPhone and Android?<span class="material-symbols-outlined">expand_more</span></button>
+      <div class="faq-a">ReefOS is a progressive web app (PWA). Visit reefos.net on any browser and add it to your home screen. It works like a native app on both iOS and Android — no app store needed.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What makes ReefOS different from other aquarium apps?<span class="material-symbols-outlined">expand_more</span></button>
+      <div class="faq-a">Most apps just log numbers. ReefOS provides decision intelligence — it analyzes your data, identifies trends, warns you of problems, suggests dosing, checks livestock compatibility, and gives you a daily action plan. It's a reef management system, not just a tracker.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Can I track my equipment and supplements?<span class="material-symbols-outlined">expand_more</span></button>
+      <div class="faq-a">Yes. ReefOS has a catalog of 284+ equipment items and 267+ supplements from brands like AI, EcoTech, Kessil, Red Sea, Brightwell, and more. You can also use the AI camera to identify products instantly.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Does my data sync across devices?<span class="material-symbols-outlined">expand_more</span></button>
+      <div class="faq-a">Yes. All your data is stored securely in the cloud and syncs in real-time. Log a test on your phone, check trends on your laptop — everything stays in sync.</div>
+    </div>
+  </section>
+
+  <!-- TECH BAR -->
+  <div class="tech-bar fade-in">
+    <div class="tech-item"><span class="material-symbols-outlined">cloud_sync</span> Cloud Sync</div>
+    <div class="tech-item"><span class="material-symbols-outlined">auto_awesome</span> AI-Powered</div>
+    <div class="tech-item"><span class="material-symbols-outlined">install_mobile</span> PWA</div>
+    <div class="tech-item"><span class="material-symbols-outlined">lock</span> Secure</div>
+    <div class="tech-item"><span class="material-symbols-outlined">speed</span> Real-Time</div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <section class="final-cta">
+    <h2 class="headline">Stop Guessing. Start Running Your Reef Like a System.</h2>
+    <p>Join reefers who track smarter, not harder. Free forever.</p>
+    <div class="hero-ctas">
+      <a href="/login" class="btn-primary">
+        <span class="material-symbols-outlined" style="font-size:18px">rocket_launch</span>
+        Start Free Now
+      </a>
+      <a href="https://reefos-planner.vercel.app" class="btn-secondary" target="_blank">
+        <span class="material-symbols-outlined" style="font-size:18px">view_in_ar</span>
+        Try 3D Planner
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p style="margin-bottom:12px;">
+      <a href="/login">App</a> &nbsp;&middot;&nbsp;
+      <a href="https://reefos-planner.vercel.app" target="_blank">3D Planner</a> &nbsp;&middot;&nbsp;
+      <a href="https://youtube.com/@ReefOS_US" target="_blank">YouTube</a>
+    </p>
+    <p>&copy; 2026 ReefOS. Built with care for the reef keeping community.</p>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // FAQ accordion
+    document.querySelectorAll('.faq-q').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.parentElement;
+        document.querySelectorAll('.faq-item').forEach(i => {
+          if (i !== item) i.classList.remove('open');
+        });
+        item.classList.toggle('open');
+      });
+    });
+
+    // Scroll fade-in
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  </script>
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ReefOS",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Web, iOS, Android",
+    "description": "Free AI-powered reef tank management app. Track water parameters, manage livestock, get smart recommendations for your saltwater aquarium.",
+    "url": "https://reefos.net",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "ratingCount": "48"
+    }
+  }
+  </script>
+</body>
+</html>
