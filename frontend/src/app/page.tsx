@@ -57,7 +57,7 @@ export default function Dashboard() {
     } catch { return new Set(); }
   });
   const [animatingFeed, setAnimatingFeed] = useState<string | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['consumables', 'upcoming']));
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -374,27 +374,6 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Consumables Inventory */}
-      {consumableTasks.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-[family-name:var(--font-headline)] font-extrabold text-white">Consumables</h2>
-          <div className="space-y-3">
-            {consumableTasks.map(t => (
-              <ConsumableGauge
-                key={t.id}
-                label={t.task_name.replace('Replace ', '').replace('Check ', '')}
-                icon={getCategoryIcon(t.category)}
-                intervalDays={t.interval_days}
-                lastCompletedAt={t.last_completed_at}
-                nextDueAt={t.next_due_at}
-                onComplete={() => handleCompleteTask(t.id)}
-                completing={completingTask === t.id}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* TODAY — Accordion sections */}
       {(() => {
         const activeFeed = feed.filter(i => !dismissedFeed.has(i.id));
@@ -509,6 +488,59 @@ export default function Dashboard() {
                 );
               })}
             </div>
+
+            {/* Consumables — collapsed by default, badge if overdue */}
+            {consumableTasks.length > 0 && (() => {
+              const overdueConsumables = consumableTasks.filter(t => {
+                if (!t.next_due_at) return false;
+                return new Date(t.next_due_at) < now;
+              });
+              return (
+                <div className="bg-[#0d1c32] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(1,14,36,0.2)]">
+                  <button
+                    onClick={() => setCollapsedSections(prev => {
+                      const next = new Set(prev);
+                      if (next.has('consumables')) next.delete('consumables');
+                      else next.add('consumables');
+                      return next;
+                    })}
+                    className="w-full flex items-center gap-3 p-4 text-left active:bg-[#1c2a41]/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[#FF7F50]/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-base text-[#FF7F50]">inventory_2</span>
+                    </div>
+                    <span className="flex-1 font-[family-name:var(--font-headline)] font-bold text-white text-sm">Consumables</span>
+                    {overdueConsumables.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-[#ff6b6b]/15 text-[10px] font-bold text-[#ff6b6b]">
+                        {overdueConsumables.length} replace
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full bg-[#1c2a41] text-[10px] font-bold text-[#c5c6cd]">
+                      {consumableTasks.length}
+                    </span>
+                    <span className={`material-symbols-outlined text-[#c5c6cd]/40 text-lg transition-transform duration-200 ${collapsedSections.has('consumables') ? '' : 'rotate-180'}`}>
+                      expand_more
+                    </span>
+                  </button>
+                  {!collapsedSections.has('consumables') && (
+                    <div className="px-4 pb-3 space-y-2">
+                      {consumableTasks.map(t => (
+                        <ConsumableGauge
+                          key={t.id}
+                          label={t.task_name.replace('Replace ', '').replace('Check ', '')}
+                          icon={getCategoryIcon(t.category)}
+                          intervalDays={t.interval_days}
+                          lastCompletedAt={t.last_completed_at}
+                          nextDueAt={t.next_due_at}
+                          onComplete={() => handleCompleteTask(t.id)}
+                          completing={completingTask === t.id}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Coming Up */}
             {upcomingTasks.length > 0 && (
