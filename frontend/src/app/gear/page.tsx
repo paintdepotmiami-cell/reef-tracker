@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { getCached, setCache } from '@/lib/cache';
 import { searchCatalog, type CatalogItem } from '@/lib/equipment-catalog';
 import { searchSupplements, type SupCatalogItem } from '@/lib/supplement-catalog';
+import ImageIdentifier, { type IdentifyResult } from '@/components/ImageIdentifier';
 
 /* ─── Equipment Knowledge Base ─── */
 interface EquipmentGuide {
@@ -310,6 +311,22 @@ export default function GearPage() {
   // Detail sheet
   const [selectedGuide, setSelectedGuide] = useState<EquipmentGuide | null>(null);
 
+  // AI Camera
+  const [showCamera, setShowCamera] = useState(false);
+  const handleIdentifyResult = (result: IdentifyResult) => {
+    setShowCamera(false);
+    setFName(`${result.brand || ''} ${result.name}`.trim());
+    setFBrand(result.brand || '');
+    if (result.type === 'supplement') {
+      setTab('supplements');
+      setFType(result.category || 'other');
+    } else {
+      setTab('equipment');
+      setFCategory(result.category || 'other');
+    }
+    setShowModal(true);
+  };
+
   // Form fields
   const [fName, setFName] = useState('');
   const [fBrand, setFBrand] = useState('');
@@ -480,6 +497,13 @@ export default function GearPage() {
           <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">My Tank</p>
           <h1 className="text-2xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Gear & Dosing</h1>
         </div>
+        <button
+          onClick={() => setShowCamera(true)}
+          className="w-10 h-10 rounded-xl bg-[#4cd6fb]/15 flex items-center justify-center active:scale-95 transition-transform"
+          title="AI Identify"
+        >
+          <span className="material-symbols-outlined text-[#4cd6fb] text-lg">photo_camera</span>
+        </button>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white rounded-xl font-[family-name:var(--font-headline)] font-bold text-sm shadow-lg shadow-[#FF7F50]/20 active:scale-95 transition-transform"
@@ -1104,6 +1128,15 @@ export default function GearPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Camera */}
+      {showCamera && (
+        <ImageIdentifier
+          context={tab === 'supplements' ? 'supplement' : 'equipment'}
+          onResult={handleIdentifyResult}
+          onClose={() => setShowCamera(false)}
+        />
       )}
 
       {/* Animation style */}
