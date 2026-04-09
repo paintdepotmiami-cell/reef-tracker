@@ -4,16 +4,25 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
-import { createEquipment, createMaintenanceTask } from '@/lib/queries';
+import { createEquipment, createMaintenanceTask, createWaterTest } from '@/lib/queries';
 
 /* ── Step Definitions ─────────────────────────────────── */
 
-const STEPS = [
+const STEPS_NEW = [
   { title: 'Design Your System', subtitle: 'Tank size, type & configuration', icon: 'water' },
   { title: 'About You', subtitle: 'Experience, goals & preferences', icon: 'school' },
   { title: 'Gear Up', subtitle: 'Equipment checklist', icon: 'build' },
   { title: 'Mix Your Ocean', subtitle: 'Water preparation guide', icon: 'water_drop' },
   { title: 'The Patience Step', subtitle: 'Cycle readiness & nitrogen cycle', icon: 'biotech' },
+  { title: 'Welcome to ReefOS', subtitle: 'You\'re ready to begin', icon: 'rocket_launch' },
+];
+
+const STEPS_EXISTING = [
+  { title: 'Design Your System', subtitle: 'Tank size, type & configuration', icon: 'water' },
+  { title: 'About You', subtitle: 'Experience, goals & preferences', icon: 'school' },
+  { title: 'Scan Your Gear', subtitle: 'Photo-identify your equipment', icon: 'photo_camera' },
+  { title: 'Scan Your Livestock', subtitle: 'Photo-identify fish & corals', icon: 'pets' },
+  { title: 'Current Parameters', subtitle: 'Snap your latest test results', icon: 'science' },
   { title: 'Welcome to ReefOS', subtitle: 'You\'re ready to begin', icon: 'rocket_launch' },
 ];
 
@@ -173,6 +182,12 @@ export default function SetupWizard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // Flow: new vs existing
+  const [tankStatus, setTankStatus] = useState<'new' | 'existing' | ''>('');
+  const [tankAge, setTankAge] = useState(''); // months
+
+  const STEPS = tankStatus === 'existing' ? STEPS_EXISTING : STEPS_NEW;
+
   // Step 1: Tank
   const [tankName, setTankName] = useState('');
   const [tankSize, setTankSize] = useState('');
@@ -189,18 +204,137 @@ export default function SetupWizard() {
   const [units, setUnits] = useState('imperial');
   const [language, setLanguage] = useState('en');
 
-  // Step 3: Equipment
+  // Step 3: Equipment (new tank = checklist, existing tank = AI scan)
   const [equipment, setEquipment] = useState<EquipItem[]>(INITIAL_EQUIPMENT.map(e => ({ ...e })));
   const [expandedTooltip, setExpandedTooltip] = useState<string | null>(null);
 
-  // Step 5: Cycle
+  // Existing tank: AI scan states
+  const [scanningGear, setScanningGear] = useState(false);
+  const [scannedGear, setScannedGear] = useState<{ name: string; brand: string | null; category: string; confidence: number }[]>([]);
+  const [scanningLivestock, setScanningLivestock] = useState(false);
+  const [scannedLivestock, setScannedLivestock] = useState<{ name: string; scientific_name: string | null; type: string; category: string; confidence: number; details: string }[]>([]);
+
+  // Existing tank: Current parameters
+  const [scanningParams, setScanningParams] = useState(false);
+  const [params, setParams] = useState<Record<string, number | null>>({
+    alkalinity: null, calcium: null, magnesium: null, nitrate: null,
+    phosphate: null, ph: null, ammonia: null, nitrite: null,
+    salinity: null, temperature: null,
+  });
+
+  // Step 5: Cycle (new tank only)
   const [startCycle, setStartCycle] = useState(false);
 
   const gallons = parseInt(tankSize) || 0;
   const weight = calcWeight(gallons);
+  const tankAgeMonths = parseInt(tankAge) || 0;
+
+  /* ── AI Photo Helpers ───────────────────────────────── */
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const max = 800;
+          let w = img.width, h = img.height;
+          if (w > max || h > max) { const r = Math.min(max / w, max / h); w *= r; h *= r; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleGearPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanningGear(true);
+    try {
+      const base64 = await compressImage(file);
+      const res = await fetch('/api/identify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64, context: 'equipment' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.name && data.type !== 'unknown') {
+          setScannedGear(prev => [...prev, { name: data.brand ? `${data.brand} ${data.name}` : data.name, brand: data.brand, category: data.category, confidence: data.confidence }]);
+          // Also mark in equipment checklist
+          setEquipment(prev => prev.map(eq => {
+            const cat = eq.category.toLowerCase();
+            const dataCat = (data.category || '').toLowerCase();
+            if (cat === dataCat || eq.name.toLowerCase().includes(dataCat)) {
+              return { ...eq, status: 'have' };
+            }
+            return eq;
+          }));
+        }
+      }
+    } catch (err) { console.error('Gear scan failed:', err); }
+    finally { setScanningGear(false); e.target.value = ''; }
+  };
+
+  const handleLivestockPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanningLivestock(true);
+    try {
+      const base64 = await compressImage(file);
+      const res = await fetch('/api/identify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64, context: 'auto' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.name && ['fish', 'coral', 'invertebrate'].includes(data.type)) {
+          setScannedLivestock(prev => [...prev, {
+            name: data.name, scientific_name: data.scientific_name,
+            type: data.type, category: data.category,
+            confidence: data.confidence, details: data.details || '',
+          }]);
+        }
+      }
+    } catch (err) { console.error('Livestock scan failed:', err); }
+    finally { setScanningLivestock(false); e.target.value = ''; }
+  };
+
+  const handleParamsPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanningParams(true);
+    try {
+      const base64 = await compressImage(file);
+      const res = await fetch('/api/analyze-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.params) {
+          setParams(prev => {
+            const updated = { ...prev };
+            for (const [key, val] of Object.entries(data.params)) {
+              if (val !== null && val !== undefined) updated[key] = val as number;
+            }
+            return updated;
+          });
+        }
+      }
+    } catch (err) { console.error('Params scan failed:', err); }
+    finally { setScanningParams(false); e.target.value = ''; }
+  };
 
   const canAdvance = () => {
-    if (step === 0) return tankName.trim().length > 0;
+    if (step === 0) return tankName.trim().length > 0 && tankStatus !== '';
     return true;
   };
 
@@ -236,7 +370,7 @@ export default function SetupWizard() {
       }).eq('id', user.id);
 
       // 2. Create tank
-      const { data: newTank, error: tankErr } = await supabase.from('reef_tanks').insert({
+      const tankInsert: Record<string, unknown> = {
         user_id: user.id,
         name: tankName || 'My Reef',
         size_gallons: gallons || null,
@@ -244,20 +378,74 @@ export default function SetupWizard() {
         sump_type: sumpType,
         reef_goal: reefGoal,
         is_primary: true,
-        cycle_started_at: startCycle ? new Date().toISOString() : null,
         setup_completed_at: new Date().toISOString(),
-      }).select().single();
+      };
+      if (tankStatus === 'new') {
+        tankInsert.cycle_started_at = startCycle ? new Date().toISOString() : null;
+      } else {
+        // Existing tank: mark as mature, store age
+        tankInsert.cycle_started_at = new Date(Date.now() - (tankAgeMonths || 6) * 30 * 86400000).toISOString();
+        tankInsert.cycle_completed = true;
+        if (tankModel) tankInsert.model = `${selectedBrand} ${tankModel}`;
+      }
+
+      const { data: newTank, error: tankErr } = await supabase.from('reef_tanks')
+        .insert(tankInsert).select().single();
 
       if (tankErr) { setError(`Tank: ${tankErr.message}`); setSaving(false); return; }
 
-      // 3. Auto-add equipment that user marked as "have"
-      const haveItems = equipment.filter(e => e.status === 'have');
-      for (const item of haveItems) {
-        await createEquipment({
-          name: item.name,
-          category: item.category.toLowerCase(),
-          notes: `Added via Setup Wizard`,
-        });
+      if (tankStatus === 'existing') {
+        // 3a. Save scanned gear as equipment
+        for (const gear of scannedGear) {
+          await createEquipment({
+            name: gear.name,
+            category: gear.category?.toLowerCase() || 'other',
+            notes: `AI-identified during setup (${Math.round(gear.confidence * 100)}% confidence)`,
+          });
+        }
+        // Also save checklist "have" items
+        const haveItems = equipment.filter(e => e.status === 'have');
+        for (const item of haveItems) {
+          if (!scannedGear.find(g => g.name.toLowerCase().includes(item.name.toLowerCase()))) {
+            await createEquipment({ name: item.name, category: item.category.toLowerCase(), notes: 'Added via Setup Wizard' });
+          }
+        }
+
+        // 3b. Save scanned livestock
+        for (const animal of scannedLivestock) {
+          await supabase.from('reef_animals').insert({
+            user_id: user.id,
+            tank_id: newTank?.id || null,
+            name: animal.name,
+            species: animal.scientific_name,
+            type: animal.type as 'fish' | 'coral' | 'invertebrate',
+            subtype: animal.category,
+            quantity: 1,
+            condition: 'healthy',
+            description: animal.details,
+          });
+        }
+
+        // 3c. Save initial water test if params exist
+        const hasParams = Object.values(params).some(v => v !== null);
+        if (hasParams) {
+          await createWaterTest({
+            user_id: user.id,
+            tank_id: newTank?.id || null,
+            ...params,
+            notes: 'Baseline test from onboarding setup',
+          });
+        }
+      } else {
+        // 3. New tank: Auto-add equipment that user marked as "have"
+        const haveItems = equipment.filter(e => e.status === 'have');
+        for (const item of haveItems) {
+          await createEquipment({
+            name: item.name,
+            category: item.category.toLowerCase(),
+            notes: 'Added via Setup Wizard',
+          });
+        }
       }
 
       // 4. Auto-seed maintenance tasks
@@ -325,6 +513,48 @@ export default function SetupWizard() {
           {/* ── STEP 1: Tank Setup ──────────────────────── */}
           {step === 0 && (
             <>
+              {/* New vs Existing */}
+              <div>
+                <label className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-3">Is this a new or existing tank?</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setTankStatus('new')}
+                    className={`p-4 rounded-xl text-left transition-all ${tankStatus === 'new'
+                      ? 'bg-[#4cd6fb]/15 border-2 border-[#4cd6fb] shadow-lg shadow-[#4cd6fb]/10'
+                      : 'bg-[#0d1c32] border-2 border-transparent hover:border-[#1c2a41]'}`}>
+                    <span className={`material-symbols-outlined text-2xl mb-2 ${tankStatus === 'new' ? 'text-[#4cd6fb]' : 'text-[#c5c6cd]'}`}>add_circle</span>
+                    <p className={`font-[family-name:var(--font-headline)] text-sm font-semibold ${tankStatus === 'new' ? 'text-white' : 'text-[#c5c6cd]'}`}>New Tank</p>
+                    <p className="text-[10px] text-[#8f9097] mt-0.5">Setting up from scratch</p>
+                  </button>
+                  <button onClick={() => setTankStatus('existing')}
+                    className={`p-4 rounded-xl text-left transition-all ${tankStatus === 'existing'
+                      ? 'bg-[#2ff801]/15 border-2 border-[#2ff801] shadow-lg shadow-[#2ff801]/10'
+                      : 'bg-[#0d1c32] border-2 border-transparent hover:border-[#1c2a41]'}`}>
+                    <span className={`material-symbols-outlined text-2xl mb-2 ${tankStatus === 'existing' ? 'text-[#2ff801]' : 'text-[#c5c6cd]'}`}>check_circle</span>
+                    <p className={`font-[family-name:var(--font-headline)] text-sm font-semibold ${tankStatus === 'existing' ? 'text-white' : 'text-[#c5c6cd]'}`}>Existing Tank</p>
+                    <p className="text-[10px] text-[#8f9097] mt-0.5">Already running</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Tank Age (existing only) */}
+              {tankStatus === 'existing' && (
+                <div>
+                  <label className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-2">How old is your tank? (months)</label>
+                  <input type="number" value={tankAge} onChange={e => setTankAge(e.target.value)}
+                    className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3.5 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent transition-all text-sm"
+                    placeholder="e.g., 18" />
+                  {tankAgeMonths > 36 && (
+                    <div className="mt-3 bg-[#F1C40F]/5 border border-[#F1C40F]/20 rounded-xl p-3 flex items-start gap-2">
+                      <span className="material-symbols-outlined text-[#F1C40F] text-lg mt-0.5">warning</span>
+                      <div>
+                        <p className="text-[#F1C40F] text-xs font-bold">Old Tank Syndrome (OTS) Risk</p>
+                        <p className="text-[#c5c6cd] text-[11px] mt-1 leading-relaxed">Tanks over 3 years old can develop OTS — sand beds and rocks saturate with phosphates, pH drops slowly. ReefOS will monitor for these signs and alert you.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-2">Tank Name</label>
                 <input type="text" value={tankName} onChange={e => setTankName(e.target.value)}
@@ -546,8 +776,58 @@ export default function SetupWizard() {
             </>
           )}
 
-          {/* ── STEP 3: Equipment Checklist ─────────────── */}
-          {step === 2 && (
+          {/* ── STEP 3: Equipment Checklist (NEW) / Scan Gear (EXISTING) ── */}
+          {step === 2 && tankStatus === 'existing' && (
+            <>
+              {/* AI Gear Scanner */}
+              <div className="bg-[#0d1c32] rounded-2xl p-5 border border-[#1c2a41] text-center">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-[#4cd6fb]/10 flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-3xl text-[#4cd6fb]">photo_camera</span>
+                </div>
+                <h3 className="text-white font-bold text-lg mb-2">Snap Your Equipment</h3>
+                <p className="text-[#c5c6cd] text-sm mb-4">Take photos of your skimmer, lights, pumps, ATO, controller — ReefOS AI will identify each one.</p>
+                <label className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-sm cursor-pointer transition-all ${scanningGear ? 'bg-[#1c2a41] text-[#8f9097]' : 'bg-[#FF7F50] text-white hover:scale-[1.03] active:scale-95 shadow-lg shadow-[#FF7F50]/20'}`}>
+                  <span className="material-symbols-outlined text-lg">{scanningGear ? 'hourglass_top' : 'add_a_photo'}</span>
+                  {scanningGear ? 'Identifying...' : 'Take Photo'}
+                  <input type="file" accept="image/*" capture="environment" onChange={handleGearPhoto} className="hidden" disabled={scanningGear} />
+                </label>
+              </div>
+
+              {/* Scanned Results */}
+              {scannedGear.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-[#2ff801]/70 uppercase tracking-widest mb-2">Identified Equipment ({scannedGear.length})</p>
+                  <div className="space-y-2">
+                    {scannedGear.map((g, i) => (
+                      <div key={i} className="bg-[#2ff801]/10 border border-[#2ff801]/20 rounded-xl p-3 flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#2ff801]">check_circle</span>
+                        <div className="flex-1">
+                          <p className="text-white text-sm font-semibold">{g.name}</p>
+                          <p className="text-[10px] text-[#8f9097]">{g.category} · {Math.round(g.confidence * 100)}% confident</p>
+                        </div>
+                        <button onClick={() => setScannedGear(prev => prev.filter((_, idx) => idx !== i))}
+                          className="text-[#8f9097] hover:text-[#ff6b6b]">
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tip */}
+              <div className="bg-[#4cd6fb]/5 border border-[#4cd6fb]/20 rounded-xl p-3 flex items-start gap-2">
+                <span className="material-symbols-outlined text-[#4cd6fb] text-lg mt-0.5">tips_and_updates</span>
+                <p className="text-[11px] text-[#c5c6cd] leading-relaxed">Take one photo per piece of equipment for best results. You can also add gear manually later from the Equipment page.</p>
+              </div>
+
+              {scannedGear.length === 0 && (
+                <p className="text-center text-[#8f9097] text-xs">No equipment scanned yet. You can skip this step and add gear later.</p>
+              )}
+            </>
+          )}
+
+          {step === 2 && tankStatus !== 'existing' && (
             <>
               {/* Stats Bar */}
               <div className="flex gap-3">
@@ -630,8 +910,135 @@ export default function SetupWizard() {
             </>
           )}
 
-          {/* ── STEP 4: Water Preparation ───────────────── */}
-          {step === 3 && (
+          {/* ── STEP 4 (EXISTING): Scan Livestock ─────── */}
+          {step === 3 && tankStatus === 'existing' && (
+            <>
+              <div className="bg-[#0d1c32] rounded-2xl p-5 border border-[#1c2a41] text-center">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FF7F50]/10 flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-3xl text-[#FF7F50]">pets</span>
+                </div>
+                <h3 className="text-white font-bold text-lg mb-2">Snap Your Fish & Corals</h3>
+                <p className="text-[#c5c6cd] text-sm mb-4">Take photos of your livestock — ReefOS AI will identify species, check compatibility, and build your reef inventory.</p>
+                <label className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-sm cursor-pointer transition-all ${scanningLivestock ? 'bg-[#1c2a41] text-[#8f9097]' : 'bg-[#FF7F50] text-white hover:scale-[1.03] active:scale-95 shadow-lg shadow-[#FF7F50]/20'}`}>
+                  <span className="material-symbols-outlined text-lg">{scanningLivestock ? 'hourglass_top' : 'add_a_photo'}</span>
+                  {scanningLivestock ? 'Identifying...' : 'Take Photo'}
+                  <input type="file" accept="image/*" capture="environment" onChange={handleLivestockPhoto} className="hidden" disabled={scanningLivestock} />
+                </label>
+              </div>
+
+              {/* Scanned Livestock */}
+              {scannedLivestock.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-[#FF7F50]/70 uppercase tracking-widest mb-2">Identified Livestock ({scannedLivestock.length})</p>
+                  <div className="space-y-2">
+                    {scannedLivestock.map((a, i) => (
+                      <div key={i} className={`border rounded-xl p-3 flex items-center gap-3 ${
+                        a.type === 'fish' ? 'bg-[#4cd6fb]/10 border-[#4cd6fb]/20' :
+                        a.type === 'coral' ? 'bg-[#FF7F50]/10 border-[#FF7F50]/20' :
+                        'bg-[#2ff801]/10 border-[#2ff801]/20'
+                      }`}>
+                        <span className="material-symbols-outlined text-white">
+                          {a.type === 'fish' ? 'set_meal' : a.type === 'coral' ? 'nature' : 'bug_report'}
+                        </span>
+                        <div className="flex-1">
+                          <p className="text-white text-sm font-semibold">{a.name}</p>
+                          <p className="text-[10px] text-[#8f9097]">
+                            {a.scientific_name && <span className="italic">{a.scientific_name} · </span>}
+                            {a.type} · {a.category} · {Math.round(a.confidence * 100)}%
+                          </p>
+                          {a.details && <p className="text-[10px] text-[#c5c6cd] mt-1">{a.details}</p>}
+                        </div>
+                        <button onClick={() => setScannedLivestock(prev => prev.filter((_, idx) => idx !== i))}
+                          className="text-[#8f9097] hover:text-[#ff6b6b]">
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-[#FF7F50]/5 border border-[#FF7F50]/20 rounded-xl p-3 flex items-start gap-2">
+                <span className="material-symbols-outlined text-[#FF7F50] text-lg mt-0.5">tips_and_updates</span>
+                <p className="text-[11px] text-[#c5c6cd] leading-relaxed">One photo per animal works best. For corals, get a close-up. You can always add more from the Livestock page later.</p>
+              </div>
+
+              {scannedLivestock.length === 0 && (
+                <p className="text-center text-[#8f9097] text-xs">No livestock scanned yet. You can skip this step and add animals later.</p>
+              )}
+            </>
+          )}
+
+          {/* ── STEP 5 (EXISTING): Current Parameters ───── */}
+          {step === 4 && tankStatus === 'existing' && (
+            <>
+              <div className="bg-[#0d1c32] rounded-2xl p-5 border border-[#1c2a41] text-center">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-[#2ff801]/10 flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-3xl text-[#2ff801]">science</span>
+                </div>
+                <h3 className="text-white font-bold text-lg mb-2">Snap Your Test Results</h3>
+                <p className="text-[#c5c6cd] text-sm mb-4">Photo your Hanna Checker, API kit, or any test results — AI reads the values automatically.</p>
+                <label className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-sm cursor-pointer transition-all ${scanningParams ? 'bg-[#1c2a41] text-[#8f9097]' : 'bg-[#2ff801] text-[#010e24] hover:scale-[1.03] active:scale-95 shadow-lg shadow-[#2ff801]/20'}`}>
+                  <span className="material-symbols-outlined text-lg">{scanningParams ? 'hourglass_top' : 'add_a_photo'}</span>
+                  {scanningParams ? 'Reading...' : 'Scan Test Kit'}
+                  <input type="file" accept="image/*" capture="environment" onChange={handleParamsPhoto} className="hidden" disabled={scanningParams} />
+                </label>
+              </div>
+
+              {/* Parameter Grid — manual or AI-filled */}
+              <div>
+                <p className="text-[10px] font-bold text-[#c5c6cd]/50 uppercase tracking-widest mb-3">
+                  Parameters {Object.values(params).some(v => v !== null) && <span className="text-[#2ff801]">· AI-filled</span>}
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { key: 'alkalinity', label: 'Alkalinity', unit: 'dKH', color: '#4cd6fb' },
+                    { key: 'calcium', label: 'Calcium', unit: 'ppm', color: '#c5c6cd' },
+                    { key: 'magnesium', label: 'Magnesium', unit: 'ppm', color: '#c5a3ff' },
+                    { key: 'nitrate', label: 'Nitrate', unit: 'ppm', color: '#F1C40F' },
+                    { key: 'phosphate', label: 'Phosphate', unit: 'ppm', color: '#FF7F50' },
+                    { key: 'ph', label: 'pH', unit: '', color: '#2ff801' },
+                    { key: 'salinity', label: 'Salinity', unit: 'ppt', color: '#4cd6fb' },
+                    { key: 'temperature', label: 'Temperature', unit: '°F', color: '#ff6b6b' },
+                  ].map(p => (
+                    <div key={p.key} className="bg-[#0d1c32] rounded-xl p-3 border border-[#1c2a41]">
+                      <label className="text-[10px] uppercase tracking-wider font-bold block mb-1" style={{ color: p.color }}>{p.label}</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          step="any"
+                          value={params[p.key] ?? ''}
+                          onChange={e => setParams(prev => ({ ...prev, [p.key]: e.target.value ? parseFloat(e.target.value) : null }))}
+                          className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-2 px-2 text-white text-sm focus:ring-1 focus:ring-[#FF7F50]/50"
+                          placeholder="—"
+                        />
+                        {p.unit && <span className="text-[10px] text-[#8f9097] shrink-0">{p.unit}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick warnings based on params */}
+              {params.ammonia != null && params.ammonia > 0 && (
+                <div className="bg-[#93000a]/10 border border-[#ffb4ab]/20 rounded-xl p-3 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[#ffb4ab] text-lg">dangerous</span>
+                  <p className="text-[11px] text-[#ffb4ab] leading-relaxed"><strong>Ammonia detected ({params.ammonia} ppm).</strong> Check for dead livestock, uneaten food, or failing filtration. Immediate water change recommended.</p>
+                </div>
+              )}
+              {params.alkalinity != null && params.alkalinity > 12 && (
+                <div className="bg-[#F1C40F]/5 border border-[#F1C40F]/20 rounded-xl p-3 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[#F1C40F] text-sm">warning</span>
+                  <p className="text-[11px] text-[#c5c6cd]"><strong className="text-[#F1C40F]">Alkalinity high ({params.alkalinity} dKH).</strong> Target 7.5-9.0 dKH for most mixed reefs. ReefOS will guide you to lower it safely.</p>
+                </div>
+              )}
+
+              <p className="text-center text-[#8f9097] text-xs">You can also enter values manually or skip — log tests anytime from the Logs page.</p>
+            </>
+          )}
+
+          {/* ── STEP 4 (NEW): Water Preparation ────────── */}
+          {step === 3 && tankStatus !== 'existing' && (
             <>
               <div className="bg-[#0d1c32] rounded-2xl p-5 space-y-5 border border-[#1c2a41]">
                 {[
@@ -679,8 +1086,8 @@ export default function SetupWizard() {
             </>
           )}
 
-          {/* ── STEP 5: Cycle Readiness ─────────────────── */}
-          {step === 4 && (
+          {/* ── STEP 5 (NEW): Cycle Readiness ──────────── */}
+          {step === 4 && tankStatus !== 'existing' && (
             <>
               <div className="bg-[#0d1c32] rounded-2xl p-5 border border-[#1c2a41]">
                 <p className="text-[10px] text-[#4cd6fb] uppercase tracking-widest font-bold mb-4">The Nitrogen Cycle</p>
@@ -773,11 +1180,17 @@ export default function SetupWizard() {
               <div className="bg-[#0d1c32] rounded-2xl p-5 space-y-3 border border-[#1c2a41]">
                 <p className="text-[10px] text-[#FF7F50] uppercase tracking-widest font-bold">Your Setup</p>
                 {[
-                  { label: 'Tank', value: `${tankName || 'My Reef'} · ${gallons || '—'} gal`, icon: 'water' },
+                  { label: 'Tank', value: `${tankName || 'My Reef'} · ${gallons || '—'} gal${tankStatus === 'existing' && tankAgeMonths ? ` · ${tankAgeMonths}mo old` : ''}`, icon: 'water' },
                   { label: 'Type', value: TANK_TYPES.find(t => t.key === tankType)?.label || tankType, icon: 'category' },
                   { label: 'Goal', value: REEF_GOALS.find(g => g.key === reefGoal)?.label || reefGoal, icon: 'flag' },
-                  { label: 'Equipment', value: `${haveCount} owned · ${needCount} to buy`, icon: 'build' },
-                  { label: 'Cycle', value: startCycle ? 'Tracking active 🟢' : 'Not started yet', icon: 'biotech' },
+                  ...(tankStatus === 'existing' ? [
+                    { label: 'Equipment', value: `${scannedGear.length} AI-identified`, icon: 'build' },
+                    { label: 'Livestock', value: `${scannedLivestock.length} species found`, icon: 'pets' },
+                    { label: 'Parameters', value: Object.values(params).filter(v => v !== null).length > 0 ? 'Baseline recorded ✓' : 'Not yet', icon: 'science' },
+                  ] : [
+                    { label: 'Equipment', value: `${haveCount} owned · ${needCount} to buy`, icon: 'build' },
+                    { label: 'Cycle', value: startCycle ? 'Tracking active 🟢' : 'Not started yet', icon: 'biotech' },
+                  ]),
                 ].map(row => (
                   <div key={row.label} className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-[#FF7F50] text-lg">{row.icon}</span>
@@ -792,11 +1205,15 @@ export default function SetupWizard() {
               {/* What's Next */}
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-[#c5c6cd]/50 uppercase tracking-widest">What&apos;s Next</p>
-                {[
+                {(tankStatus === 'existing' ? [
+                  { icon: 'dashboard', title: 'Check your Dashboard', desc: 'See alerts, trends, and AI recommendations from your baseline data', color: '#4cd6fb' },
+                  { icon: 'trending_up', title: 'Track parameter trends', desc: 'Log weekly tests to build stability trends over time', color: '#FF7F50' },
+                  { icon: 'calculate', title: 'Optimize dosing', desc: 'Get exact dosing calculations from your parameter history', color: '#2ff801' },
+                ] : [
                   { icon: 'science', title: 'Log your first water test', desc: 'Start tracking NH3, NO2, NO3 for cycle monitoring', color: '#4cd6fb' },
                   { icon: 'menu_book', title: 'Read beginner guides', desc: '14 articles covering every aspect of reef keeping', color: '#FF7F50' },
                   { icon: 'pets', title: 'Browse the Species Library', desc: '180+ fish, corals & invertebrates with care guides', color: '#2ff801' },
-                ].map(card => (
+                ]).map(card => (
                   <div key={card.title} className="bg-[#0d1c32] rounded-xl p-4 flex items-center gap-3 border border-[#1c2a41]">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
                       <span className="material-symbols-outlined" style={{ color: card.color }}>{card.icon}</span>
