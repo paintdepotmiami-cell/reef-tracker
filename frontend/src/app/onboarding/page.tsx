@@ -461,7 +461,7 @@ export default function SetupWizard() {
 
       await refreshProfile();
       await refreshTank();
-      router.push('/');
+      router.push('/dashboard');
     } catch (err: unknown) {
       console.error('Setup error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
