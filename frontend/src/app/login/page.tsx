@@ -65,8 +65,8 @@ export default function LoginPage() {
       <div className="max-w-sm w-full space-y-8">
         {/* Logo */}
         <div className="text-center space-y-3">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#FF7F50] to-[#d35e32] flex items-center justify-center shadow-xl shadow-[#FF7F50]/20">
-            <span className="material-symbols-outlined text-4xl text-white">waves</span>
+          <div className="w-20 h-20 mx-auto rounded-2xl overflow-hidden shadow-xl shadow-[#FF7F50]/20">
+            <img src="/icons/logo-40.png" alt="ReefOS" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-[family-name:var(--font-headline)] font-bold tracking-[0.15em] text-[#FF7F50] uppercase">
             ReefOS

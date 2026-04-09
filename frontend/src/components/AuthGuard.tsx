@@ -41,7 +41,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <span className="material-symbols-outlined text-5xl text-[#FF7F50] animate-pulse">waves</span>
+          <img src="/icons/logo-40.png" alt="ReefOS" className="w-14 h-14 rounded-xl animate-pulse mx-auto" />
           <p className="text-[#c5c6cd] text-sm mt-3 font-medium tracking-wider uppercase">Loading ReefOS...</p>
         </div>
       </div>
