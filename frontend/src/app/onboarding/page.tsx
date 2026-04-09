@@ -89,6 +89,100 @@ const REEF_GOALS = [
   { key: 'mixed', label: 'Mixed Reef', desc: 'Balanced ecosystem', icon: 'waves', color: '#4cd6fb' },
 ];
 
+/* ── Equipment Catalog (for existing tank scan) ─────────── */
+
+const EQUIPMENT_CATALOG: { category: string; icon: string; items: { name: string; brand: string }[] }[] = [
+  { category: 'Lighting', icon: 'light_mode', items: [
+    { name: 'Hydra 32 HD', brand: 'Aqua Illumination' }, { name: 'Hydra 64 HD', brand: 'Aqua Illumination' },
+    { name: 'Prime 16 HD', brand: 'Aqua Illumination' }, { name: 'Blade', brand: 'Aqua Illumination' },
+    { name: 'A360X', brand: 'Kessil' }, { name: 'A500X', brand: 'Kessil' }, { name: 'A160WE', brand: 'Kessil' },
+    { name: 'Radion XR15', brand: 'EcoTech Marine' }, { name: 'Radion XR30', brand: 'EcoTech Marine' },
+    { name: 'Photon V2+', brand: 'Reef Factory' },
+    { name: 'Black Box LED', brand: 'Generic' }, { name: 'ReefLED 90', brand: 'Red Sea' }, { name: 'ReefLED 160S', brand: 'Red Sea' },
+    { name: 'Nemolight S72', brand: 'Nemo' },
+    { name: 'OR3 90', brand: 'Orphek' }, { name: 'OR3 120', brand: 'Orphek' }, { name: 'Atlantik V4', brand: 'Orphek' },
+  ]},
+  { category: 'Skimmer', icon: 'bubble_chart', items: [
+    { name: 'Classic 110-S', brand: 'Reef Octopus' }, { name: 'Classic 150-S', brand: 'Reef Octopus' },
+    { name: 'Regal 150-S', brand: 'Reef Octopus' }, { name: 'Regal 200-S', brand: 'Reef Octopus' },
+    { name: 'Curve 5', brand: 'Bubble Magus' }, { name: 'Curve 7', brand: 'Bubble Magus' },
+    { name: 'Comline DOC 9001', brand: 'Tunze' }, { name: 'DOC 9410', brand: 'Tunze' },
+    { name: 'RSK-300', brand: 'Red Sea' }, { name: 'RSK-600', brand: 'Red Sea' },
+    { name: 'SWC-120', brand: 'SWC' }, { name: 'SWC-160', brand: 'SWC' },
+    { name: 'Jebao DPS-6', brand: 'Jebao' },
+    { name: 'HOB-1', brand: 'IceCap' },
+    { name: 'Skim-Mate 800', brand: 'AquaMaxx' },
+  ]},
+  { category: 'Return Pump', icon: 'water_pump', items: [
+    { name: 'Sicce Syncra SDC 7.0', brand: 'Sicce' }, { name: 'Sicce Syncra SDC 9.0', brand: 'Sicce' },
+    { name: 'Sicce Syncra Silent 3.0', brand: 'Sicce' },
+    { name: 'Varios 4S', brand: 'Abyzz' },
+    { name: 'DC Runner 5.3', brand: 'Aqua Medic' },
+    { name: 'Vectra S2', brand: 'EcoTech Marine' }, { name: 'Vectra M2', brand: 'EcoTech Marine' }, { name: 'Vectra L2', brand: 'EcoTech Marine' },
+    { name: 'Silence 5.0', brand: 'Tunze' },
+    { name: 'MightyJet DC', brand: 'Innovative Marine' },
+    { name: 'Waveline DC-3000', brand: 'Jebao' }, { name: 'Waveline DC-6000', brand: 'Jebao' },
+  ]},
+  { category: 'Powerhead', icon: 'air', items: [
+    { name: 'VorTech MP10', brand: 'EcoTech Marine' }, { name: 'VorTech MP40', brand: 'EcoTech Marine' }, { name: 'VorTech MP60', brand: 'EcoTech Marine' },
+    { name: 'Nero 3', brand: 'Aqua Illumination' }, { name: 'Nero 5', brand: 'Aqua Illumination' }, { name: 'Nero 7', brand: 'Aqua Illumination' },
+    { name: 'Turbelle 6040', brand: 'Tunze' }, { name: 'Turbelle 6055', brand: 'Tunze' }, { name: 'Turbelle 6095', brand: 'Tunze' },
+    { name: 'Gyre XF-250', brand: 'Maxspect' }, { name: 'Gyre XF-350', brand: 'Maxspect' },
+    { name: 'SOW-8', brand: 'Jebao' }, { name: 'SOW-16', brand: 'Jebao' },
+    { name: 'IceCap 2K Gyre', brand: 'IceCap' },
+  ]},
+  { category: 'Heater', icon: 'thermostat', items: [
+    { name: 'Titanium 150W', brand: 'Finnex' }, { name: 'Titanium 300W', brand: 'Finnex' },
+    { name: 'TH-500', brand: 'Finnex' },
+    { name: 'Titanium 200W', brand: 'Aqueon' }, { name: 'Titanium 300W', brand: 'Aqueon' },
+    { name: 'Jäger 200W', brand: 'Eheim' }, { name: 'Jäger 300W', brand: 'Eheim' },
+    { name: 'Smart Heater', brand: 'Reef Factory' },
+    { name: 'InkBird ITC-306T', brand: 'InkBird' }, { name: 'InkBird ITC-308', brand: 'InkBird' },
+    { name: 'BeanTemp', brand: 'BRS' },
+  ]},
+  { category: 'ATO', icon: 'water_drop', items: [
+    { name: 'Smart ATO Micro', brand: 'AutoAqua' }, { name: 'Smart ATO Duo', brand: 'AutoAqua' },
+    { name: 'Osmolator 3155', brand: 'Tunze' }, { name: 'Nano Osmolator', brand: 'Tunze' },
+    { name: 'XP ATO', brand: 'IceCap' },
+    { name: 'Smart ATO', brand: 'Reef Factory' },
+    { name: 'Hydros ATO', brand: 'CoralVue' },
+    { name: 'MightyJet ATO', brand: 'Innovative Marine' },
+  ]},
+  { category: 'Controller', icon: 'settings_input_component', items: [
+    { name: 'Apex', brand: 'Neptune Systems' }, { name: 'Apex Jr', brand: 'Neptune Systems' }, { name: 'Apex EL', brand: 'Neptune Systems' },
+    { name: 'Trident', brand: 'Neptune Systems' },
+    { name: 'Hydros Control X4', brand: 'CoralVue' }, { name: 'Hydros Control X2', brand: 'CoralVue' },
+    { name: 'Reef Commander', brand: 'Reef Factory' },
+    { name: 'ReefBot', brand: 'Reef Kinetics' },
+    { name: 'ALKATRONIC', brand: 'FocusTree' },
+    { name: 'GHL ProfiLux 4', brand: 'GHL' },
+  ]},
+  { category: 'Dosing Pump', icon: 'science', items: [
+    { name: 'ReefDose 2', brand: 'Red Sea' }, { name: 'ReefDose 4', brand: 'Red Sea' },
+    { name: 'DOS', brand: 'Neptune Systems' }, { name: 'DDR', brand: 'Neptune Systems' },
+    { name: 'Jebao DP-4', brand: 'Jebao' },
+    { name: 'Kamoer X1 Pro', brand: 'Kamoer' },
+    { name: 'Smart Doser', brand: 'Reef Factory' },
+    { name: 'BRS 1.1mL', brand: 'BRS' },
+  ]},
+  { category: 'Reactor', icon: 'filter_alt', items: [
+    { name: 'BioPellet Reactor', brand: 'BRS' }, { name: 'GFO/Carbon Reactor', brand: 'BRS' },
+    { name: 'Bio Reactor 70', brand: 'Reef Octopus' },
+    { name: 'FR-SE Media Reactor', brand: 'Two Little Fishies' },
+    { name: 'CaRx C120.2', brand: 'Reef Octopus' },
+    { name: 'KR Reactor', brand: 'Deltec' },
+    { name: 'Rollermat', brand: 'Theiling' },
+    { name: 'Clarisea SK-3000', brand: 'D-D' },
+  ]},
+  { category: 'RO/DI', icon: 'water_full', items: [
+    { name: '4-Stage Value Plus', brand: 'BRS' }, { name: '5-Stage Plus', brand: 'BRS' }, { name: '6-Stage Universal', brand: 'BRS' },
+    { name: 'Typhoon III', brand: 'Air Water Ice' },
+    { name: 'Aquatic Life RO Buddie', brand: 'Aquatic Life' },
+    { name: 'Maxcap', brand: 'Spectrapure' },
+    { name: 'SpectraSelect 90', brand: 'Spectrapure' },
+  ]},
+];
+
 /* ── Equipment Checklist ──────────────────────────────── */
 
 interface EquipItem {
@@ -218,9 +312,12 @@ export default function SetupWizard() {
   const [speciesDb, setSpeciesDb] = useState<{ common_name: string; scientific_name: string; category: string; subcategory: string; difficulty: string }[]>([]);
   const [livestockSearch, setLivestockSearch] = useState('');
   const [livestockTab, setLivestockTab] = useState<'fish' | 'coral' | 'invertebrate'>('fish');
-  // Gear manual search + products DB
+  // Gear category browser
+  const [gearCategory, setGearCategory] = useState<string | null>(null);
   const [gearSearch, setGearSearch] = useState('');
   const [productsDb, setProductsDb] = useState<{ name: string; brand: string; category: string }[]>([]);
+  // Livestock subcategory browser
+  const [livestockSubcat, setLivestockSubcat] = useState<string | null>(null);
 
   // Existing tank: Current parameters
   const [scanningParams, setScanningParams] = useState(false);
@@ -862,77 +959,93 @@ export default function SetupWizard() {
               {/* OR divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-[#1c2a41]" />
-                <span className="text-[10px] font-bold text-[#8f9097] uppercase tracking-wider">or add from list</span>
+                <span className="text-[10px] font-bold text-[#8f9097] uppercase tracking-wider">or choose by category</span>
                 <div className="flex-1 h-px bg-[#1c2a41]" />
               </div>
 
-              {/* Manual Gear Search — products DB + generic list + custom */}
-              <div>
-                <input
-                  type="text"
-                  value={gearSearch}
-                  onChange={e => setGearSearch(e.target.value)}
-                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 text-sm"
-                  placeholder="Search by brand or name... (Kessil, Vortech, Reef Octopus...)"
-                />
-                {gearSearch.length >= 2 && (() => {
-                  const q = gearSearch.toLowerCase();
-                  // Combine products DB + generic equipment, dedup
-                  const productMatches = productsDb
-                    .filter(p => p.name.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q))
-                    .map(p => ({ name: p.brand ? `${p.brand} ${p.name}` : p.name, brand: p.brand, category: p.category }));
-                  const genericMatches = INITIAL_EQUIPMENT
-                    .filter(e => e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q))
-                    .map(e => ({ name: e.name, brand: null as string | null, category: e.category }));
-                  const allMatches = [...productMatches, ...genericMatches]
-                    .filter((item, idx, arr) => arr.findIndex(x => x.name === item.name) === idx)
-                    .slice(0, 15);
-                  return (
-                    <div className="mt-2 max-h-52 overflow-y-auto space-y-1.5">
-                      {allMatches.map(item => {
-                        const alreadyAdded = scannedGear.some(g => g.name === item.name);
+              {/* Category Grid */}
+              {!gearCategory ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {EQUIPMENT_CATALOG.map(cat => {
+                    const count = scannedGear.filter(g => g.category.toLowerCase() === cat.category.toLowerCase()).length;
+                    return (
+                      <button key={cat.category} onClick={() => setGearCategory(cat.category)}
+                        className="bg-[#0d1c32] border border-[#1c2a41] hover:border-[#4cd6fb]/40 rounded-xl p-3 text-center transition-all active:scale-[0.96]">
+                        <span className="material-symbols-outlined text-xl text-[#4cd6fb]">{cat.icon}</span>
+                        <p className="text-white text-xs font-semibold mt-1.5">{cat.category}</p>
+                        {count > 0 && <p className="text-[9px] text-[#2ff801] font-bold mt-0.5">{count} added</p>}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div>
+                  {/* Back + Category Header */}
+                  <button onClick={() => { setGearCategory(null); setGearSearch(''); }}
+                    className="flex items-center gap-1 text-[#4cd6fb] text-sm mb-3 hover:underline">
+                    <span className="material-symbols-outlined text-base">arrow_back</span> All Categories
+                  </button>
+                  <p className="text-[10px] font-bold text-[#4cd6fb]/70 uppercase tracking-widest mb-2">
+                    {gearCategory} — {EQUIPMENT_CATALOG.find(c => c.category === gearCategory)?.items.length} models
+                  </p>
+
+                  {/* Search within category */}
+                  <input
+                    type="text" value={gearSearch} onChange={e => setGearSearch(e.target.value)}
+                    className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-2.5 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#4cd6fb]/50 text-sm mb-2"
+                    placeholder={`Filter ${gearCategory.toLowerCase()}...`}
+                  />
+
+                  {/* Model List */}
+                  <div className="max-h-60 overflow-y-auto space-y-1.5">
+                    {(EQUIPMENT_CATALOG.find(c => c.category === gearCategory)?.items || [])
+                      .filter(item => !gearSearch || `${item.brand} ${item.name}`.toLowerCase().includes(gearSearch.toLowerCase()))
+                      .map(item => {
+                        const fullName = `${item.brand} ${item.name}`;
+                        const alreadyAdded = scannedGear.some(g => g.name === fullName);
                         return (
-                          <button key={item.name} disabled={alreadyAdded}
+                          <button key={fullName} disabled={alreadyAdded}
                             onClick={() => {
-                              setScannedGear(prev => [...prev, { name: item.name, brand: item.brand, category: item.category, confidence: 1 }]);
-                              setGearSearch('');
+                              setScannedGear(prev => [...prev, { name: fullName, brand: item.brand, category: gearCategory!, confidence: 1 }]);
                             }}
-                            className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded ? 'bg-[#2ff801]/10 border border-[#2ff801]/20' : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
+                            className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded
+                              ? 'bg-[#2ff801]/10 border border-[#2ff801]/20'
+                              : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
                           >
                             <span className={`material-symbols-outlined text-sm ${alreadyAdded ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
                               {alreadyAdded ? 'check_circle' : 'add_circle'}
                             </span>
                             <div>
                               <p className={`text-sm font-medium ${alreadyAdded ? 'text-[#2ff801]' : 'text-white'}`}>{item.name}</p>
-                              <p className="text-[10px] text-[#8f9097]">{item.category}{item.brand && ` · ${item.brand}`}</p>
+                              <p className="text-[10px] text-[#8f9097]">{item.brand}</p>
                             </div>
                           </button>
                         );
                       })}
+                  </div>
 
-                      {/* Custom add — type any gear name */}
-                      {!allMatches.some(m => m.name.toLowerCase() === q) && (
-                        <button
-                          onClick={() => {
-                            setScannedGear(prev => [...prev, { name: gearSearch.trim(), brand: null, category: 'custom', confidence: 1 }]);
-                            setGearSearch('');
-                          }}
-                          className="w-full p-3 rounded-xl flex items-center gap-3 text-left bg-[#FF7F50]/10 border border-[#FF7F50]/20 hover:border-[#FF7F50]/40 active:scale-[0.98] transition-all"
-                        >
-                          <span className="material-symbols-outlined text-sm text-[#FF7F50]">add_circle</span>
-                          <div>
-                            <p className="text-sm font-medium text-[#FF7F50]">Add &quot;{gearSearch.trim()}&quot;</p>
-                            <p className="text-[10px] text-[#8f9097]">Custom equipment</p>
-                          </div>
-                        </button>
-                      )}
-                    </div>
-                  );
-                })()}
-                {gearSearch.length < 2 && scannedGear.length === 0 && (
-                  <p className="text-center text-[#8f9097] text-xs mt-3">Take a photo or search to add your equipment.</p>
-                )}
-              </div>
+                  {/* Custom add for this category */}
+                  {gearSearch.length >= 2 && (
+                    <button
+                      onClick={() => {
+                        setScannedGear(prev => [...prev, { name: gearSearch.trim(), brand: null, category: gearCategory!, confidence: 1 }]);
+                        setGearSearch('');
+                      }}
+                      className="w-full mt-2 p-3 rounded-xl flex items-center gap-3 text-left bg-[#FF7F50]/10 border border-[#FF7F50]/20 hover:border-[#FF7F50]/40 active:scale-[0.98] transition-all"
+                    >
+                      <span className="material-symbols-outlined text-sm text-[#FF7F50]">add_circle</span>
+                      <div>
+                        <p className="text-sm font-medium text-[#FF7F50]">Add &quot;{gearSearch.trim()}&quot;</p>
+                        <p className="text-[10px] text-[#8f9097]">Custom {gearCategory?.toLowerCase()}</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {scannedGear.length === 0 && !gearCategory && (
+                <p className="text-center text-[#8f9097] text-xs">Take a photo or pick a category to add your equipment.</p>
+              )}
             </>
           )}
 
@@ -1070,14 +1183,14 @@ export default function SetupWizard() {
               {/* OR divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-[#1c2a41]" />
-                <span className="text-[10px] font-bold text-[#8f9097] uppercase tracking-wider">or add from list</span>
+                <span className="text-[10px] font-bold text-[#8f9097] uppercase tracking-wider">or choose from list</span>
                 <div className="flex-1 h-px bg-[#1c2a41]" />
               </div>
 
               {/* Livestock Type Tabs */}
               <div className="flex gap-2">
                 {(['fish', 'coral', 'invertebrate'] as const).map(t => (
-                  <button key={t} onClick={() => { setLivestockTab(t); setLivestockSearch(''); }}
+                  <button key={t} onClick={() => { setLivestockTab(t); setLivestockSubcat(null); setLivestockSearch(''); }}
                     className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${livestockTab === t
                       ? 'bg-[#FF7F50]/15 border-2 border-[#FF7F50] text-white'
                       : 'bg-[#0d1c32] border-2 border-transparent text-[#8f9097]'}`}
@@ -1087,67 +1200,82 @@ export default function SetupWizard() {
                 ))}
               </div>
 
-              {/* Species Search */}
+              {/* Subcategory Pills or Species List */}
               <div>
-                <input
-                  type="text"
-                  value={livestockSearch}
-                  onChange={e => setLivestockSearch(e.target.value)}
-                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 text-sm"
-                  placeholder={`Search ${livestockTab}... (e.g., clownfish, torch coral)`}
-                />
-                {livestockSearch.length >= 2 && (
-                  <div className="mt-2 max-h-52 overflow-y-auto space-y-1.5">
-                    {speciesDb
-                      .filter(s => s.category?.toLowerCase() === livestockTab && (
-                        s.common_name?.toLowerCase().includes(livestockSearch.toLowerCase()) ||
-                        s.scientific_name?.toLowerCase().includes(livestockSearch.toLowerCase()) ||
-                        s.subcategory?.toLowerCase().includes(livestockSearch.toLowerCase())
-                      ))
-                      .slice(0, 15)
-                      .map(species => {
-                        const alreadyAdded = scannedLivestock.some(a => a.name === species.common_name);
+                {!livestockSubcat ? (
+                  <>
+                    {/* Show subcategory pills for the selected tab */}
+                    <div className="flex flex-wrap gap-2">
+                      {[...new Set(speciesDb.filter(s => s.category?.toLowerCase() === livestockTab).map(s => s.subcategory))].filter(Boolean).sort().map(sub => {
+                        const count = scannedLivestock.filter(a => a.category === sub).length;
                         return (
-                          <button key={species.common_name} disabled={alreadyAdded}
-                            onClick={() => {
-                              setScannedLivestock(prev => [...prev, {
-                                name: species.common_name,
-                                scientific_name: species.scientific_name,
-                                type: livestockTab,
-                                category: species.subcategory || livestockTab,
-                                confidence: 1,
-                                details: species.difficulty ? `Difficulty: ${species.difficulty}` : '',
-                              }]);
-                              setLivestockSearch('');
-                            }}
-                            className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded
-                              ? 'bg-[#2ff801]/10 border border-[#2ff801]/20'
-                              : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
-                          >
-                            <span className={`material-symbols-outlined text-sm ${alreadyAdded ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
-                              {alreadyAdded ? 'check_circle' : 'add_circle'}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-medium ${alreadyAdded ? 'text-[#2ff801]' : 'text-white'}`}>{species.common_name}</p>
-                              <p className="text-[10px] text-[#8f9097] truncate">
-                                <span className="italic">{species.scientific_name}</span>
-                                {species.subcategory && ` · ${species.subcategory}`}
-                                {species.difficulty && ` · ${species.difficulty}`}
-                              </p>
-                            </div>
+                          <button key={sub} onClick={() => setLivestockSubcat(sub)}
+                            className="bg-[#0d1c32] border border-[#1c2a41] hover:border-[#FF7F50]/40 rounded-xl px-4 py-2.5 text-center transition-all active:scale-[0.96]">
+                            <p className="text-white text-xs font-semibold">{sub}</p>
+                            {count > 0 && <p className="text-[9px] text-[#2ff801] font-bold">{count} added</p>}
                           </button>
                         );
                       })}
-                    {speciesDb.filter(s => s.category?.toLowerCase() === livestockTab && (
-                      s.common_name?.toLowerCase().includes(livestockSearch.toLowerCase()) ||
-                      s.scientific_name?.toLowerCase().includes(livestockSearch.toLowerCase())
-                    )).length === 0 && (
-                      <p className="text-center text-[#8f9097] text-xs py-2">No matches found. Try a different search or use the camera.</p>
+                    </div>
+                    {scannedLivestock.length === 0 && (
+                      <p className="text-center text-[#8f9097] text-xs mt-3">Pick a category above or take a photo to add your livestock.</p>
                     )}
-                  </div>
-                )}
-                {livestockSearch.length < 2 && scannedLivestock.length === 0 && (
-                  <p className="text-center text-[#8f9097] text-xs mt-3">Take a photo or search to add your livestock.</p>
+                  </>
+                ) : (
+                  <>
+                    {/* Back + Subcategory Header */}
+                    <button onClick={() => { setLivestockSubcat(null); setLivestockSearch(''); }}
+                      className="flex items-center gap-1 text-[#FF7F50] text-sm mb-3 hover:underline">
+                      <span className="material-symbols-outlined text-base">arrow_back</span> All {livestockTab === 'fish' ? 'Fish' : livestockTab === 'coral' ? 'Corals' : 'Invertebrates'}
+                    </button>
+
+                    {/* Filter within subcategory */}
+                    {speciesDb.filter(s => s.category?.toLowerCase() === livestockTab && s.subcategory === livestockSubcat).length > 8 && (
+                      <input
+                        type="text" value={livestockSearch} onChange={e => setLivestockSearch(e.target.value)}
+                        className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-2.5 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 text-sm mb-2"
+                        placeholder={`Filter ${livestockSubcat?.toLowerCase()}...`}
+                      />
+                    )}
+
+                    {/* Species List */}
+                    <div className="max-h-60 overflow-y-auto space-y-1.5">
+                      {speciesDb
+                        .filter(s => s.category?.toLowerCase() === livestockTab && s.subcategory === livestockSubcat)
+                        .filter(s => !livestockSearch || s.common_name?.toLowerCase().includes(livestockSearch.toLowerCase()) || s.scientific_name?.toLowerCase().includes(livestockSearch.toLowerCase()))
+                        .map(species => {
+                          const alreadyAdded = scannedLivestock.some(a => a.name === species.common_name);
+                          return (
+                            <button key={species.common_name} disabled={alreadyAdded}
+                              onClick={() => {
+                                setScannedLivestock(prev => [...prev, {
+                                  name: species.common_name,
+                                  scientific_name: species.scientific_name,
+                                  type: livestockTab,
+                                  category: species.subcategory || livestockTab,
+                                  confidence: 1,
+                                  details: species.difficulty ? `${species.difficulty} difficulty` : '',
+                                }]);
+                              }}
+                              className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded
+                                ? 'bg-[#2ff801]/10 border border-[#2ff801]/20'
+                                : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
+                            >
+                              <span className={`material-symbols-outlined text-sm ${alreadyAdded ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
+                                {alreadyAdded ? 'check_circle' : 'add_circle'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium ${alreadyAdded ? 'text-[#2ff801]' : 'text-white'}`}>{species.common_name}</p>
+                                <p className="text-[10px] text-[#8f9097] truncate">
+                                  <span className="italic">{species.scientific_name}</span>
+                                  {species.difficulty && ` · ${species.difficulty}`}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </>
                 )}
               </div>
             </>
