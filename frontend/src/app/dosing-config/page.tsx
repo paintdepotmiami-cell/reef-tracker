@@ -762,12 +762,12 @@ export default function DosingConfigPage() {
 
       {/* ═══ Add/Edit Channel Modal ═══ */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowAddModal(false); setEditingChannel(null); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { setShowAddModal(false); setEditingChannel(null); }}>
           <div
-            className="bg-[#0d1c32] rounded-t-3xl w-full max-w-lg p-6 space-y-4 max-h-[85vh] overflow-y-auto"
+            className="bg-[#0d1c32] rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[80vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between sticky top-0 bg-[#0d1c32] pb-2 -mt-2 pt-2 z-10">
+            <div className="flex items-center justify-between">
               <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-lg">
                 {editingChannel !== null ? `Edit Channel ${editingChannel + 1}` : 'Add Channel'}
               </h3>
@@ -862,16 +862,14 @@ export default function DosingConfigPage() {
               {fEnabled ? 'Channel Enabled' : 'Channel Disabled'}
             </button>
 
-            {/* Save — sticky at bottom */}
-            <div className="sticky bottom-0 bg-[#0d1c32] pt-2 pb-1">
-              <button
-                onClick={editingChannel !== null ? () => handleUpdateChannel(editingChannel) : handleAddChannel}
-                disabled={!fProduct.trim() || saving}
-                className="w-full bg-gradient-to-r from-[#FF7F50] to-[#d35e32] text-white font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] disabled:opacity-40 font-[family-name:var(--font-headline)] tracking-wide shadow-lg shadow-[#FF7F50]/25"
-              >
-                {saving ? 'Saving...' : editingChannel !== null ? 'Update Channel' : 'Add Channel'}
-              </button>
-            </div>
+            {/* Save */}
+            <button
+              onClick={editingChannel !== null ? () => handleUpdateChannel(editingChannel) : handleAddChannel}
+              disabled={!fProduct.trim() || saving}
+              className="w-full bg-gradient-to-r from-[#FF7F50] to-[#d35e32] text-white font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] disabled:opacity-40 font-[family-name:var(--font-headline)] tracking-wide shadow-lg shadow-[#FF7F50]/25"
+            >
+              {saving ? 'Saving...' : editingChannel !== null ? 'Update Channel' : 'Add Channel'}
+            </button>
           </div>
         </div>
       )}
