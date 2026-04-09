@@ -91,7 +91,7 @@ export default function LogsPage() {
         const newForm: Record<string, string> = {};
         const allKeys = [...PARAMS, ...EXTRA_PARAMS].map(p => p.key);
         for (const key of allKeys) {
-          if (params[key] != null && params[key] !== 0) {
+          if (params[key] != null) {
             newForm[key] = String(params[key]);
             detectedKeys.push(key);
           }
@@ -165,28 +165,33 @@ export default function LogsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    let photoUrl: string | null = null;
-    if (photos.length > 0) {
-      photoUrl = await uploadPhotos();
+    try {
+      let photoUrl: string | null = null;
+      if (photos.length > 0) {
+        photoUrl = await uploadPhotos();
+      }
+      const data: Record<string, number | string | null> = {
+        test_date: new Date().toISOString().split('T')[0],
+        user_id: user?.id || null,
+        tank_id: tank?.id || null,
+      };
+      if (photoUrl) data.photo_url = photoUrl;
+      [...PARAMS, ...EXTRA_PARAMS].forEach(p => {
+        if (form[p.key]) data[p.key] = parseFloat(form[p.key]);
+      });
+      const result = await createWaterTest(data as Partial<WaterTest>);
+      if (result) {
+        setTests(prev => [result, ...prev]);
+        setForm({});
+        clearAllPhotos();
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error('Save failed:', err);
+    } finally {
+      setSaving(false);
     }
-    const data: Record<string, number | string | null> = {
-      test_date: new Date().toISOString().split('T')[0],
-      user_id: user?.id || null,
-      tank_id: tank?.id || null,
-    };
-    if (photoUrl) data.photo_url = photoUrl;
-    [...PARAMS, ...EXTRA_PARAMS].forEach(p => {
-      if (form[p.key]) data[p.key] = parseFloat(form[p.key]);
-    });
-    const result = await createWaterTest(data as Partial<WaterTest>);
-    if (result) {
-      setTests(prev => [result, ...prev]);
-      setForm({});
-      clearAllPhotos();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }
-    setSaving(false);
   };
 
   const getStatus = (key: string, val: number | null) => {
