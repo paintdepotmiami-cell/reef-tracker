@@ -6,9 +6,9 @@ import { usePathname } from 'next/navigation';
 const tabs = [
   { href: '/', icon: 'home', label: 'Home', match: ['/'] },
   { href: '/param-center', icon: 'monitoring', label: 'Params', match: ['/param-center', '/logs', '/trends', '/alerts', '/dosing'] },
+  { href: '/livestock', icon: 'pets', label: 'Livestock', match: ['/livestock', '/library', '/acclimation'] },
   { href: '/planner', icon: 'view_in_ar', label: 'Planner', match: ['/planner'] },
-  { href: '/tools', icon: 'handyman', label: 'Tools', match: ['/tools', '/library', '/cycle', '/sos', '/articles', '/bioload', '/pest-id', '/videos', '/maintenance', '/power-outage', '/quarantine', '/bio-accelerator', '/volume-calc', '/sump-guide', '/stocking', '/diagnostics', '/feeding', '/flow', '/products'] },
-  { href: '/my-reef', icon: 'water_drop', label: 'My Reef', match: ['/my-reef', '/livestock', '/gear', '/profile'] },
+  { href: '/tools', icon: 'handyman', label: 'Tools', match: ['/tools', '/cycle', '/sos', '/articles', '/bioload', '/pest-id', '/videos', '/maintenance', '/power-outage', '/quarantine', '/bio-accelerator', '/volume-calc', '/sump-guide', '/stocking', '/diagnostics', '/feeding', '/flow', '/products', '/gear', '/profile'] },
 ];
 
 export default function BottomNav() {

@@ -22,6 +22,7 @@ export interface Animal {
   placement_zone: string | null;
   reef_safe: string | null;
   warnings: string[] | null;
+  qt_start_date: string | null;
   user_id: string | null;
   tank_id: string | null;
 }
@@ -231,6 +232,14 @@ export async function getAnimals(type?: string): Promise<Animal[]> {
   if (type) q = q.eq('type', type);
   const { data } = await q;
   return data || [];
+}
+
+export async function updateAnimal(id: string, updates: Partial<Animal>): Promise<void> {
+  await getSupabase().from('reef_animals').update(updates).eq('id', id);
+}
+
+export async function deleteAnimal(id: string): Promise<void> {
+  await getSupabase().from('reef_animals').delete().eq('id', id);
 }
 
 export async function getLatestTest(): Promise<WaterTest | null> {

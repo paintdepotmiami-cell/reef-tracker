@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { getAnimals, getSpecies } from '@/lib/queries';
+import Link from 'next/link';
+import { getAnimals, getSpecies, updateAnimal, deleteAnimal } from '@/lib/queries';
 import type { Animal, Species } from '@/lib/queries';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +26,14 @@ const BADGE_COLORS: Record<string, string> = {
   invertebrate: 'bg-[#ffb59c]/10 text-[#ffb59c]',
 };
 
+const CONDITION_META: Record<string, { label: string; color: string; icon: string; bg: string }> = {
+  healthy: { label: 'Healthy', color: '#2ff801', icon: 'check_circle', bg: 'bg-[#2ff801]' },
+  monitor: { label: 'Monitor', color: '#F1C40F', icon: 'visibility', bg: 'bg-[#F1C40F]' },
+  stressed: { label: 'Stressed', color: '#FF7F50', icon: 'warning', bg: 'bg-[#FF7F50]' },
+  quarantine: { label: 'In QT', color: '#4cd6fb', icon: 'local_hospital', bg: 'bg-[#4cd6fb]' },
+  dead: { label: 'Dead', color: '#ff4444', icon: 'skull', bg: 'bg-[#ff4444]' },
+};
+
 export default function LivestockPage() {
   const { user, tank } = useAuth();
   const [animals, setAnimals] = useState<Animal[]>(getCached<Animal[]>('animals') || []);
@@ -42,6 +51,16 @@ export default function LivestockPage() {
   const [addQty, setAddQty] = useState('1');
   const [adding, setAdding] = useState(false);
   const [addSuccess, setAddSuccess] = useState(false);
+
+  // Edit / Delete states
+  const [editingAnimal, setEditingAnimal] = useState<Animal | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editCondition, setEditCondition] = useState('healthy');
+  const [editNotes, setEditNotes] = useState('');
+  const [editQuantity, setEditQuantity] = useState(1);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -119,6 +138,43 @@ export default function LivestockPage() {
       }, 1500);
     }
     setAdding(false);
+  };
+
+  const openEdit = (animal: Animal) => {
+    setEditingAnimal(animal);
+    setEditName(animal.name);
+    setEditCondition(animal.condition || 'healthy');
+    setEditNotes(animal.care_notes || '');
+    setEditQuantity(animal.quantity || 1);
+    setShowEditModal(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingAnimal) return;
+    setSaving(true);
+    const updates: any = {
+      name: editName,
+      condition: editCondition,
+      care_notes: editNotes,
+      quantity: editQuantity,
+    };
+    if (editCondition === 'quarantine' && editingAnimal.condition !== 'quarantine') {
+      updates.qt_start_date = new Date().toISOString().split('T')[0];
+    }
+    if (editCondition !== 'quarantine') {
+      updates.qt_start_date = null;
+    }
+    await updateAnimal(editingAnimal.id, updates);
+    setAnimals(prev => prev.map(a => a.id === editingAnimal.id ? { ...a, ...updates } : a));
+    setShowEditModal(false);
+    setSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteAnimal(id);
+    setAnimals(prev => prev.filter(a => a.id !== id));
+    setConfirmDeleteId(null);
+    setSelected(null);
   };
 
   const filtered = animals
@@ -202,17 +258,24 @@ export default function LivestockPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#041329] via-transparent to-transparent opacity-80"></div>
               </div>
             )}
-            <div className="absolute top-4 right-4">
-              <div className={`backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1.5 border ${
-                a.condition === 'healthy'
-                  ? 'bg-[#2ff801]/15 border-[#2ff801]/20'
-                  : 'bg-[#93000a]/20 border-[#ffb4ab]/20'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${a.condition === 'healthy' ? 'bg-[#2ff801]' : 'bg-[#ffb4ab]'}`}></span>
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${a.condition === 'healthy' ? 'text-[#2ff801]' : 'text-[#ffb4ab]'}`}>
-                  {a.condition === 'healthy' ? 'Healthy' : 'Monitor'}
-                </span>
+            {a.condition === 'quarantine' && a.qt_start_date && (
+              <div className="absolute top-2 left-2 bg-[#4cd6fb]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 z-10">
+                <span className="material-symbols-outlined text-xs">timer</span>
+                {Math.max(0, 30 - Math.floor((Date.now() - new Date(a.qt_start_date).getTime()) / 86400000))}d left
               </div>
+            )}
+            <div className="absolute top-4 right-4">
+              {(() => {
+                const meta = CONDITION_META[a.condition] || CONDITION_META.healthy;
+                return (
+                  <div className="backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1.5 border" style={{ backgroundColor: `${meta.color}15`, borderColor: `${meta.color}33` }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: meta.color }}></span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: meta.color }}>
+                      {meta.label}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
             <div className={`${a.photo_ref ? 'absolute bottom-0 left-0 w-full' : ''} p-5`}>
               <div className="flex justify-between items-end">
@@ -226,6 +289,12 @@ export default function LivestockPage() {
                 <div className="p-2 rounded-full bg-[#27354c]/60 backdrop-blur-md">
                   <span className="material-symbols-outlined text-[#ffb59c] text-sm">visibility</span>
                 </div>
+              </div>
+              <div className="flex gap-1 mt-2">
+                <button onClick={(e) => { e.stopPropagation(); openEdit(a); }} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#1c2a41] text-[#c5c6cd] text-[10px] active:scale-95 transition-transform">
+                  <span className="material-symbols-outlined text-xs">edit</span>
+                  Edit
+                </button>
               </div>
             </div>
           </div>
@@ -249,9 +318,15 @@ export default function LivestockPage() {
                   {selected.subtype || selected.type}
                 </span>
                 {selected.quantity > 1 && <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-[#c5c6cd]">x{selected.quantity}</span>}
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selected.condition === 'healthy' ? 'bg-[#2ff801]/10 text-[#2ff801]' : 'bg-[#F1C40F]/10 text-[#F1C40F]'}`}>
-                  {selected.condition === 'healthy' ? 'Healthy' : 'Monitor'}
-                </span>
+                {(() => {
+                  const meta = CONDITION_META[selected.condition] || CONDITION_META.healthy;
+                  return (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1" style={{ backgroundColor: `${meta.color}1a`, color: meta.color }}>
+                      <span className="material-symbols-outlined text-xs">{meta.icon}</span>
+                      {meta.label}
+                    </span>
+                  );
+                })()}
                 {selected.difficulty && <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/5 text-[#c5c6cd]">{selected.difficulty}</span>}
               </div>
 
@@ -311,6 +386,15 @@ export default function LivestockPage() {
 
               {selected.description && <p className="text-sm text-[#c5c6cd] leading-relaxed">{selected.description}</p>}
               {selected.care_notes && <p className="text-sm text-[#c5c6cd] leading-relaxed">{selected.care_notes}</p>}
+              <div className="flex gap-2 mt-4">
+                <button onClick={() => { setSelected(null); openEdit(selected); }} className="flex-1 py-3 rounded-xl bg-[#1c2a41] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                  Edit
+                </button>
+                <button onClick={() => setConfirmDeleteId(selected.id)} className="py-3 px-5 rounded-xl bg-[#93000a]/20 text-[#ffb4ab] text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                </button>
+              </div>
               <button
                 onClick={() => setSelected(null)}
                 className="w-full py-3 bg-[#FF7F50]/10 text-[#FF7F50] rounded-xl hover:bg-[#FF7F50]/20 transition font-semibold cursor-pointer text-sm"
@@ -580,6 +664,163 @@ export default function LivestockPage() {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {showEditModal && editingAnimal && (
+        <div className="fixed inset-0 bg-black/85 z-[60] flex items-end justify-center" onClick={() => setShowEditModal(false)}>
+          <div className="bg-gradient-to-b from-[#112036] to-[#041329] rounded-t-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto border-t border-[#ffb59c]/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-6 space-y-5">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-[family-name:var(--font-headline)] font-bold text-white">Edit Animal</h2>
+                  <p className="text-xs text-[#c5c6cd] mt-0.5">{editingAnimal.species || editingAnimal.name}</p>
+                </div>
+                <button onClick={() => setShowEditModal(false)} className="w-8 h-8 rounded-full bg-[#1c2a41] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#c5c6cd] text-sm">close</span>
+                </button>
+              </div>
+
+              {/* Status Selector */}
+              <div>
+                <label className="font-[family-name:var(--font-headline)] text-[9px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-2">Status</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {Object.entries(CONDITION_META).map(([key, meta]) => (
+                    <button
+                      key={key}
+                      onClick={() => setEditCondition(key)}
+                      className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl text-center transition-all active:scale-95 ${
+                        editCondition === key
+                          ? 'ring-2 bg-opacity-20'
+                          : 'bg-[#0d1c32]'
+                      }`}
+                      style={editCondition === key ? { backgroundColor: `${meta.color}1a`, boxShadow: `0 0 0 2px ${meta.color}` } : {}}
+                    >
+                      <span className="material-symbols-outlined text-lg" style={{ color: meta.color }}>{meta.icon}</span>
+                      <span className="text-[9px] font-bold" style={{ color: editCondition === key ? meta.color : '#c5c6cd' }}>{meta.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Smart Alerts */}
+              {editCondition === 'dead' && (
+                <div className="bg-[#ff4444]/10 border border-[#ff4444]/20 rounded-xl p-3 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[#ff4444] text-lg mt-0.5">emergency</span>
+                  <div>
+                    <p className="text-[#ff4444] text-sm font-bold">Check Ammonia Now!</p>
+                    <p className="text-[#c5c6cd] text-xs">Decomposing tissue causes toxic ammonia spikes. Test NH3 immediately and do a water change if needed.</p>
+                    <Link href="/logs" className="text-[#FF7F50] text-xs font-bold mt-1 inline-block">Log Water Test &rarr;</Link>
+                  </div>
+                </div>
+              )}
+
+              {editCondition === 'stressed' && (
+                <div className="bg-[#FF7F50]/10 border border-[#FF7F50]/20 rounded-xl p-3 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[#FF7F50] text-lg mt-0.5">psychology</span>
+                  <div>
+                    <p className="text-[#FF7F50] text-sm font-bold">Something looks off?</p>
+                    <p className="text-[#c5c6cd] text-xs">Run a quick diagnosis to identify the issue.</p>
+                    <Link href="/diagnostics" className="text-[#FF7F50] text-xs font-bold mt-1 inline-block">Run Diagnostics &rarr;</Link>
+                  </div>
+                </div>
+              )}
+
+              {editCondition === 'quarantine' && (
+                <div className="bg-[#4cd6fb]/10 border border-[#4cd6fb]/20 rounded-xl p-3 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[#4cd6fb] text-lg mt-0.5">local_hospital</span>
+                  <div>
+                    <p className="text-[#4cd6fb] text-sm font-bold">Quarantine Mode</p>
+                    <p className="text-[#c5c6cd] text-xs">30-day prophylactic quarantine to prevent Ich, Velvet, and parasites from entering your display tank.</p>
+                    <Link href="/quarantine" className="text-[#4cd6fb] text-xs font-bold mt-1 inline-block">View QT Protocols &rarr;</Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Name */}
+              <div>
+                <label className="font-[family-name:var(--font-headline)] text-[9px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-1.5">Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="w-full bg-[#041329] border border-[#1c2a41] rounded-xl py-2.5 px-3 text-white text-sm focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent"
+                />
+              </div>
+
+              {/* Quantity */}
+              <div>
+                <label className="font-[family-name:var(--font-headline)] text-[9px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-1.5">Quantity</label>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setEditQuantity(Math.max(1, editQuantity - 1))}
+                    className="w-10 h-10 rounded-xl bg-[#1c2a41] flex items-center justify-center text-white active:scale-95 transition-transform"
+                  >
+                    <span className="material-symbols-outlined text-sm">remove</span>
+                  </button>
+                  <span className="text-white text-lg font-bold w-8 text-center">{editQuantity}</span>
+                  <button
+                    onClick={() => setEditQuantity(editQuantity + 1)}
+                    className="w-10 h-10 rounded-xl bg-[#1c2a41] flex items-center justify-center text-white active:scale-95 transition-transform"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="font-[family-name:var(--font-headline)] text-[9px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-1.5">Notes</label>
+                <textarea
+                  value={editNotes}
+                  onChange={e => setEditNotes(e.target.value)}
+                  rows={3}
+                  className="w-full bg-[#041329] border border-[#1c2a41] rounded-xl py-2.5 px-3 text-white text-sm focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent resize-none"
+                  placeholder="Care notes, observations..."
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 py-3 rounded-xl bg-[#1c2a41] text-[#c5c6cd] font-bold text-sm active:scale-95 transition-transform"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  disabled={saving}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white font-bold text-sm shadow-lg shadow-[#FF7F50]/20 active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Saving...</>
+                  ) : (
+                    <><span className="material-symbols-outlined text-sm">check</span> Save</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 bg-black/85 z-[70] flex items-center justify-center p-6" onClick={() => setConfirmDeleteId(null)}>
+          <div className="bg-[#112036] rounded-2xl p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <span className="material-symbols-outlined text-[#ff4444] text-4xl">delete_forever</span>
+              <h3 className="text-white text-lg font-bold mt-2">Remove Animal?</h3>
+              <p className="text-[#c5c6cd] text-sm mt-1">This will permanently remove this animal from your tank log.</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-3 rounded-xl bg-[#1c2a41] text-[#c5c6cd] font-bold text-sm active:scale-95 transition-transform">Cancel</button>
+              <button onClick={() => handleDelete(confirmDeleteId)} className="flex-1 py-3 rounded-xl bg-[#ff4444]/20 text-[#ff4444] font-bold text-sm active:scale-95 transition-transform">Remove</button>
             </div>
           </div>
         </div>

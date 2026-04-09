@@ -26,9 +26,9 @@ export default function TopBar() {
           <span className="material-symbols-outlined text-xl">notifications</span>
         </button>
         {profile && (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] flex items-center justify-center text-white text-xs font-bold">
+          <Link href="/profile" className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] flex items-center justify-center text-white text-xs font-bold active:scale-90 transition-transform">
             {(profile.display_name || '?')[0].toUpperCase()}
-          </div>
+          </Link>
         )}
       </div>
     </header>
