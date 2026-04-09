@@ -134,12 +134,20 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const err = await response.text();
-      console.error('Gemini API error:', err);
-      return NextResponse.json({ error: 'AI identification failed' }, { status: 502 });
+      console.error(`[identify] Gemini ${response.status}:`, err.slice(0, 500));
+      return NextResponse.json({ error: `AI identification failed (${response.status})`, detail: err.slice(0, 200) }, { status: 502 });
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Check for blocked/empty responses
+    if (!data.candidates || data.candidates.length === 0) {
+      console.error('[identify] No candidates returned:', JSON.stringify(data).slice(0, 500));
+      const blockReason = data.promptFeedback?.blockReason || 'unknown';
+      return NextResponse.json({ error: `AI returned no results (blocked: ${blockReason})` }, { status: 500 });
+    }
+
+    const text = data.candidates[0]?.content?.parts?.[0]?.text || '';
 
     // Parse JSON from response (handle potential markdown wrapping)
     const jsonMatch = text.match(/\{[\s\S]*\}/);

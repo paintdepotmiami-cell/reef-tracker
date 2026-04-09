@@ -379,27 +379,31 @@ export default function SetupWizard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: base64, context: 'equipment' }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.name && data.type !== 'unknown') {
-          const photoName = data.brand ? `${data.brand} ${data.name}` : data.name;
-          setScannedGear(prev => {
-            const existing = prev.findIndex(g => g.name === photoName);
-            if (existing >= 0) { const updated = [...prev]; updated[existing] = { ...updated[existing], qty: updated[existing].qty + 1 }; return updated; }
-            return [...prev, { name: photoName, brand: data.brand, category: data.category, confidence: data.confidence, qty: 1 }];
-          });
-          // Also mark in equipment checklist
-          setEquipment(prev => prev.map(eq => {
-            const cat = eq.category.toLowerCase();
-            const dataCat = (data.category || '').toLowerCase();
-            if (cat === dataCat || eq.name.toLowerCase().includes(dataCat)) {
-              return { ...eq, status: 'have' };
-            }
-            return eq;
-          }));
-        }
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Gear scan API error:', data);
+        setError(`Photo scan failed: ${data.error || res.statusText}. Try selecting from the category list below.`);
+      } else if (data.name && data.type !== 'unknown') {
+        const photoName = data.brand ? `${data.brand} ${data.name}` : data.name;
+        setScannedGear(prev => {
+          const existing = prev.findIndex(g => g.name === photoName);
+          if (existing >= 0) { const updated = [...prev]; updated[existing] = { ...updated[existing], qty: updated[existing].qty + 1 }; return updated; }
+          return [...prev, { name: photoName, brand: data.brand, category: data.category, confidence: data.confidence, qty: 1 }];
+        });
+        // Also mark in equipment checklist
+        setEquipment(prev => prev.map(eq => {
+          const cat = eq.category.toLowerCase();
+          const dataCat = (data.category || '').toLowerCase();
+          if (cat === dataCat || eq.name.toLowerCase().includes(dataCat)) {
+            return { ...eq, status: 'have' };
+          }
+          return eq;
+        }));
+        setError('');
+      } else {
+        setError('Could not identify this item. Try a closer photo or select from the categories below.');
       }
-    } catch (err) { console.error('Gear scan failed:', err); }
+    } catch (err) { console.error('Gear scan failed:', err); setError('Photo scan failed. Try selecting from the category list below.'); }
     finally { setScanningGear(false); e.target.value = ''; }
   };
 
