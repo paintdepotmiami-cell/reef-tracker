@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
-import { createEquipment, createMaintenanceTask, createWaterTest } from '@/lib/queries';
+import { createEquipment, createMaintenanceTask, createWaterTest, getSpecies } from '@/lib/queries';
 
 /* ── Step Definitions ─────────────────────────────────── */
 
@@ -214,6 +214,13 @@ export default function SetupWizard() {
   const [scanningLivestock, setScanningLivestock] = useState(false);
   const [scannedLivestock, setScannedLivestock] = useState<{ name: string; scientific_name: string | null; type: string; category: string; confidence: number; details: string }[]>([]);
 
+  // Species search for manual livestock add
+  const [speciesDb, setSpeciesDb] = useState<{ common_name: string; scientific_name: string; category: string; subcategory: string; difficulty: string }[]>([]);
+  const [livestockSearch, setLivestockSearch] = useState('');
+  const [livestockTab, setLivestockTab] = useState<'fish' | 'coral' | 'invertebrate'>('fish');
+  // Gear manual search
+  const [gearSearch, setGearSearch] = useState('');
+
   // Existing tank: Current parameters
   const [scanningParams, setScanningParams] = useState(false);
   const [params, setParams] = useState<Record<string, number | null>>({
@@ -221,6 +228,13 @@ export default function SetupWizard() {
     phosphate: null, ph: null, ammonia: null, nitrite: null,
     salinity: null, temperature: null,
   });
+
+  // Load species database for manual livestock selection
+  useEffect(() => {
+    if (tankStatus === 'existing') {
+      getSpecies().then(data => setSpeciesDb(data as typeof speciesDb));
+    }
+  }, [tankStatus]);
 
   // Step 5: Cycle (new tank only)
   const [startCycle, setStartCycle] = useState(false);
@@ -815,15 +829,53 @@ export default function SetupWizard() {
                 </div>
               )}
 
-              {/* Tip */}
-              <div className="bg-[#4cd6fb]/5 border border-[#4cd6fb]/20 rounded-xl p-3 flex items-start gap-2">
-                <span className="material-symbols-outlined text-[#4cd6fb] text-lg mt-0.5">tips_and_updates</span>
-                <p className="text-[11px] text-[#c5c6cd] leading-relaxed">Take one photo per piece of equipment for best results. You can also add gear manually later from the Equipment page.</p>
+              {/* OR divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-[#1c2a41]" />
+                <span className="text-[10px] font-bold text-[#8f9097] uppercase tracking-wider">or add from list</span>
+                <div className="flex-1 h-px bg-[#1c2a41]" />
               </div>
 
-              {scannedGear.length === 0 && (
-                <p className="text-center text-[#8f9097] text-xs">No equipment scanned yet. You can skip this step and add gear later.</p>
-              )}
+              {/* Manual Gear Search */}
+              <div>
+                <input
+                  type="text"
+                  value={gearSearch}
+                  onChange={e => setGearSearch(e.target.value)}
+                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 text-sm"
+                  placeholder="Search equipment... (skimmer, light, pump, etc.)"
+                />
+                {gearSearch.length >= 2 && (
+                  <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5">
+                    {INITIAL_EQUIPMENT
+                      .filter(e => e.name.toLowerCase().includes(gearSearch.toLowerCase()) || e.category.toLowerCase().includes(gearSearch.toLowerCase()))
+                      .map(item => {
+                        const alreadyAdded = scannedGear.some(g => g.name === item.name);
+                        return (
+                          <button key={item.name} disabled={alreadyAdded}
+                            onClick={() => {
+                              setScannedGear(prev => [...prev, { name: item.name, brand: null, category: item.category, confidence: 1 }]);
+                              setEquipment(prev => prev.map(eq => eq.name === item.name ? { ...eq, status: 'have' } : eq));
+                              setGearSearch('');
+                            }}
+                            className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded ? 'bg-[#2ff801]/10 border border-[#2ff801]/20' : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
+                          >
+                            <span className={`material-symbols-outlined text-sm ${alreadyAdded ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
+                              {alreadyAdded ? 'check_circle' : 'add_circle'}
+                            </span>
+                            <div>
+                              <p className={`text-sm font-medium ${alreadyAdded ? 'text-[#2ff801]' : 'text-white'}`}>{item.name}</p>
+                              <p className="text-[10px] text-[#8f9097]">{item.category}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+                {gearSearch.length < 2 && scannedGear.length === 0 && (
+                  <p className="text-center text-[#8f9097] text-xs mt-3">Take a photo or search to add your equipment.</p>
+                )}
+              </div>
             </>
           )}
 
@@ -958,14 +1010,89 @@ export default function SetupWizard() {
                 </div>
               )}
 
-              <div className="bg-[#FF7F50]/5 border border-[#FF7F50]/20 rounded-xl p-3 flex items-start gap-2">
-                <span className="material-symbols-outlined text-[#FF7F50] text-lg mt-0.5">tips_and_updates</span>
-                <p className="text-[11px] text-[#c5c6cd] leading-relaxed">One photo per animal works best. For corals, get a close-up. You can always add more from the Livestock page later.</p>
+              {/* OR divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-[#1c2a41]" />
+                <span className="text-[10px] font-bold text-[#8f9097] uppercase tracking-wider">or add from list</span>
+                <div className="flex-1 h-px bg-[#1c2a41]" />
               </div>
 
-              {scannedLivestock.length === 0 && (
-                <p className="text-center text-[#8f9097] text-xs">No livestock scanned yet. You can skip this step and add animals later.</p>
-              )}
+              {/* Livestock Type Tabs */}
+              <div className="flex gap-2">
+                {(['fish', 'coral', 'invertebrate'] as const).map(t => (
+                  <button key={t} onClick={() => { setLivestockTab(t); setLivestockSearch(''); }}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${livestockTab === t
+                      ? 'bg-[#FF7F50]/15 border-2 border-[#FF7F50] text-white'
+                      : 'bg-[#0d1c32] border-2 border-transparent text-[#8f9097]'}`}
+                  >
+                    {t === 'fish' ? '🐠 Fish' : t === 'coral' ? '🪸 Corals' : '🦐 Inverts'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Species Search */}
+              <div>
+                <input
+                  type="text"
+                  value={livestockSearch}
+                  onChange={e => setLivestockSearch(e.target.value)}
+                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 text-sm"
+                  placeholder={`Search ${livestockTab}... (e.g., clownfish, torch coral)`}
+                />
+                {livestockSearch.length >= 2 && (
+                  <div className="mt-2 max-h-52 overflow-y-auto space-y-1.5">
+                    {speciesDb
+                      .filter(s => s.category?.toLowerCase() === livestockTab && (
+                        s.common_name?.toLowerCase().includes(livestockSearch.toLowerCase()) ||
+                        s.scientific_name?.toLowerCase().includes(livestockSearch.toLowerCase()) ||
+                        s.subcategory?.toLowerCase().includes(livestockSearch.toLowerCase())
+                      ))
+                      .slice(0, 15)
+                      .map(species => {
+                        const alreadyAdded = scannedLivestock.some(a => a.name === species.common_name);
+                        return (
+                          <button key={species.common_name} disabled={alreadyAdded}
+                            onClick={() => {
+                              setScannedLivestock(prev => [...prev, {
+                                name: species.common_name,
+                                scientific_name: species.scientific_name,
+                                type: livestockTab,
+                                category: species.subcategory || livestockTab,
+                                confidence: 1,
+                                details: species.difficulty ? `Difficulty: ${species.difficulty}` : '',
+                              }]);
+                              setLivestockSearch('');
+                            }}
+                            className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded
+                              ? 'bg-[#2ff801]/10 border border-[#2ff801]/20'
+                              : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
+                          >
+                            <span className={`material-symbols-outlined text-sm ${alreadyAdded ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
+                              {alreadyAdded ? 'check_circle' : 'add_circle'}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-medium ${alreadyAdded ? 'text-[#2ff801]' : 'text-white'}`}>{species.common_name}</p>
+                              <p className="text-[10px] text-[#8f9097] truncate">
+                                <span className="italic">{species.scientific_name}</span>
+                                {species.subcategory && ` · ${species.subcategory}`}
+                                {species.difficulty && ` · ${species.difficulty}`}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    {speciesDb.filter(s => s.category?.toLowerCase() === livestockTab && (
+                      s.common_name?.toLowerCase().includes(livestockSearch.toLowerCase()) ||
+                      s.scientific_name?.toLowerCase().includes(livestockSearch.toLowerCase())
+                    )).length === 0 && (
+                      <p className="text-center text-[#8f9097] text-xs py-2">No matches found. Try a different search or use the camera.</p>
+                    )}
+                  </div>
+                )}
+                {livestockSearch.length < 2 && scannedLivestock.length === 0 && (
+                  <p className="text-center text-[#8f9097] text-xs mt-3">Take a photo or search to add your livestock.</p>
+                )}
+              </div>
             </>
           )}
 
