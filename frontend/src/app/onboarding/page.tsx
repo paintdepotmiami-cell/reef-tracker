@@ -17,6 +17,43 @@ const STEPS = [
   { title: 'Welcome to ReefOS', subtitle: 'You\'re ready to begin', icon: 'rocket_launch' },
 ];
 
+/* ── Commercial Tank Presets ──────────────────────────── */
+
+const COMMERCIAL_TANKS: { brand: string; models: { name: string; gallons: number }[] }[] = [
+  { brand: 'Red Sea', models: [
+    { name: 'Max Nano', gallons: 20 }, { name: 'Max E-170', gallons: 45 }, { name: 'Max E-260', gallons: 69 },
+    { name: 'Max E-370', gallons: 98 }, { name: 'Max S-400', gallons: 110 }, { name: 'Max S-500', gallons: 133 },
+    { name: 'Reefer 170', gallons: 43 }, { name: 'Reefer 250', gallons: 65 }, { name: 'Reefer 300', gallons: 80 },
+    { name: 'Reefer 350', gallons: 91 }, { name: 'Reefer 425 XL', gallons: 112 }, { name: 'Reefer 525 XL', gallons: 139 },
+    { name: 'Reefer 625 XXL', gallons: 164 }, { name: 'Reefer 750 XXL', gallons: 200 },
+    { name: 'Reefer Peninsula 500', gallons: 132 }, { name: 'Reefer Peninsula 650', gallons: 172 },
+  ]},
+  { brand: 'Waterbox', models: [
+    { name: 'Cube 10', gallons: 10 }, { name: 'Cube 15', gallons: 15 }, { name: 'Cube 20', gallons: 20 },
+    { name: 'AIO 16', gallons: 16 }, { name: 'AIO 25', gallons: 25 }, { name: 'AIO 35', gallons: 35 },
+    { name: 'Marine X 60.2', gallons: 60 }, { name: 'Marine X 90.3', gallons: 90 },
+    { name: 'Marine X 110.4', gallons: 110 }, { name: 'Marine X 150.5', gallons: 150 },
+    { name: 'Marine X 185.5', gallons: 185 }, { name: 'Marine X 220.6', gallons: 220 },
+    { name: 'Peninsula 25', gallons: 25 }, { name: 'Peninsula 65.4', gallons: 65 },
+  ]},
+  { brand: 'Innovative Marine', models: [
+    { name: 'Nuvo 10', gallons: 10 }, { name: 'Nuvo 20', gallons: 20 }, { name: 'Nuvo 40', gallons: 40 },
+    { name: 'Lagoon 25', gallons: 25 }, { name: 'Lagoon 50', gallons: 50 },
+    { name: 'EXT 30', gallons: 30 }, { name: 'EXT 50', gallons: 50 }, { name: 'EXT 75', gallons: 75 },
+    { name: 'EXT 100', gallons: 100 }, { name: 'EXT 150', gallons: 150 }, { name: 'EXT 200', gallons: 200 },
+  ]},
+  { brand: 'Coralife', models: [
+    { name: 'BioCube 16', gallons: 16 }, { name: 'BioCube 32', gallons: 32 },
+  ]},
+  { brand: 'Fluval', models: [
+    { name: 'Evo 5', gallons: 5 }, { name: 'Evo 13.5', gallons: 13 }, { name: 'Sea Evo 52', gallons: 52 },
+  ]},
+  { brand: 'JBJ', models: [
+    { name: 'Rimless Flat Panel 10', gallons: 10 }, { name: 'Rimless Flat Panel 25', gallons: 25 },
+    { name: 'Rimless Flat Panel 45', gallons: 45 }, { name: 'Rimless Flat Panel 65', gallons: 65 },
+  ]},
+];
+
 const TANK_TYPES = [
   { key: 'reef', label: 'Reef Tank', desc: 'SPS, LPS, soft corals', icon: 'waves' },
   { key: 'mixed', label: 'Mixed Reef', desc: 'Fish + corals balanced', icon: 'pets' },
@@ -73,7 +110,9 @@ const INITIAL_EQUIPMENT: EquipItem[] = [
   { name: 'Mixing Container + Pump', category: 'Water', why: 'Mix saltwater 24hrs before use — match temp and salinity', essential: true, status: 'need' },
   // Heating
   { name: 'Heater', category: 'Heating', why: 'Maintains 76-78°F — corals die at <72°F', essential: true, status: 'need' },
-  { name: 'Thermometer / Controller', category: 'Heating', why: 'Monitors temp — prevents heater malfunction from cooking livestock', essential: false, status: 'need' },
+  { name: 'Heater Controller', category: 'Heating', why: 'CRITICAL safety device. Heaters are the #1 equipment failure — they stick ON and cook your tank. An external controller (InkBird, Apex) cuts power if temp exceeds your setpoint. Non-negotiable for any reef.', essential: true, status: 'need' },
+  // Water Management
+  { name: 'Auto Top-Off (ATO)', category: 'Water Management', why: 'Automatically replenishes evaporated freshwater to maintain salinity. Essential for nano tanks (<30gal) where evaporation causes dangerous salinity swings within hours.', essential: false, status: 'need' },
   // Monitoring
   { name: 'Test Kits (Alk/Ca/Mg/NO3/PO4)', category: 'Monitoring', why: 'Weekly parameter testing is mandatory — Hanna Checkers or Salifert recommended', essential: true, status: 'need' },
 ];
@@ -139,6 +178,8 @@ export default function SetupWizard() {
   const [tankSize, setTankSize] = useState('');
   const [tankType, setTankType] = useState('mixed');
   const [sumpType, setSumpType] = useState('sump');
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [tankModel, setTankModel] = useState('');
 
   // Step 2: Profile
   const [experience, setExperience] = useState('beginner');
@@ -247,10 +288,16 @@ export default function SetupWizard() {
   };
   const back = () => { if (step > 0) setStep(step - 1); };
 
+  // Dynamic essential: ATO is essential for nano tanks (<30 gal)
+  const isNano = gallons > 0 && gallons < 30;
+  const adjustedEquipment = equipment.map(e =>
+    e.name === 'Auto Top-Off (ATO)' ? { ...e, essential: isNano ? true : e.essential } : e
+  );
+
   // Equipment stats
-  const haveCount = equipment.filter(e => e.status === 'have').length;
-  const needCount = equipment.filter(e => e.status === 'need').length;
-  const essentialMissing = equipment.filter(e => e.essential && e.status !== 'have').length;
+  const haveCount = adjustedEquipment.filter(e => e.status === 'have').length;
+  const needCount = adjustedEquipment.filter(e => e.status === 'need').length;
+  const essentialMissing = adjustedEquipment.filter(e => e.essential && e.status !== 'have').length;
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-between max-w-md mx-auto">
@@ -285,8 +332,56 @@ export default function SetupWizard() {
                   placeholder="e.g., Living Room Reef" autoFocus />
               </div>
 
+              {/* Commercial Tank Selector */}
               <div>
-                <label className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-2">Tank Size (gallons)</label>
+                <label className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-2">
+                  Commercial Tank <span className="text-[#8f9097]">• Optional</span>
+                </label>
+                <select
+                  value={selectedBrand}
+                  onChange={e => { setSelectedBrand(e.target.value); setTankModel(''); }}
+                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3.5 px-4 text-white focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent transition-all text-sm appearance-none"
+                >
+                  <option value="">Custom / DIY tank</option>
+                  {COMMERCIAL_TANKS.map(b => (
+                    <option key={b.brand} value={b.brand}>{b.brand}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedBrand && (
+                <div>
+                  <label className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-2">Model</label>
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {COMMERCIAL_TANKS.find(b => b.brand === selectedBrand)?.models.map(m => (
+                      <button key={m.name} onClick={() => {
+                        setTankModel(m.name);
+                        setTankSize(String(m.gallons));
+                        if (!tankName) setTankName(`${selectedBrand} ${m.name}`);
+                      }}
+                        className={`p-3 rounded-xl text-left transition-all ${tankModel === m.name
+                          ? 'bg-[#FF7F50]/15 border-2 border-[#FF7F50]'
+                          : 'bg-[#0d1c32] border-2 border-transparent hover:border-[#1c2a41]'}`}
+                      >
+                        <p className={`text-sm font-semibold ${tankModel === m.name ? 'text-white' : 'text-[#c5c6cd]'}`}>{m.name}</p>
+                        <p className="text-[10px] text-[#8f9097]">{m.gallons} gallons</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {tankModel && (
+                <div className="bg-[#2ff801]/5 border border-[#2ff801]/20 rounded-xl p-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#2ff801] text-lg">check_circle</span>
+                  <p className="text-[11px] text-[#c5c6cd]">Auto-filled: <strong className="text-white">{selectedBrand} {tankModel}</strong> — {tankSize} gallons</p>
+                </div>
+              )}
+
+              <div>
+                <label className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-2">
+                  Tank Size (gallons){tankModel && <span className="text-[#2ff801] ml-2">✓ Auto-filled</span>}
+                </label>
                 <input type="number" value={tankSize} onChange={e => setTankSize(e.target.value)}
                   className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3.5 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent transition-all text-sm"
                   placeholder="e.g., 40" />
@@ -477,9 +572,19 @@ export default function SetupWizard() {
                 </div>
               )}
 
+              {isNano && (
+                <div className="bg-[#F1C40F]/5 border border-[#F1C40F]/20 rounded-xl p-3 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[#F1C40F] text-lg mt-0.5">warning</span>
+                  <div>
+                    <p className="text-[#F1C40F] text-xs font-bold">Nano Tank: ATO is Essential</p>
+                    <p className="text-[#c5c6cd] text-[11px] mt-1 leading-relaxed">In tanks under 30 gallons, evaporation causes dangerous salinity swings within hours. An Auto Top-Off system is <strong className="text-white">mandatory</strong> to keep your livestock alive.</p>
+                  </div>
+                </div>
+              )}
+
               {/* Equipment List */}
-              {['Core', 'Filtration', 'Circulation', 'Lighting', 'Water', 'Heating', 'Monitoring'].map(cat => {
-                const items = equipment.filter(e => e.category === cat);
+              {['Core', 'Filtration', 'Circulation', 'Lighting', 'Water', 'Heating', 'Water Management', 'Monitoring'].map(cat => {
+                const items = adjustedEquipment.filter(e => e.category === cat);
                 if (items.length === 0) return null;
                 return (
                   <div key={cat}>
@@ -530,11 +635,11 @@ export default function SetupWizard() {
             <>
               <div className="bg-[#0d1c32] rounded-2xl p-5 space-y-5 border border-[#1c2a41]">
                 {[
-                  { num: 1, icon: 'water_drop', title: 'Fill with RO/DI Water FIRST', desc: 'Fill the tank with purified freshwater ONLY. Aerate with a powerhead for 30 minutes to release trapped gases before adding salt. TDS meter should read 0. Never use tap water.', color: '#4cd6fb' },
-                  { num: 2, icon: 'science', title: 'Dissolve Salt Slowly', desc: `For ${gallons || 40} gallons: approximately ${Math.round((gallons || 40) * 0.5)} cups of salt mix. Add salt gradually while the pump circulates. Target: 35 ppt (1.026 SG). Verify with refractometer as you go.`, color: '#FF7F50' },
-                  { num: 3, icon: 'autorenew', title: 'Mix & Heat for 24 Hours', desc: 'Set heater to 77°F and let the pump circulate overnight. This fully dissolves salt and stabilizes temperature. Turn on ALL equipment (skimmer, return pump, wavemakers) to verify flow and check for leaks.', color: '#F1C40F' },
-                  { num: 4, icon: 'landscape', title: 'Aquascape: Rock FIRST, Sand LATER', desc: 'Place live rock directly on the glass bottom to create caves and overhangs. Do NOT put sand first — fish dig and can topple rocks. Pro tip: you can add sand after 4-6 weeks to avoid trapping detritus during the cycling phase.', color: '#c5a3ff' },
-                  { num: 5, icon: 'straighten', title: 'Verify Parameters', desc: 'Measure salinity (1.025-1.026), temperature (76-78°F), and pH (8.0-8.4). Everything must be stable before starting the nitrogen cycle.', color: '#2ff801' },
+                  { num: 1, icon: 'water_drop', title: 'Fill with RO/DI Water', desc: 'Fill the tank with purified freshwater ONLY. TDS meter should read 0. Never use tap water — it contains phosphates, silicates, chlorine, and heavy metals.', color: '#4cd6fb' },
+                  { num: 2, icon: 'autorenew', title: 'Aerate for 24 Hours BEFORE Adding Salt', desc: 'Run a powerhead and heater (set to 77°F) in the freshwater for 24 hours. This oxygenates the water, stabilizes pH, and releases trapped gases. Adding salt to unaerated RO/DI can cause elements to precipitate due to pH shock.', color: '#F1C40F' },
+                  { num: 3, icon: 'science', title: 'THEN Dissolve Salt Slowly', desc: `For ${gallons || 40} gallons: approximately ${Math.round((gallons || 40) * 0.5)} cups of salt mix. Add salt gradually while the pump circulates. Target: 35 ppt (1.026 SG). Verify with refractometer as you go. Let mix for another 24 hours.`, color: '#FF7F50' },
+                  { num: 4, icon: 'landscape', title: 'Aquascape: Rock FIRST, Sand LATER', desc: 'Place live rock directly on the glass bottom to create caves and overhangs. Do NOT put sand first — fish dig and can topple rocks. Pro tip: add sand after 4-6 weeks to avoid trapping detritus during the cycling phase.', color: '#c5a3ff' },
+                  { num: 5, icon: 'straighten', title: 'Verify Parameters & Equipment', desc: 'Measure salinity (1.025-1.026), temperature (76-78°F), and pH (8.0-8.4). Turn on ALL equipment (skimmer, return pump, wavemakers) to verify flow and check for leaks. Everything must be stable before starting the nitrogen cycle.', color: '#2ff801' },
                 ].map(s => (
                   <div key={s.num} className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${s.color}15` }}>
@@ -618,6 +723,17 @@ export default function SetupWizard() {
                       <span className="material-symbols-outlined text-[#2ff801] text-sm">check</span> {p}
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Lights OFF Warning */}
+              <div className="bg-[#93000a]/10 border-2 border-[#ffb4ab]/30 rounded-xl p-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#ffb4ab]/15 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[#ffb4ab] text-xl">lightbulb</span>
+                </div>
+                <div>
+                  <p className="text-[#ffb4ab] font-bold text-sm">Keep Your Lights OFF During Cycling</p>
+                  <p className="text-[#c5c6cd] text-xs mt-1 leading-relaxed">During the first 4-6 weeks, lights do <strong className="text-white">nothing</strong> for beneficial bacteria — but they DO trigger explosive algae blooms (green hair algae, cyanobacteria, diatoms). Keep the tank dark until ammonia and nitrite read zero. Your patience here prevents the #1 beginner frustration.</p>
                 </div>
               </div>
 
