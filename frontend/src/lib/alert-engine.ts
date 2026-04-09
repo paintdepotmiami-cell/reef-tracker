@@ -195,9 +195,112 @@ export function generateChemistryAlerts(tests: WaterTest[]): ReefAlert[] {
     });
   }
 
+  // ── High Alkalinity > 11 dKH (dangerous for SPS) ──
+  if (alk > 11) {
+    alerts.push({
+      id: `alk-high-${now}`,
+      severity: alk > 12 ? 'warning' : 'info',
+      category: 'chemistry',
+      title: 'High Alkalinity',
+      message: `Alkalinity at ${alk} dKH (target: 8-10). High Alk causes burnt tips and tissue necrosis in SPS corals.`,
+      action: 'Reduce or pause alkalinity dosing. Let coral consumption bring it down naturally over 2-3 days. Do NOT try to crash it with water changes — rapid drops are worse than high levels.',
+      icon: 'trending_up',
+      color: '#FF7F50',
+      param: 'alkalinity',
+      value: alk,
+      threshold: 11,
+      linkTo: '/dosing',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
+
+  // ── Low Calcium < 380 ppm ──
+  const ca = latest.calcium ?? 0;
+  if (ca > 0 && ca < 380) {
+    alerts.push({
+      id: `ca-low-${now}`,
+      severity: ca < 350 ? 'warning' : 'info',
+      category: 'chemistry',
+      title: 'Low Calcium',
+      message: `Calcium at ${ca} ppm (target: 420-450). Corals need calcium to build skeletons — growth stalls below 380 ppm.`,
+      action: 'Dose BRS Calcium Chloride or equivalent. Check Magnesium first — low Mg prevents Ca from holding. Dose Ca and Alk in balance.',
+      icon: 'trending_down',
+      color: ca < 350 ? '#FF7F50' : '#F1C40F',
+      param: 'calcium',
+      value: ca,
+      threshold: 380,
+      linkTo: '/dosing',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
+
+  // ── Low Magnesium < 1200 ppm ──
+  const mg = latest.magnesium ?? 0;
+  if (mg > 0 && mg < 1200) {
+    alerts.push({
+      id: `mg-low-${now}`,
+      severity: mg < 1100 ? 'warning' : 'info',
+      category: 'chemistry',
+      title: 'Low Magnesium',
+      message: `Magnesium at ${mg} ppm (target: 1300-1400). Low Mg causes spontaneous calcium carbonate precipitation — Ca and Alk won't hold.`,
+      action: 'Dose Magnesium FIRST before adjusting Ca or Alk. BRS Magnesium is the standard. Mg can be raised more aggressively (50 ppm/day) than Ca or Alk.',
+      icon: 'trending_down',
+      color: mg < 1100 ? '#FF7F50' : '#F1C40F',
+      param: 'magnesium',
+      value: mg,
+      threshold: 1200,
+      linkTo: '/dosing',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
+
+  // ── High pH > 8.5 (Kalkwasser overdose risk) ──
+  if (ph > 8.5) {
+    alerts.push({
+      id: `ph-high-${now}`,
+      severity: ph > 8.6 ? 'critical' : 'warning',
+      category: 'chemistry',
+      title: 'High pH',
+      message: `pH at ${ph} (target: 8.0-8.3). pH above 8.5 stresses livestock. Above 8.6 can be lethal.`,
+      action: 'If using Kalkwasser, reduce concentration or slow ATO drip rate. Check if CO₂ scrubber is removing too much CO₂. Verify pH probe calibration.',
+      icon: 'thermostat',
+      color: ph > 8.6 ? '#ff4444' : '#FF7F50',
+      param: 'ph',
+      value: ph,
+      threshold: 8.5,
+      linkTo: '/dosing',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
+
+  // ── Low Salinity < 1.022 (ATO malfunction flooding) ──
+  if (salinity > 0 && salinity < 1.022) {
+    alerts.push({
+      id: `sal-low-${now}`,
+      severity: salinity < 1.020 ? 'critical' : 'warning',
+      category: 'salinity',
+      title: 'Low Salinity',
+      message: `Salinity at ${salinity} (target: 1.024-1.026). Low salinity can indicate ATO stuck ON, flooding the tank with fresh water.`,
+      action: 'Check ATO immediately — a stuck float switch can flood your tank with RODI. If salinity dropped suddenly, raise it slowly (no more than 0.002 per hour) by adding saltwater.',
+      icon: 'water_drop',
+      color: salinity < 1.020 ? '#ff4444' : '#FF7F50',
+      param: 'salinity',
+      value: salinity,
+      threshold: 1.022,
+      linkTo: '/trends',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
+
   // ── OTS: Dinoflagellate Trap (NO₃ = 0 AND PO₄ = 0) ──
-  const no3 = latest.nitrate ?? -1;
-  if (no3 === 0 && po4 === 0) {
+  // Both values must be explicitly tested (not null) to avoid false positives
+  const no3 = latest.nitrate;
+  if (no3 !== null && no3 !== undefined && no3 === 0 && latest.phosphate !== null && latest.phosphate !== undefined && latest.phosphate === 0) {
     alerts.push({
       id: `dino-trap-${now}`,
       severity: 'critical',
@@ -250,6 +353,11 @@ export function generateMaintenanceAlerts(config: {
   lastRefugiumPrune: Date | null;
   lastPumpClean: Date | null;
   lastFilterChange: Date | null;
+  lastProbeCal: Date | null;
+  lastTubeInspect: Date | null;
+  lastHeaterCheck: Date | null;
+  lastCoralAudit: Date | null;
+  tankAgeMonths?: number;
 }): ReefAlert[] {
   const alerts: ReefAlert[] = [];
   const now = Date.now();
@@ -267,7 +375,7 @@ export function generateMaintenanceAlerts(config: {
         severity: 'reminder',
         category: 'refugium',
         title: 'Time to Prune Macroalgae',
-        message: daysSincePrune > 999
+        message: daysSincePrune >= 999
           ? 'Monthly reminder: harvest your refugium macroalgae.'
           : `Last pruned ${daysSincePrune} days ago.`,
         action: 'Remove 30-50% of the Chaetomorpha from your sump refugium. This physically exports nitrates and phosphates from your system. Don\'t remove it all — leave enough to keep growing.',
@@ -291,7 +399,7 @@ export function generateMaintenanceAlerts(config: {
       severity: 'reminder',
       category: 'hardware',
       title: 'Quarterly Hardware Cleaning',
-      message: daysSincePumpClean > 999
+      message: daysSincePumpClean >= 999
         ? 'Quarterly reminder: clean your pumps and powerheads.'
         : `Last cleaned ${daysSincePumpClean} days ago.`,
       action: 'Soak your return pump and wave makers in citric acid or white vinegar for 2-4 hours to dissolve calcium deposits. This prevents burnout and maintains flow. Rinse thoroughly in RODI water before reinstalling.',
@@ -314,7 +422,7 @@ export function generateMaintenanceAlerts(config: {
       severity: 'info',
       category: 'maintenance',
       title: 'Filter Sock Check',
-      message: daysSinceFilter > 999
+      message: daysSinceFilter >= 999
         ? 'Regular reminder: check and replace your filter socks.'
         : `Last changed ${daysSinceFilter} days ago.`,
       action: 'Dirty filter socks become nitrate factories. Replace or wash every 3-5 days for optimal water quality.',
@@ -326,65 +434,100 @@ export function generateMaintenanceAlerts(config: {
     });
   }
 
-  // ── OTS: Probe Calibration (monthly) ──
-  alerts.push({
-    id: `probe-cal-${now}`,
-    severity: 'reminder',
-    category: 'hardware',
-    title: 'Monthly Probe Calibration',
-    message: 'pH and KH electronic probes drift over time. Uncalibrated probes feed wrong data to dosing pumps and calcium reactors, causing cascading errors.',
-    action: 'Calibrate pH probe with 7.0 and 10.0 buffer solutions. Clean the probe tip with soft brush. For Hanna checkers, verify with reference solution. Calibrate refractometer with 35ppt calibration fluid (NOT RO/DI water).',
-    icon: 'tune',
-    color: '#c5a3ff',
-    linkTo: '/maintenance',
-    timestamp: now,
-    dismissible: true,
-  });
+  // ── OTS: Probe Calibration (monthly — 30 days) ──
+  const daysSinceProbeCal = config.lastProbeCal
+    ? Math.floor((now - config.lastProbeCal.getTime()) / dayMs)
+    : 999;
 
-  // ── OTS: Dosing Tube Inspection (every 6 months) ──
-  alerts.push({
-    id: `dosing-tube-${now}`,
-    severity: 'reminder',
-    category: 'hardware',
-    title: 'Inspect Dosing Tubes',
-    message: 'Calcium and alkalinity solutions crystallize inside dosing tubes over 6-12 months, reducing flow rate. Your pump thinks it\'s dosing 50mL but may only deliver 30mL.',
-    action: 'Remove dosing tubes and inspect for white calcium deposits. Replace tubes if clogged. Soak in vinegar to dissolve buildup. Check tube connections for leaks.',
-    icon: 'plumbing',
-    color: '#F1C40F',
-    linkTo: '/maintenance',
-    timestamp: now,
-    dismissible: true,
-  });
+  if (daysSinceProbeCal >= 30) {
+    alerts.push({
+      id: `probe-cal-${now}`,
+      severity: 'reminder',
+      category: 'hardware',
+      title: 'Monthly Probe Calibration',
+      message: daysSinceProbeCal >= 999
+        ? 'Monthly reminder: calibrate your probes and testers.'
+        : `Last calibrated ${daysSinceProbeCal} days ago.`,
+      action: 'Calibrate pH probe with 7.0 and 10.0 buffer solutions. Clean the probe tip with soft brush. For Hanna checkers, verify with reference solution. Calibrate refractometer with 35ppt calibration fluid (NOT RO/DI water).',
+      icon: 'tune',
+      color: '#c5a3ff',
+      linkTo: '/maintenance',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
 
-  // ── OTS: Heater Controller Warning ──
-  alerts.push({
-    id: `heater-warn-${now}`,
-    severity: 'reminder',
-    category: 'hardware',
-    title: 'Heater Safety Check',
-    message: 'The heater is the most dangerous equipment in your tank. When heaters fail, they fail ON — cooking the entire tank. An external controller is the #1 life insurance for your reef.',
-    action: 'Verify your heater controller (Inkbird/Neptune) is working. Test by lowering the setpoint — the relay should click OFF. If you don\'t have a controller, this is the single most important purchase you can make.',
-    icon: 'local_fire_department',
-    color: '#ff4444',
-    linkTo: '/gear',
-    timestamp: now,
-    dismissible: true,
-  });
+  // ── OTS: Dosing Tube Inspection (every 180 days) ──
+  const daysSinceTubeInspect = config.lastTubeInspect
+    ? Math.floor((now - config.lastTubeInspect.getTime()) / dayMs)
+    : 999;
 
-  // ── OTS: Coral Pruning / Shadow Check (annual for tanks > 2 years) ──
-  alerts.push({
-    id: `coral-prune-${now}`,
-    severity: 'info',
-    category: 'maintenance',
-    title: 'Annual Coral Shadow Audit',
-    message: 'As colonies grow, upper corals (especially Acropora and branching LPS) create shadow zones that starve lower corals of light, causing tissue necrosis from the base up.',
-    action: 'Inspect your aquascape from below with a flashlight. Frag (prune) any colony whose shadow covers other corals. Consider adding a supplemental side-mount LED bar to wrap light around the structure.',
-    icon: 'content_cut',
-    color: '#2ff801',
-    linkTo: '/maintenance',
-    timestamp: now,
-    dismissible: true,
-  });
+  if (daysSinceTubeInspect >= 180) {
+    alerts.push({
+      id: `dosing-tube-${now}`,
+      severity: 'reminder',
+      category: 'hardware',
+      title: 'Inspect Dosing Tubes',
+      message: daysSinceTubeInspect >= 999
+        ? 'Reminder: inspect dosing tubes for crystallization.'
+        : `Last inspected ${daysSinceTubeInspect} days ago.`,
+      action: 'Remove dosing tubes and inspect for white calcium deposits. Replace tubes if clogged. Soak in vinegar to dissolve buildup. Check tube connections for leaks.',
+      icon: 'plumbing',
+      color: '#F1C40F',
+      linkTo: '/maintenance',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
+
+  // ── OTS: Heater Controller Check (every 90 days) ──
+  const daysSinceHeaterCheck = config.lastHeaterCheck
+    ? Math.floor((now - config.lastHeaterCheck.getTime()) / dayMs)
+    : 999;
+
+  if (daysSinceHeaterCheck >= 90) {
+    alerts.push({
+      id: `heater-warn-${now}`,
+      severity: 'reminder',
+      category: 'hardware',
+      title: 'Heater Safety Check',
+      message: daysSinceHeaterCheck >= 999
+        ? 'Quarterly reminder: test your heater controller.'
+        : `Last checked ${daysSinceHeaterCheck} days ago.`,
+      action: 'Verify your heater controller (Inkbird/Neptune) is working. Test by lowering the setpoint — the relay should click OFF. If you don\'t have a controller, this is the single most important purchase you can make.',
+      icon: 'local_fire_department',
+      color: '#ff4444',
+      linkTo: '/gear',
+      timestamp: now,
+      dismissible: true,
+    });
+  }
+
+  // ── OTS: Coral Pruning / Shadow Check (annual, only for tanks > 12 months old) ──
+  const tankAge = config.tankAgeMonths ?? 0;
+  if (tankAge >= 12) {
+    const daysSinceCoralAudit = config.lastCoralAudit
+      ? Math.floor((now - config.lastCoralAudit.getTime()) / dayMs)
+      : 999;
+
+    if (daysSinceCoralAudit >= 365) {
+      alerts.push({
+        id: `coral-prune-${now}`,
+        severity: 'info',
+        category: 'maintenance',
+        title: 'Annual Coral Shadow Audit',
+        message: daysSinceCoralAudit >= 999
+          ? 'Annual reminder: check for shadow zones in your aquascape.'
+          : `Last audited ${daysSinceCoralAudit} days ago.`,
+        action: 'Inspect your aquascape from below with a flashlight. Frag (prune) any colony whose shadow covers other corals. Consider adding a supplemental side-mount LED bar to wrap light around the structure.',
+        icon: 'content_cut',
+        color: '#2ff801',
+        linkTo: '/maintenance',
+        timestamp: now,
+        dismissible: true,
+      });
+    }
+  }
 
   return alerts;
 }
@@ -399,6 +542,11 @@ export function generateAllAlerts(
     lastRefugiumPrune: Date | null;
     lastPumpClean: Date | null;
     lastFilterChange: Date | null;
+    lastProbeCal: Date | null;
+    lastTubeInspect: Date | null;
+    lastHeaterCheck: Date | null;
+    lastCoralAudit: Date | null;
+    tankAgeMonths?: number;
   }
 ): ReefAlert[] {
   const chemAlerts = generateChemistryAlerts(tests);

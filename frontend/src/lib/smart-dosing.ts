@@ -71,7 +71,7 @@ export interface TankContext {
   hasSPS: boolean;
   hasLPS: boolean;
   hasATO: boolean;
-  hasDosingSPump: boolean;
+  hasDosingPump: boolean;
   currentAlk: number | null;
   currentCa: number | null;
   currentMg: number | null;
@@ -112,7 +112,7 @@ function getMethodAdvice(
         ? 'Calcium Chloride solution is the safest way to raise Ca. Pair with equal Alk dosing to maintain balance.'
         : 'MgCl2/MgSO4 mix raises Mg safely. Mg can be dosed more aggressively than Ca/Alk.',
     warnings: ballingWarnings,
-    schedule: ctx.hasDosingSPump
+    schedule: ctx.hasDosingPump
       ? 'Dosing pump: split daily dose into 4-6 micro-doses throughout the day'
       : param === 'Alkalinity'
         ? 'Manual: dose once daily at night (before lights out)'
@@ -197,6 +197,11 @@ export function calculateSmartDosing(
   target: number,
   ctx: TankContext,
 ): SmartDosingResult {
+  // Guard against NaN/null slipping through at runtime
+  if (isNaN(current) || isNaN(target)) {
+    current = current || 0;
+    target = target || 0;
+  }
   const deficit = target - current;
   const lowerParam = param.toLowerCase();
 
@@ -242,9 +247,12 @@ export function calculateSmartDosing(
   let splitDoses = false;
   let daysToComplete = 1;
 
-  if (lowerParam === 'alkalinity') {
+  // Skip dose calculation when at or above target
+  if (deficit <= 0) {
+    frequency = 'No dosing needed — levels are at or above target.';
+  } else if (lowerParam === 'alkalinity') {
     product = 'Soda Ash Solution (Sodium Carbonate)';
-    // BRS 2-Part: 1 mL per gallon raises ~1 dKH in 4 gallons
+    // BRS 2-Part concentrated liquid: 1 mL per gallon raises ~1 dKH in 4 gallons
     doseAmount = (deficit * ctx.gallons) / 4;
     if (deficit > 1) {
       splitDoses = true;
@@ -255,6 +263,7 @@ export function calculateSmartDosing(
     }
   } else if (lowerParam === 'calcium') {
     product = 'Calcium Chloride Solution';
+    // BRS concentrated CaCl2 solution (standard recipe ~473g/gal): ~1 mL per gallon raises Ca by ~1 ppm in 20 gallons
     doseAmount = (deficit * ctx.gallons) / 20;
     if (deficit > 20) {
       splitDoses = true;
@@ -300,7 +309,7 @@ export function calculateSmartDosing(
       // Levels are good AND auto-dosing → pump is dialed in correctly
       autoDosingNote = `✅ Auto-dosing ${currentAutoDose.ml_per_day} mL/day of ${currentAutoDose.product} — levels look good. Pump is dialed in.`;
     }
-  } else if (deficit > 0 && ctx.hasDosingSPump) {
+  } else if (deficit > 0 && ctx.hasDosingPump) {
     // Has a pump but NOT dosing this parameter → suggest setting it up
     autoDosingNote = `💡 You have a dosing pump but ${param} isn't configured for auto-dosing. Set up a channel with ~${Math.round(doseAmount / Math.max(daysToComplete, 1))} mL/day to maintain stable levels.`;
   }
@@ -338,7 +347,7 @@ export function calculateSmartDosing(
 
   // ── OTS: Ionic Drift Warning (applies to all 2-Part dosing) ──
   tips.push('🧪 Ionic Drift: Every dose of 2-Part (Balling) produces NaCl as a byproduct. Over months, sodium and chloride accumulate, displacing trace elements (Sr, B, I, Fe). Water changes are NOT just for nutrient export — they are an "ionic reset" that restores natural seawater proportions.');
-  if (ctx.hasDosingSPump) {
+  if (ctx.hasDosingPump) {
     tips.push('💡 With automated dosing, it\'s easy to forget water changes. But with 2-Part, regular 10-15% weekly water changes are ESSENTIAL to flush accumulated NaCl. No water change = ionic drift → mysterious coral decline.');
   }
 
@@ -357,6 +366,14 @@ export function calculateSmartDosing(
   // OTS: Mg too HIGH — possible overdosing or salt mix issue
   if (ctx.currentMg !== null && ctx.currentMg > 1500) {
     crossWarnings.push(`Mg is elevated (${ctx.currentMg} ppm). While high Mg is less dangerous than low, check your salt mix brand — some run high on Mg. A water change with a balanced salt mix will normalize it.`);
+  }
+  // HIGH Alk warning — dangerous for SPS (burnt tips, tissue necrosis)
+  if (ctx.currentAlk !== null && ctx.currentAlk > 11) {
+    crossWarnings.push(`⚠️ Alkalinity is high (${ctx.currentAlk} dKH). High Alk (>11) causes burnt tips and tissue necrosis in SPS. Reduce or pause Alk dosing and let consumption bring it down naturally. Do NOT try to lower it with water changes — rapid drops are worse.`);
+  }
+  // HIGH Ca warning
+  if (ctx.currentCa !== null && ctx.currentCa > 500) {
+    crossWarnings.push(`Calcium is elevated (${ctx.currentCa} ppm). High Ca (>500) increases risk of abiotic precipitation, especially with high Alk. Reduce Ca dosing.`);
   }
 
   return {

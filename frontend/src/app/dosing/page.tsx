@@ -142,7 +142,7 @@ export default function DosingPage() {
       hasSPS: true,
       hasLPS: true,
       hasATO: true,
-      hasDosingSPump: autoDosing.length > 0,
+      hasDosingPump: autoDosing.length > 0,
       currentAlk: values['Alkalinity']?.current ? parseFloat(values['Alkalinity'].current) : null,
       currentCa: values['Calcium']?.current ? parseFloat(values['Calcium'].current) : null,
       currentMg: values['Magnesium']?.current ? parseFloat(values['Magnesium'].current) : null,

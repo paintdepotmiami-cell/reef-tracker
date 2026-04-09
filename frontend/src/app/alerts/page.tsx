@@ -45,6 +45,10 @@ export default function AlertsPage() {
       lastRefugiumPrune: null,  // No data yet — will trigger reminder
       lastPumpClean: null,
       lastFilterChange: null,
+      lastProbeCal: null,
+      lastTubeInspect: null,
+      lastHeaterCheck: null,
+      lastCoralAudit: null,
     });
   }, [tests]);
 
