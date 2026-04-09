@@ -242,6 +242,14 @@ export async function deleteAnimal(id: string): Promise<void> {
   await getSupabase().from('reef_animals').delete().eq('id', id);
 }
 
+export async function updateProfile(userId: string, updates: Record<string, unknown>): Promise<void> {
+  await getSupabase().from('reef_profiles').update(updates).eq('id', userId);
+}
+
+export async function updateTank(tankId: string, updates: Record<string, unknown>): Promise<void> {
+  await getSupabase().from('reef_tanks').update(updates).eq('id', tankId);
+}
+
 export async function getLatestTest(): Promise<WaterTest | null> {
   const { data } = await getSupabase()
     .from('reef_water_tests')

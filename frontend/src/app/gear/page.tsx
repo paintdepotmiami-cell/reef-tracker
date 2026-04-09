@@ -205,7 +205,7 @@ const EQUIPMENT_GUIDE: EquipmentGuide[] = [
     color: '#c5c6cd',
     bg: 'bg-[#c5c6cd]/10',
     label: 'Overflow Box',
-    importance: 'important',
+    importance: 'optional',
     what: 'A gravity-fed mechanism (drilled bulkhead or hang-on siphon box) that drains water from the display tank down to the sump. Maintains constant water level in the display while feeding the sump filtration loop.',
     why: 'Required to connect your display to the sump. Drilled overflows are safest (no siphon to break). The overflow determines maximum flow to the sump — size it correctly.',
     warning: 'If you have a sump, you need an overflow to connect it to your display. Without it, the sump-display water loop cannot function.',
