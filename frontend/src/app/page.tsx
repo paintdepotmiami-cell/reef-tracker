@@ -1,592 +1,455 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getAnimals, getLatestTest, getAllTests, getStats, generateTodayFeed, getMaintenanceTasks, completeMaintenanceTask } from '@/lib/queries';
-import type { Animal, WaterTest, ActionItem, MaintenanceTask } from '@/lib/queries';
-import { getCached, setCache } from '@/lib/cache';
-import { useAuth } from '@/lib/auth';
-import { analyzeTrends } from '@/lib/trend-analysis';
-import { getSupabase } from '@/lib/supabase';
-import Link from 'next/link';
-import ParamGauge from '@/components/ParamGauge';
-import ConsumableGauge from '@/components/ConsumableGauge';
-import CycleStatusCard from '@/components/CycleStatus';
+import { useState } from 'react';
+import Image from 'next/image';
 
-import { analyzeCycle } from '@/lib/cycle-engine';
+export default function ReefOSLanding() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-function getCategoryIcon(category: string): string {
-  const icons: Record<string, string> = {
-    testing: 'science',
-    water_change: 'water_drop',
-    water_management: 'water_drop',
-    cleaning: 'cleaning_services',
-    dosing: 'colorize',
-    feeding: 'restaurant',
-    equipment: 'settings_input_component',
-    filtration: 'filter_alt',
-    maintenance: 'build',
-    other: 'task_alt',
-  };
-  return icons[category] || 'task_alt';
-}
+  const features = [
+    {
+      title: 'Water Parameter Intelligence',
+      text: 'Track Alk, Ca, Mg, NO₃, PO₄, pH, NH₃, and NO₂. Snap a photo of your test kit — AI reads the values. See trends, get alerts, and know exactly when to dose.',
+      icon: '🧪',
+      screenshot: '/screenshots/params.png',
+      alt: 'ReefOS parameter center showing water chemistry analysis',
+      tag: 'AI-Powered OCR',
+    },
+    {
+      title: 'Livestock Management',
+      text: 'Manage fish, corals, and inverts with health tracking, compatibility checks, quarantine countdowns, and AI camera identification from a 180+ species database.',
+      icon: '🐠',
+      screenshot: '/screenshots/livestock.png',
+      alt: 'ReefOS livestock manager showing fish collection',
+      tag: '180+ Species',
+    },
+    {
+      title: 'Alerts, Dosing & Maintenance',
+      text: 'Every morning, ReefOS tells you what your reef needs. Smart alerts prioritized by urgency, exact dosing calculations, recurring tasks, and consumable tracking.',
+      icon: '⚠️',
+      screenshot: '/screenshots/dashboard.png',
+      alt: 'ReefOS dashboard with alerts and daily actions',
+      tag: 'Decision Intelligence',
+    },
+    {
+      title: '3D Reef Planner',
+      text: 'Design your tank layout in 3D. Visualize flow patterns, PAR distribution, and pump placement. Plan coral positions with confidence.',
+      icon: '🌊',
+      screenshot: '/screenshots/planner.png',
+      alt: 'ReefOS 3D planner showing flow simulation',
+      tag: 'Flow & PAR Sim',
+    },
+  ];
 
-/** Wraps a promise with a timeout — resolves with null if it takes too long */
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([
-    p,
-    new Promise<null>(resolve => setTimeout(() => resolve(null), ms)),
-  ]);
-}
+  const engines = [
+    'Cycling Engine',
+    'Feeding Engine',
+    'Flow Optimizer',
+    'Diagnostics',
+    'Emergency Tools',
+    'Compatibility Logic',
+    'AI Recognition',
+    'Maintenance Automation',
+  ];
 
-export default function Dashboard() {
-  const { user, tank, profile, refreshTank } = useAuth();
-  const [uploading, setUploading] = useState(false);
+  const faqs = [
+    {
+      q: 'What parameters does ReefOS track?',
+      a: 'Alkalinity (dKH), Calcium (ppm), Magnesium (ppm), Nitrate, Phosphate, pH, Ammonia, and Nitrite. Each has trend analysis, safe ranges, and actionable alerts.',
+    },
+    {
+      q: 'How does AI test recognition work?',
+      a: 'Take a photo of your test kit (Hanna Checker, API, etc.) and ReefOS uses Google Gemini AI to read values automatically. No manual typing needed.',
+    },
+    {
+      q: 'Is ReefOS really free?',
+      a: 'Yes, 100%. All features are free with no paywalls, premium tiers, or usage limits. We believe every reefer deserves good tools.',
+    },
+    {
+      q: 'Does it work on iPhone and Android?',
+      a: 'ReefOS is a progressive web app (PWA). Visit reefos.net on any browser and add to home screen. Works like a native app — no app store needed.',
+    },
+    {
+      q: 'What makes ReefOS different?',
+      a: 'Most apps log numbers. ReefOS provides decision intelligence — it analyzes data, identifies trends, warns of problems, suggests dosing, checks compatibility, and gives daily action plans.',
+    },
+    {
+      q: 'Does my data sync across devices?',
+      a: 'Yes. All data is stored securely in the cloud and syncs in real-time. Log a test on your phone, check trends on your laptop.',
+    },
+  ];
 
-  const [test, setTest] = useState<WaterTest | null>(getCached<WaterTest | null>('latestTest'));
-  const [feed, setFeed] = useState<ActionItem[]>(getCached<ActionItem[]>('todayFeed') || []);
-  const [stats, setStats] = useState(getCached<{ fish: number; corals: number; inverts: number; equipment: number }>('stats') || { fish: 0, corals: 0, inverts: 0, equipment: 0 });
-  const [tasks, setTasks] = useState<MaintenanceTask[]>(getCached<MaintenanceTask[]>('maintenanceTasks') || []);
-  const [completingTask, setCompletingTask] = useState<string | null>(null);
-  const [loading, setLoading] = useState(!getCached('stats'));
-  const [dismissedFeed, setDismissedFeed] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    try {
-      const stored = JSON.parse(localStorage.getItem('dismissedFeed') || '{}');
-      const today = new Date().toDateString();
-      return stored.date === today ? new Set(stored.ids as string[]) : new Set();
-    } catch { return new Set(); }
-  });
-  const [animatingFeed, setAnimatingFeed] = useState<string | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['consumables', 'upcoming']));
-
-  useEffect(() => {
-    if (!user) { setLoading(false); return; }
-
-    let animals: Animal[] = getCached<Animal[]>('animals') || [];
-    let latestTest: WaterTest | null = getCached<WaterTest | null>('latestTest');
-
-    const forceLoad = setTimeout(() => {
-      console.warn('Dashboard timeout — forcing render');
-      setLoading(false);
-    }, 6000);
-
-    let allTests: WaterTest[] = getCached<WaterTest[]>('allTests') || [];
-
-    Promise.allSettled([
-      withTimeout(getAnimals(), 5000).then(a => { if (a) { animals = a; setCache('animals', a); } }),
-      withTimeout(getLatestTest(), 5000).then(t => {
-        if (t !== undefined) {
-          latestTest = t;
-          setCache('latestTest', t);
-          setTest(t);
-        }
-      }),
-      withTimeout(getAllTests(), 5000).then(t => { if (t) { allTests = t; setCache('allTests', t); } }).catch(() => {}),
-      withTimeout(getStats(), 5000).then(s => { if (s) { setCache('stats', s); setStats(s); } }).catch(() => {}),
-      withTimeout(getMaintenanceTasks(), 5000).then(t => { if (t) { setCache('maintenanceTasks', t); setTasks(t); } }).catch(() => {}),
-    ]).then(() => {
-      const basicFeed = generateTodayFeed(latestTest, animals);
-      const trendReport = analyzeTrends(allTests);
-
-      const now = new Date();
-      const maintenanceAlerts: ActionItem[] = (getCached<MaintenanceTask[]>('maintenanceTasks') || [])
-        .filter(t => {
-          if (!t.next_due_at) return false;
-          const due = new Date(t.next_due_at);
-          const daysUntil = (due.getTime() - now.getTime()) / 86400000;
-          return daysUntil <= 0;
-        })
-        .map(t => {
-          const due = new Date(t.next_due_at!);
-          const daysOverdue = Math.floor((now.getTime() - due.getTime()) / 86400000);
-          const isOverdue = daysOverdue > 0;
-          return {
-            id: `maint-${t.id}`,
-            type: 'maintenance' as const,
-            priority: (daysOverdue >= 3 ? 'critical' : isOverdue ? 'warning' : 'info') as ActionItem['priority'],
-            icon: getCategoryIcon(t.category),
-            title: isOverdue ? `${t.task_name} \u2014 ${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue` : `${t.task_name} \u2014 due today`,
-            description: t.notes || `Every ${t.interval_days} days. Tap to mark complete.`,
-            action: 'Mark done',
-          };
-        });
-
-      const trendIds = new Set(trendReport.actionItems.map(i => i.id));
-      const maintIds = new Set(maintenanceAlerts.map(i => i.id));
-      const basicFiltered = basicFeed.filter(i => !trendIds.has(i.id) && !maintIds.has(i.id));
-      const combinedFeed = [...trendReport.actionItems, ...maintenanceAlerts, ...basicFiltered];
-      const priorityOrder = { critical: 0, warning: 1, info: 2 };
-      combinedFeed.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-      setCache('todayFeed', combinedFeed);
-      setFeed(combinedFeed);
-    }).finally(() => {
-      clearTimeout(forceLoad);
-      setLoading(false);
-    });
-  }, [user]);
-
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-center">
-        <span className="material-symbols-outlined text-5xl text-[#FF7F50] animate-pulse">waves</span>
-        <p className="text-[#c5c6cd] text-sm mt-3 font-medium tracking-wider uppercase">Loading ReefOS...</p>
-      </div>
-    </div>
-  );
-
-  // Maintenance task helpers
-  const now = new Date();
-  const upcomingTasks = tasks.filter(t => {
-    if (!t.next_due_at) return false;
-    const due = new Date(t.next_due_at);
-    const daysUntil = (due.getTime() - now.getTime()) / 86400000;
-    return daysUntil > 0 && daysUntil <= 7 && due.toDateString() !== now.toDateString();
-  });
-
-  async function handleCompleteTask(taskId: string) {
-    setCompletingTask(taskId);
-    const updated = await completeMaintenanceTask(taskId);
-    if (updated) {
-      setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
-      setCache('maintenanceTasks', tasks.map(t => t.id === taskId ? updated : t));
-    }
-    setCompletingTask(null);
-  }
-
-  async function handleDismissFeed(itemId: string) {
-    setAnimatingFeed(itemId);
-
-    // If it's a maintenance feed item, complete the underlying task
-    const maintMatch = itemId.match(/^maint-(.+)$/);
-    if (maintMatch) {
-      await handleCompleteTask(maintMatch[1]);
-    }
-
-    // Animate out, then dismiss
-    setTimeout(() => {
-      const next = new Set(dismissedFeed);
-      next.add(itemId);
-      setDismissedFeed(next);
-      setAnimatingFeed(null);
-      try {
-        localStorage.setItem('dismissedFeed', JSON.stringify({ date: new Date().toDateString(), ids: Array.from(next) }));
-      } catch {}
-    }, 350);
-  }
-
-  // Consumable tasks
-  const consumableCats = new Set(['filtration', 'equipment', 'dosing']);
-  const consumableTasks = tasks.filter(t =>
-    consumableCats.has(t.category) || t.interval_days >= 14
-  );
-
-  const criticalCount = feed.filter(f => f.priority === 'critical').length;
-  const warningCount = feed.filter(f => f.priority === 'warning').length;
-  const totalSpecimens = stats.fish + stats.corals + stats.inverts;
-
-  // Cycle engine
-  const allTests = getCached<WaterTest[]>('allTests') || [];
-  const tankAge = tank?.created_at
-    ? Math.floor((now.getTime() - new Date(tank.created_at).getTime()) / 86400000)
-    : 999;
-  const cycleStatus = analyzeCycle({
-    tests: allTests,
-    tankCreatedAt: tank?.created_at || null,
-    tankAgeInDays: tankAge,
-  });
-
-  async function handleHeroPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !user || !tank) return;
-    setUploading(true);
-    try {
-      const ext = file.name.split('.').pop() || 'jpg';
-      const path = `${user.id}/hero.${ext}`;
-      const supabase = getSupabase();
-      // Upload (upsert to overwrite)
-      const { error: uploadErr } = await supabase.storage
-        .from('tank-photos')
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (uploadErr) throw uploadErr;
-      // Get public URL
-      const { data: urlData } = supabase.storage.from('tank-photos').getPublicUrl(path);
-      const photoUrl = urlData.publicUrl + '?t=' + Date.now(); // cache bust
-      // Update tank record
-      await supabase.from('reef_tanks').update({ photo_url: photoUrl }).eq('id', tank.id);
-      await refreshTank();
-    } catch (err) {
-      console.error('Upload failed:', err);
-    }
-    setUploading(false);
-  }
-
-  // Gauge configs
-  const gaugeParams = test ? [
-    { label: 'Calcium', value: test.calcium, unit: 'ppm', min: 300, max: 520, safeMin: 380, safeMax: 450 },
-    { label: 'Alk', value: test.alkalinity, unit: 'dKH', min: 4, max: 14, safeMin: 7, safeMax: 11 },
-    { label: 'Mg', value: test.magnesium, unit: 'ppm', min: 1100, max: 1500, safeMin: 1250, safeMax: 1400 },
-    { label: 'pH', value: test.ph, unit: '', min: 7.5, max: 8.8, safeMin: 8.0, safeMax: 8.4 },
-    { label: 'PO\u2084', value: test.phosphate, unit: 'ppm', min: 0, max: 0.4, safeMin: 0, safeMax: 0.1 },
-    { label: 'NO\u2083', value: test.nitrate, unit: 'ppm', min: 0, max: 40, safeMin: 2, safeMax: 15 },
-    { label: 'NH\u2083', value: test.ammonia, unit: 'ppm', min: 0, max: 1, safeMin: 0, safeMax: 0 },
-    { label: 'NO\u2082', value: test.nitrite, unit: 'ppm', min: 0, max: 1, safeMin: 0, safeMax: 0 },
-  ] : [];
+  const screenshots = [
+    { src: '/screenshots/dashboard.png', alt: 'ReefOS Dashboard' },
+    { src: '/screenshots/params.png', alt: 'Parameter Center' },
+    { src: '/screenshots/livestock.png', alt: 'Livestock Manager' },
+    { src: '/screenshots/planner.png', alt: '3D Reef Planner' },
+    { src: '/screenshots/cycle.png', alt: 'Cycle Tracker' },
+  ];
 
   return (
-    <div className="space-y-8 pb-28">
-      {/* HERO — Tank Viewport */}
-      <section className="relative -mx-4 -mt-4 h-56 md:h-72 rounded-b-3xl overflow-hidden shadow-2xl group">
-        {/* Background: photo or gradient */}
-        {tank?.photo_url ? (
-          <img
-            src={tank.photo_url}
-            alt={tank.name}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#003347] via-[#041329] to-[#0d1c32]">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #4cd6fb 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#041329]/90 via-[#041329]/30 to-transparent" />
+    <div className="min-h-screen bg-[#010e24] text-[#c5c6cd]" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Background glows */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute left-[-10%] top-[-5%] h-80 w-80 rounded-full bg-[#4cd6fb]/10 blur-[100px]" />
+        <div className="absolute right-[-10%] top-[10%] h-96 w-96 rounded-full bg-[#2ff801]/5 blur-[100px]" />
+        <div className="absolute bottom-[-15%] left-[20%] h-96 w-96 rounded-full bg-[#FF7F50]/5 blur-[100px]" />
+      </div>
 
-        {/* Camera button */}
-        <label className={`absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center cursor-pointer active:scale-90 transition-transform ${uploading ? 'animate-pulse' : ''}`}>
-          <span className="material-symbols-outlined text-white text-lg">
-            {uploading ? 'progress_activity' : 'photo_camera'}
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleHeroPhoto}
-            className="hidden"
-            disabled={uploading}
-          />
-        </label>
-
-        <div className="absolute bottom-0 left-0 w-full p-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2 ${
-              criticalCount > 0 ? 'bg-[#ff6b6b]/15 text-[#ff6b6b]' : 'bg-[#2ff801]/15 text-[#2ff801]'
-            }`}>
-              {criticalCount > 0 ? `${criticalCount} Alert${criticalCount > 1 ? 's' : ''}` : 'Stable Environment'}
-            </span>
-            <h2 className="text-3xl md:text-4xl font-[family-name:var(--font-headline)] font-extrabold text-white tracking-tight">
-              {tank?.name || 'My Reef'}
-            </h2>
-            <p className="text-[#8ccff5]/80 font-medium text-sm">
-              {tank?.size_gallons ? `${tank.size_gallons} Gallon` : ''} {tank?.tank_type === 'mixed' ? 'Mixed Reef' : tank?.tank_type === 'reef' ? 'Reef' : tank?.tank_type === 'fish_only' ? 'Fish Only' : 'Reef'} System
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-              <p className="text-[10px] text-[#8ccff5] uppercase tracking-widest font-bold">Specimens</p>
-              <p className="text-xl font-[family-name:var(--font-headline)] font-extrabold text-white">{totalSpecimens}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-              <p className="text-[10px] text-[#8ccff5] uppercase tracking-widest font-bold">Gear</p>
-              <p className="text-xl font-[family-name:var(--font-headline)] font-extrabold text-white">{stats.equipment}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Actions */}
-      <section className="grid grid-cols-3 gap-3">
-        <Link href="/logs" className="bg-[#004b66] text-[#8ccff5] p-4 rounded-xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_4px_16px_rgba(1,14,36,0.3)]">
-          <span className="material-symbols-outlined text-2xl">science</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider">Test Water</span>
-        </Link>
-        <Link href="/planner" className="bg-[#0d1c32] text-[#c5c6cd] p-4 rounded-xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_4px_16px_rgba(1,14,36,0.3)]">
-          <span className="material-symbols-outlined text-2xl text-[#FF7F50]">view_in_ar</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider">Planner</span>
-        </Link>
-        <Link href="/livestock" className="bg-[#0d1c32] text-[#c5c6cd] p-4 rounded-xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_4px_16px_rgba(1,14,36,0.3)]">
-          <span className="material-symbols-outlined text-2xl text-[#4cd6fb]">sailing</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider">Livestock</span>
-        </Link>
-      </section>
-
-      {/* Alert Banner */}
-      {criticalCount > 0 && (
-        <div className="p-4 bg-[#ff6b6b]/10 border border-[#ff6b6b]/20 text-[#ffb4ab] rounded-xl flex items-center gap-4">
-          <span className="material-symbols-outlined text-[#ff6b6b]">warning</span>
-          <div className="flex-1">
-            <p className="text-xs font-bold uppercase tracking-widest">Active Alert</p>
-            <p className="text-sm font-medium">{feed.find(f => f.priority === 'critical')?.title}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Cycle Status Banner (only shows if cycling) */}
-      {cycleStatus.active && (
-        <CycleStatusCard status={cycleStatus} variant="banner" />
-      )}
-
-      {/* Water Parameters */}
-      {test && (
-        <section className="space-y-4">
-          <div className="flex items-end justify-between">
+      {/* NAV */}
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#010e24]/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <a href="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FF7F50]/15 text-lg">🐠</div>
             <div>
-              <h2 className="text-xl font-[family-name:var(--font-headline)] font-extrabold text-white">Water Chemistry</h2>
-              <p className="text-[#8f9097] text-xs mt-0.5">
-                {new Date(test.test_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
+              <div className="text-lg font-bold text-white tracking-tight">Reef<span className="text-[#FF7F50]">OS</span></div>
+              <div className="text-[10px] text-[#8f9097] font-medium uppercase tracking-widest">Reef Tank App</div>
             </div>
-            <Link href="/logs" className="text-[#4cd6fb] text-sm font-semibold flex items-center gap-1 hover:underline">
-              History <span className="material-symbols-outlined text-sm">arrow_forward</span>
-            </Link>
+          </a>
+          <nav className="hidden items-center gap-8 text-sm text-[#c5c6cd] md:flex">
+            <a href="#features" className="transition hover:text-white">Features</a>
+            <a href="#screenshots" className="transition hover:text-white">Screenshots</a>
+            <a href="#pricing" className="transition hover:text-white">Pricing</a>
+            <a href="#faq" className="transition hover:text-white">FAQ</a>
+          </nav>
+          <a href="/login" className="rounded-xl bg-[#FF7F50] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95">
+            Start Free
+          </a>
+        </div>
+      </header>
+
+      <main>
+        {/* HERO */}
+        <section className="mx-auto max-w-7xl px-6 pt-16 pb-20 lg:pt-24 lg:pb-28">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF7F50]/20 bg-[#FF7F50]/10 px-4 py-1.5 text-xs font-bold text-[#FF7F50] uppercase tracking-wider">
+              <span className="h-2 w-2 rounded-full bg-[#2ff801] animate-pulse" />
+              Free forever &middot; No credit card
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-[900] text-white tracking-tight leading-[1.1]" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              The All-in-One{' '}
+              <span className="bg-gradient-to-r from-[#FF7F50] to-[#4cd6fb] bg-clip-text text-transparent">
+                Reef Tank App
+              </span>
+              {' '}for Tracking, Stability & Growth
+            </h1>
+            <p className="mt-6 text-lg text-[#c5c6cd] max-w-2xl mx-auto leading-relaxed">
+              Track 8 water parameters, manage 180+ species, get AI-powered recommendations,
+              and stop guessing what your reef needs. Built by reefers, for reefers.
+            </p>
+            <p className="mt-4 text-base font-semibold text-[#2ff801]">
+              Stop guessing. Start running your reef like a system.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="/login" className="rounded-2xl bg-[#FF7F50] px-8 py-4 text-base font-bold text-white shadow-2xl shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-lg">rocket_launch</span>
+                Start Free
+              </a>
+              <a href="#features" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20 hover:bg-white/10 flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-lg">play_circle</span>
+                See How It Works
+              </a>
+            </div>
           </div>
 
-          {/* Big 3: Ca, Alk, Mg */}
-          <div className="grid grid-cols-3 gap-3">
-            {gaugeParams.slice(0, 3).map(g => (
-              <ParamGauge
-                key={g.label}
-                label={g.label}
-                value={g.value}
-                unit={g.unit}
-                min={g.min}
-                max={g.max}
-                safeMin={g.safeMin}
-                safeMax={g.safeMax}
-              />
+          {/* Hero Screenshot */}
+          <div className="mt-12 max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.5)] border border-white/[0.08]">
+            <Image src="/screenshots/dashboard.png" alt="ReefOS Dashboard — reef tank management app" width={1200} height={675} className="w-full" priority />
+          </div>
+        </section>
+
+        {/* STATS BAR */}
+        <div className="border-y border-white/[0.06] py-10">
+          <div className="mx-auto max-w-4xl flex justify-center gap-12 sm:gap-20 flex-wrap px-6">
+            {[['8+', 'Parameters'], ['180+', 'Species'], ['550+', 'Products'], ['35', 'Smart Tools']].map(([num, label]) => (
+              <div key={label} className="text-center">
+                <div className="text-3xl font-[900] text-[#FF7F50]" style={{ fontFamily: "'Manrope', sans-serif" }}>{num}</div>
+                <div className="text-xs font-bold text-[#8f9097] uppercase tracking-wider mt-1">{label}</div>
+              </div>
             ))}
           </div>
+        </div>
 
-          {/* Secondary params */}
-          <div className="flex justify-between gap-1 px-1">
-            {gaugeParams.slice(3).map(g => (
-              <ParamGauge
-                key={g.label}
-                label={g.label}
-                value={g.value}
-                unit={g.unit}
-                min={g.min}
-                max={g.max}
-                safeMin={g.safeMin}
-                safeMax={g.safeMax}
-                compact
-              />
+        {/* PROBLEM */}
+        <section className="mx-auto max-w-7xl px-6 py-20">
+          <div className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8 lg:p-10">
+            <div className="grid gap-8 lg:grid-cols-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#ffb4ab]">The problem</p>
+                <h2 className="mt-3 text-3xl font-[900] text-white tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                  Most reef tanks fail because of instability, not lack of gear.
+                </h2>
+              </div>
+              <div className="lg:col-span-2 grid gap-4 sm:grid-cols-2">
+                {[
+                  ['trending_down', 'Unstable parameters nobody caught in time'],
+                  ['edit_note', 'Scattered tracking across apps, sheets, and memory'],
+                  ['psychology', 'Too much info, not enough actionable advice'],
+                  ['warning', 'No clear plan when something goes wrong'],
+                ].map(([icon, text]) => (
+                  <div key={text} className="rounded-2xl border border-[#ff6b6b]/10 bg-[#ff6b6b]/[0.03] p-5 flex items-start gap-3">
+                    <span className="material-symbols-outlined text-[#ff6b6b] text-xl mt-0.5">{icon}</span>
+                    <span className="text-[#c5c6cd] text-sm">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Solution */}
+          <div className="mt-6 rounded-3xl border border-[#2ff801]/10 bg-[#2ff801]/[0.02] p-8 max-w-3xl mx-auto">
+            <h3 className="text-lg font-bold text-[#2ff801] mb-4">ReefOS turns your reef into a managed system</h3>
+            <div className="space-y-3">
+              {[
+                'One place for all your reef data',
+                'AI that reads your tests and tells you what to do',
+                'Alerts before problems become emergencies',
+                'Built specifically for saltwater reef aquariums',
+              ].map(item => (
+                <div key={item} className="flex items-center gap-3 text-[#c5c6cd]">
+                  <span className="material-symbols-outlined text-[#2ff801] text-lg">check_circle</span>
+                  <span className="text-sm">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FEATURES */}
+        <section id="features" className="mx-auto max-w-7xl px-6 py-20">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#4cd6fb]">Features</p>
+            <h2 className="mt-3 text-4xl font-[900] text-white tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              Everything Your Reef Needs. One App.
+            </h2>
+            <p className="mt-4 text-lg text-[#c5c6cd]">
+              From daily parameter tracking to emergency protocols — ReefOS covers the full lifecycle of reef keeping.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {features.map((feature, i) => (
+              <div key={feature.title} className={`rounded-3xl border border-white/[0.06] bg-[#0d1c32] p-6 lg:p-8 grid gap-8 items-center ${i % 2 === 0 ? 'lg:grid-cols-[1fr_1.2fr]' : 'lg:grid-cols-[1.2fr_1fr]'}`}>
+                {i % 2 === 1 && (
+                  <div className="rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/[0.06] hidden lg:block">
+                    <Image src={feature.screenshot} alt={feature.alt} width={800} height={500} className="w-full" />
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF7F50]/10 text-xl">
+                      {feature.icon}
+                    </div>
+                    <span className="px-3 py-1 rounded-lg bg-[#4cd6fb]/10 text-[#4cd6fb] text-[10px] font-bold uppercase tracking-wider">
+                      {feature.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">{feature.title}</h3>
+                  <p className="text-[#c5c6cd] leading-relaxed">{feature.text}</p>
+                </div>
+                <div className={`rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/[0.06] ${i % 2 === 1 ? 'lg:hidden' : ''}`}>
+                  <Image src={feature.screenshot} alt={feature.alt} width={800} height={500} className="w-full" />
+                </div>
+              </div>
             ))}
           </div>
         </section>
-      )}
 
-      {/* TODAY — Accordion sections */}
-      {(() => {
-        const activeFeed = feed.filter(i => !dismissedFeed.has(i.id));
-        const sections: { key: string; label: string; icon: string; color: string; bgColor: string; items: typeof activeFeed }[] = [
-          { key: 'alerts', label: 'Alerts', icon: 'warning', color: 'text-[#ffb4ab]', bgColor: 'bg-[#ffb4ab]/10', items: activeFeed.filter(i => i.type === 'param_alert') },
-          { key: 'maintenance', label: 'Maintenance', icon: 'build', color: 'text-[#F1C40F]', bgColor: 'bg-[#F1C40F]/10', items: activeFeed.filter(i => i.type === 'maintenance') },
-          { key: 'compatibility', label: 'Compatibility', icon: 'swap_horiz', color: 'text-[#4cd6fb]', bgColor: 'bg-[#4cd6fb]/10', items: activeFeed.filter(i => i.type === 'compatibility') },
-          { key: 'general', label: 'General', icon: 'info', color: 'text-[#c5c6cd]', bgColor: 'bg-[#c5c6cd]/10', items: activeFeed.filter(i => !['param_alert', 'maintenance', 'compatibility'].includes(i.type)) },
-        ].filter(s => s.items.length > 0);
+        {/* SCREENSHOT GALLERY */}
+        <section id="screenshots" className="py-20">
+          <div className="text-center max-w-3xl mx-auto px-6 mb-10">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF7F50]">See it in action</p>
+            <h2 className="mt-3 text-3xl font-[900] text-white tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              Real Screenshots From a Real Reef Tank
+            </h2>
+          </div>
+          <div className="flex gap-4 overflow-x-auto px-6 pb-4 snap-x snap-mandatory" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {screenshots.map(s => (
+              <div key={s.alt} className="min-w-[min(85vw,550px)] snap-center flex-shrink-0 rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-white/[0.06]">
+                <Image src={s.src} alt={s.alt} width={800} height={500} className="w-full" />
+              </div>
+            ))}
+          </div>
+        </section>
 
-        const totalDone = dismissedFeed.size;
-        const totalActive = activeFeed.length;
-
-        if (totalActive === 0 && totalDone === 0) return null;
-
-        return (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-[family-name:var(--font-headline)] font-extrabold text-white">Today</h2>
-              {totalDone > 0 && (
-                <span className="text-[10px] text-[#2ff801] font-bold flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">check_circle</span>
-                  {totalDone} done
-                </span>
-              )}
+        {/* DIFFERENTIATOR */}
+        <section className="mx-auto max-w-7xl px-6 py-8">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8f9097]">Other aquarium apps</p>
+              <h3 className="mt-4 text-2xl font-bold text-white">Store data. Show charts. Stop there.</h3>
+              <ul className="mt-6 space-y-3">
+                {['Manual parameter entry only', 'Just charts and graphs', 'Generic fish database', 'No emergency tools', 'Paid subscriptions'].map(item => (
+                  <li key={item} className="flex items-center gap-3 text-[#8f9097] text-sm">
+                    <span className="material-symbols-outlined text-[#ff6b6b] text-base">close</span>{item}
+                  </li>
+                ))}
+              </ul>
             </div>
+            <div className="rounded-3xl border border-[#4cd6fb]/15 bg-gradient-to-br from-[#4cd6fb]/[0.06] to-[#2ff801]/[0.03] p-8 shadow-2xl shadow-[#4cd6fb]/5">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#4cd6fb]">ReefOS</p>
+              <h3 className="mt-4 text-2xl font-bold text-white">Understand, decide, and improve.</h3>
+              <ul className="mt-6 space-y-3">
+                {['AI reads your test photos', 'Actionable alerts & daily plans', 'Compatibility + health tracking', '550+ equipment & supplement catalog', 'Emergency SOS & diagnostics', '100% free, forever'].map(item => (
+                  <li key={item} className="flex items-center gap-3 text-white text-sm font-medium">
+                    <span className="material-symbols-outlined text-[#2ff801] text-base">check_circle</span>{item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
 
-            {/* Progress bar */}
-            {(totalActive + totalDone) > 0 && (
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-1.5 bg-[#1c2a41] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#2ff801] to-[#4cd6fb] rounded-full transition-all duration-500"
-                    style={{ width: `${totalDone / (totalActive + totalDone) * 100}%` }}
-                  />
-                </div>
-                <span className="text-[10px] text-[#c5c6cd]/50 font-mono">{totalDone}/{totalActive + totalDone}</span>
-              </div>
-            )}
-
-            {/* All done state */}
-            {totalActive === 0 && totalDone > 0 && (
-              <div className="bg-[#2ff801]/10 border border-[#2ff801]/20 rounded-xl p-6 text-center">
-                <span className="material-symbols-outlined text-3xl text-[#2ff801]">task_alt</span>
-                <p className="text-[#2ff801] font-bold mt-2">All done for today!</p>
-                <p className="text-[10px] text-[#c5c6cd]/50 mt-1">{totalDone} task{totalDone > 1 ? 's' : ''} completed</p>
-              </div>
-            )}
-
-            {/* Accordion sections */}
-            <div className="space-y-3">
-              {sections.map(section => {
-                const isCollapsed = collapsedSections.has(section.key);
-                return (
-                  <div key={section.key} className="bg-[#0d1c32] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(1,14,36,0.2)]">
-                    {/* Accordion header */}
-                    <button
-                      onClick={() => setCollapsedSections(prev => {
-                        const next = new Set(prev);
-                        if (next.has(section.key)) next.delete(section.key);
-                        else next.add(section.key);
-                        return next;
-                      })}
-                      className="w-full flex items-center gap-3 p-4 text-left active:bg-[#1c2a41]/50 transition-colors"
-                    >
-                      <div className={`w-8 h-8 rounded-lg ${section.bgColor} flex items-center justify-center`}>
-                        <span className={`material-symbols-outlined text-base ${section.color}`}>{section.icon}</span>
-                      </div>
-                      <span className="flex-1 font-[family-name:var(--font-headline)] font-bold text-white text-sm">{section.label}</span>
-                      <span className="px-2 py-0.5 rounded-full bg-[#1c2a41] text-[10px] font-bold text-[#c5c6cd]">
-                        {section.items.length}
-                      </span>
-                      <span className={`material-symbols-outlined text-[#c5c6cd]/40 text-lg transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`}>
-                        expand_more
-                      </span>
-                    </button>
-
-                    {/* Accordion content */}
-                    {!isCollapsed && (
-                      <div className="px-4 pb-3 space-y-2">
-                        {section.items.map(item => (
-                          <div
-                            key={item.id}
-                            className={`rounded-lg p-3 flex items-start gap-3 transition-all duration-300 ${
-                              animatingFeed === item.id ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100'
-                            } ${
-                              item.priority === 'critical' ? 'bg-[#ffb4ab]/5 border border-[#ffb4ab]/15' :
-                              item.priority === 'warning' ? 'bg-[#F1C40F]/5 border border-[#F1C40F]/10' :
-                              'bg-[#1c2a41]/40 border border-[#1c2a41]'
-                            }`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-white text-[13px] leading-tight">{item.title}</p>
-                              <p className="text-[11px] text-[#c5c6cd]/70 mt-1 leading-relaxed">{item.description}</p>
-                            </div>
-                            <button
-                              onClick={() => handleDismissFeed(item.id)}
-                              disabled={animatingFeed === item.id}
-                              className="group/chk w-8 h-8 rounded-full border-2 border-[#c5c6cd]/20 flex items-center justify-center shrink-0 mt-0.5 hover:border-[#2ff801] hover:bg-[#2ff801]/15 active:scale-90 transition-all disabled:opacity-50"
-                            >
-                              {animatingFeed === item.id ? (
-                                <span className="material-symbols-outlined text-[#2ff801] text-sm animate-spin">progress_activity</span>
-                              ) : (
-                                <span className="material-symbols-outlined text-[#c5c6cd]/30 group-hover/chk:text-[#2ff801] text-sm transition-colors">check</span>
-                              )}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+        {/* ENGINES */}
+        <section className="mx-auto max-w-7xl px-6 py-20">
+          <div className="grid gap-10 lg:grid-cols-2">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#4cd6fb]">Under the hood</p>
+              <h2 className="mt-3 text-3xl font-[900] text-white tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                8 Intelligent Engines Working Together
+              </h2>
+              <p className="mt-4 text-[#c5c6cd] leading-relaxed">
+                ReefOS isn&apos;t just screens — it&apos;s a system of engines that handle cycling, feeding, diagnostics, compatibility, emergencies, flow, maintenance, and planning.
+              </p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {engines.map(engine => (
+                  <div key={engine} className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm text-white font-medium">
+                    {engine}
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
+            <div className="rounded-3xl overflow-hidden border border-white/[0.06] shadow-[0_8px_40px_rgba(0,0,0,0.3)]">
+              <Image src="/screenshots/cycle.png" alt="ReefOS cycle tracker showing tank maturity" width={800} height={500} className="w-full" />
+            </div>
+          </div>
+        </section>
 
-            {/* Consumables — collapsed by default, badge if overdue */}
-            {consumableTasks.length > 0 && (() => {
-              const overdueConsumables = consumableTasks.filter(t => {
-                if (!t.next_due_at) return false;
-                return new Date(t.next_due_at) < now;
-              });
-              return (
-                <div className="bg-[#0d1c32] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(1,14,36,0.2)]">
-                  <button
-                    onClick={() => setCollapsedSections(prev => {
-                      const next = new Set(prev);
-                      if (next.has('consumables')) next.delete('consumables');
-                      else next.add('consumables');
-                      return next;
-                    })}
-                    className="w-full flex items-center gap-3 p-4 text-left active:bg-[#1c2a41]/50 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#FF7F50]/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-base text-[#FF7F50]">inventory_2</span>
-                    </div>
-                    <span className="flex-1 font-[family-name:var(--font-headline)] font-bold text-white text-sm">Consumables</span>
-                    {overdueConsumables.length > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#ff6b6b]/15 text-[10px] font-bold text-[#ff6b6b]">
-                        {overdueConsumables.length} replace
-                      </span>
-                    )}
-                    <span className="px-2 py-0.5 rounded-full bg-[#1c2a41] text-[10px] font-bold text-[#c5c6cd]">
-                      {consumableTasks.length}
-                    </span>
-                    <span className={`material-symbols-outlined text-[#c5c6cd]/40 text-lg transition-transform duration-200 ${collapsedSections.has('consumables') ? '' : 'rotate-180'}`}>
-                      expand_more
-                    </span>
-                  </button>
-                  {!collapsedSections.has('consumables') && (
-                    <div className="px-4 pb-3 space-y-2">
-                      {consumableTasks.map(t => (
-                        <ConsumableGauge
-                          key={t.id}
-                          label={t.task_name.replace('Replace ', '').replace('Check ', '')}
-                          icon={getCategoryIcon(t.category)}
-                          intervalDays={t.interval_days}
-                          lastCompletedAt={t.last_completed_at}
-                          nextDueAt={t.next_due_at}
-                          onComplete={() => handleCompleteTask(t.id)}
-                          completing={completingTask === t.id}
-                        />
-                      ))}
-                    </div>
-                  )}
+        {/* PRICING */}
+        <section id="pricing" className="mx-auto max-w-xl px-6 py-20 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#4cd6fb]">Pricing</p>
+          <h2 className="mt-3 text-4xl font-[900] text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>Simple. Free. Forever.</h2>
+          <p className="mt-3 text-[#c5c6cd]">No trials. No paywalls. No &quot;premium&quot; tiers.</p>
+
+          <div className="mt-8 rounded-3xl border border-white/[0.06] bg-[#0d1c32] p-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FF7F50] to-[#4cd6fb]" />
+            <div className="text-5xl font-[900] text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>$0</div>
+            <div className="text-lg text-[#8f9097] font-semibold">Forever</div>
+            <div className="text-sm font-bold text-[#2ff801] mt-2 mb-6">All features included. No catch.</div>
+            <div className="space-y-3 text-left mb-8">
+              {[
+                'Unlimited parameter logging',
+                'AI test photo recognition',
+                'Full species & product database',
+                'All 35 smart tools',
+                'Livestock management & compatibility',
+                'Alerts, trends, and dosing',
+                '3D reef planner',
+                'Emergency SOS & diagnostics',
+              ].map(item => (
+                <div key={item} className="flex items-center gap-3 text-sm text-[#c5c6cd]">
+                  <span className="material-symbols-outlined text-[#2ff801] text-base">check_circle</span>{item}
                 </div>
-              );
-            })()}
+              ))}
+            </div>
+            <a href="/login" className="block w-full rounded-xl bg-[#FF7F50] py-4 text-center text-base font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.02] active:scale-95">
+              Get Started Free
+            </a>
+          </div>
+        </section>
 
-            {/* Coming Up */}
-            {upcomingTasks.length > 0 && (
-              <div className="bg-[#0d1c32]/50 rounded-xl overflow-hidden">
+        {/* SEO BLOCK */}
+        <section className="mx-auto max-w-4xl px-6 py-12">
+          <div className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8">
+            <h2 className="text-2xl font-bold text-white mb-4">The Best Free Reef Tank App for Saltwater Aquarium Management</h2>
+            <p className="text-[#8f9097] leading-relaxed mb-4">
+              ReefOS is a free reef tank management app designed for saltwater aquarium hobbyists at every level. Whether you&apos;re cycling your first tank or maintaining an advanced SPS-dominant mixed reef, ReefOS gives you the tools to track water parameters, manage livestock, monitor equipment, and make data-driven decisions about your reef aquarium.
+            </p>
+            <p className="text-[#8f9097] leading-relaxed mb-4">
+              Unlike basic aquarium tracker apps, ReefOS uses artificial intelligence to read water test results from photos, identify fish and corals with your camera, generate personalized dosing recommendations, and alert you before small parameter shifts become tank-threatening emergencies.
+            </p>
+            <p className="text-[#8f9097] leading-relaxed">
+              With a database of over 180 reef species, 550+ equipment and supplement products, and 35 specialized reef-keeping tools, ReefOS is the most comprehensive saltwater aquarium app available — and it&apos;s completely free. Works as a PWA on iPhone, Android, tablet, or desktop.
+            </p>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="mx-auto max-w-3xl px-6 py-20">
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#4cd6fb]">FAQ</p>
+            <h2 className="mt-3 text-3xl font-[900] text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              Frequently Asked Questions
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {faqs.map((faq, i) => (
+              <div key={faq.q} className="rounded-2xl border border-white/[0.06] bg-[#0d1c32] overflow-hidden">
                 <button
-                  onClick={() => setCollapsedSections(prev => {
-                    const next = new Set(prev);
-                    if (next.has('upcoming')) next.delete('upcoming');
-                    else next.add('upcoming');
-                    return next;
-                  })}
-                  className="w-full flex items-center gap-3 p-4 text-left active:bg-[#1c2a41]/50 transition-colors"
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between p-5 text-left"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-[#c5c6cd]/5 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-base text-[#c5c6cd]/40">schedule</span>
-                  </div>
-                  <span className="flex-1 font-[family-name:var(--font-headline)] font-bold text-[#c5c6cd]/50 text-sm">Coming Up</span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#1c2a41]/50 text-[10px] font-bold text-[#c5c6cd]/40">
-                    {upcomingTasks.length}
-                  </span>
-                  <span className={`material-symbols-outlined text-[#c5c6cd]/30 text-lg transition-transform duration-200 ${collapsedSections.has('upcoming') ? '' : 'rotate-180'}`}>
+                  <span className="text-white font-semibold pr-4">{faq.q}</span>
+                  <span className={`material-symbols-outlined text-[#8f9097] transition-transform duration-200 ${openFaq === i ? 'rotate-180' : ''}`}>
                     expand_more
                   </span>
                 </button>
-                {!collapsedSections.has('upcoming') && (
-                  <div className="px-4 pb-3 space-y-2">
-                    {upcomingTasks.map(t => {
-                      const daysUntil = Math.ceil((new Date(t.next_due_at!).getTime() - now.getTime()) / 86400000);
-                      return (
-                        <div key={t.id} className="rounded-lg p-3 flex items-center gap-3 bg-[#1c2a41]/20">
-                          <span className="material-symbols-outlined text-[#c5c6cd]/30 text-lg">{getCategoryIcon(t.category)}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] text-[#c5c6cd]/60 font-medium">{t.task_name}</p>
-                          </div>
-                          <span className="text-[10px] text-[#c5c6cd]/35 font-mono shrink-0">{daysUntil}d</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <div className={`overflow-hidden transition-all duration-300 ${openFaq === i ? 'max-h-40 pb-5' : 'max-h-0'}`}>
+                  <p className="px-5 text-sm text-[#c5c6cd] leading-relaxed">{faq.a}</p>
+                </div>
               </div>
-            )}
-          </section>
-        );
-      })()}
+            ))}
+          </div>
+        </section>
 
+        {/* TECH BAR */}
+        <div className="border-y border-white/[0.06] py-8">
+          <div className="mx-auto max-w-4xl flex justify-center gap-8 flex-wrap px-6">
+            {[
+              ['cloud_sync', 'Cloud Sync'],
+              ['auto_awesome', 'AI-Powered'],
+              ['install_mobile', 'PWA'],
+              ['lock', 'Secure'],
+              ['speed', 'Real-Time'],
+            ].map(([icon, label]) => (
+              <div key={label} className="flex items-center gap-2 text-sm text-[#8f9097] font-semibold">
+                <span className="material-symbols-outlined text-[#4cd6fb] text-lg">{icon}</span>{label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FINAL CTA */}
+        <section className="mx-auto max-w-4xl px-6 py-24 text-center">
+          <div className="rounded-[2rem] border border-[#4cd6fb]/15 bg-gradient-to-br from-[#4cd6fb]/[0.08] via-[#0d1c32] to-[#2ff801]/[0.05] p-10 lg:p-16 shadow-[0_40px_140px_rgba(76,214,251,0.08)]">
+            <h2 className="text-3xl lg:text-4xl font-[900] text-white tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              Stop Guessing. Start Running Your Reef Like a System.
+            </h2>
+            <p className="mt-4 text-[#c5c6cd] text-lg">
+              Join reefers who track smarter, not harder. Free forever.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="/login" className="rounded-2xl bg-[#FF7F50] px-8 py-4 text-base font-bold text-white shadow-2xl shadow-[#FF7F50]/20 transition hover:scale-[1.03]">
+                Start Free Now
+              </a>
+              <a href="https://reefos-planner.vercel.app" target="_blank" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20">
+                Try 3D Planner
+              </a>
+            </div>
+            <p className="mt-4 text-xs text-[#8f9097]">No credit card required</p>
+          </div>
+        </section>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="border-t border-white/[0.06] py-10 text-center px-6">
+        <div className="flex justify-center gap-6 text-sm mb-4">
+          <a href="/login" className="text-[#4cd6fb] hover:text-white transition">App</a>
+          <a href="https://reefos-planner.vercel.app" target="_blank" className="text-[#4cd6fb] hover:text-white transition">3D Planner</a>
+          <a href="https://youtube.com/@ReefOS_US" target="_blank" className="text-[#4cd6fb] hover:text-white transition">YouTube</a>
+        </div>
+        <p className="text-xs text-[#8f9097]">&copy; 2026 ReefOS. Built with care for the reef keeping community.</p>
+      </footer>
     </div>
   );
 }

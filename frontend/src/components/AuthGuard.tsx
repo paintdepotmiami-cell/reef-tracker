@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-const PUBLIC_PATHS = ['/login', '/landing'];
+const PUBLIC_PATHS = ['/login', '/landing', '/'];
 
 // DEV ONLY: bypass auth for UI preview — REMOVE before deploy
 const DEV_BYPASS = process.env.NODE_ENV === 'development';
@@ -21,12 +21,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const isPublic = PUBLIC_PATHS.includes(pathname);
 
     if (!user && !isPublic) {
-      router.replace('/login');
+      router.replace('/');
       return;
     }
 
-    if (user && isPublic) {
-      router.replace('/');
+    if (user && pathname === '/login') {
+      router.replace('/dashboard');
       return;
     }
 

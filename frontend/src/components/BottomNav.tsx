@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const tabs = [
-  { href: '/', icon: 'home', label: 'Home', match: ['/'] },
+  { href: '/dashboard', icon: 'home', label: 'Home', match: ['/dashboard'] },
   { href: '/param-center', icon: 'monitoring', label: 'Params', match: ['/param-center', '/logs', '/trends', '/alerts', '/dosing'] },
   { href: '/livestock', icon: 'pets', label: 'Livestock', match: ['/livestock', '/library', '/acclimation'] },
   { href: '/planner', icon: 'view_in_ar', label: 'Planner', match: ['/planner'] },
