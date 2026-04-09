@@ -513,7 +513,7 @@ export default function SetupWizard() {
       const supabase = getSupabase();
 
       // 1. Update profile
-      await supabase.from('reef_profiles').update({
+      const { error: profileErr } = await supabase.from('reef_profiles').update({
         experience_level: experience,
         location_city: city || null,
         location_state: state || null,
@@ -522,6 +522,8 @@ export default function SetupWizard() {
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       }).eq('id', user.id);
+
+      if (profileErr) { setError(`Profile: ${profileErr.message}`); setSaving(false); return; }
 
       // 2. Create tank
       const tankInsert: Record<string, unknown> = {
@@ -615,7 +617,7 @@ export default function SetupWizard() {
       // 4. Save dosing config if user has a dosing pump with active channels
       const activeChannels = dosingChannels.filter(ch => ch.enabled && ch.ml_per_day > 0);
       if (activeChannels.length > 0) {
-        const pumpGear = scannedGear.find(g => g.category === 'Dosing Pump');
+        const pumpGear = scannedGear.find(g => g.category.toLowerCase().includes('dos'));
         promises.push(createDosingConfig({
           user_id: user.id,
           tank_id: newTank?.id || null,
@@ -638,15 +640,19 @@ export default function SetupWizard() {
         }));
       }
 
-      // Run all inserts in parallel
-      await Promise.all(promises);
+      // Run all inserts in parallel (use allSettled so one failure doesn't block others)
+      const results = await Promise.allSettled(promises);
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.warn(`${failures.length} of ${results.length} inserts failed:`, failures);
+      }
 
-      await refreshProfile();
-      await refreshTank();
+      try { await refreshProfile(); } catch (e) { console.warn('refreshProfile failed:', e); }
+      try { await refreshTank(); } catch (e) { console.warn('refreshTank failed:', e); }
       router.push('/dashboard');
     } catch (err: unknown) {
       console.error('Setup error:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
@@ -1107,7 +1113,7 @@ export default function SetupWizard() {
               )}
 
               {/* Dosing Pump Configuration — appears when a dosing pump is in the gear list */}
-              {scannedGear.some(g => g.category === 'Dosing Pump') && (
+              {scannedGear.some(g => g.category.toLowerCase().includes('dos')) && (
                 <div className="mt-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="material-symbols-outlined text-[#4cd6fb]">science</span>
