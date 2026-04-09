@@ -3,8 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 // Vercel serverless timeout — 10s on Hobby, 60s on Pro
 export const maxDuration = 60;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+function getGeminiConfig() {
+  const key = process.env.GEMINI_API_KEY;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+  return { key, url };
+}
 
 type IdentifyContext = 'equipment' | 'supplement' | 'fish' | 'coral' | 'invertebrate' | 'auto';
 
@@ -87,7 +90,10 @@ Return ONLY valid JSON (no markdown):
 };
 
 export async function POST(req: NextRequest) {
+  const { key: GEMINI_API_KEY, url: GEMINI_URL } = getGeminiConfig();
+
   if (!GEMINI_API_KEY) {
+    console.error('[identify] GEMINI_API_KEY not set');
     return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
   }
 
@@ -98,15 +104,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
-    if (!GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
-    }
-
     // image should be base64 encoded (data:image/jpeg;base64,...)
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const mimeType = image.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
 
-    console.log(`[identify] context=${context}, imageSize=${Math.round(base64Data.length / 1024)}KB`);
+    console.log(`[identify] context=${context}, imageSize=${Math.round(base64Data.length / 1024)}KB, keyLen=${GEMINI_API_KEY.length}`);
 
     const response = await fetch(GEMINI_URL, {
       method: 'POST',
@@ -147,8 +149,9 @@ export async function POST(req: NextRequest) {
 
     const result = JSON.parse(jsonMatch[0]);
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('Identify error:', error);
-    return NextResponse.json({ error: 'Identification failed' }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Identify error:', msg);
+    return NextResponse.json({ error: `Identification failed: ${msg}` }, { status: 500 });
   }
 }

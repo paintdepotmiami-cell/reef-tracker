@@ -304,7 +304,7 @@ export default function SetupWizard() {
 
   // Existing tank: AI scan states
   const [scanningGear, setScanningGear] = useState(false);
-  const [scannedGear, setScannedGear] = useState<{ name: string; brand: string | null; category: string; confidence: number }[]>([]);
+  const [scannedGear, setScannedGear] = useState<{ name: string; brand: string | null; category: string; confidence: number; qty: number }[]>([]);
   const [scanningLivestock, setScanningLivestock] = useState(false);
   const [scannedLivestock, setScannedLivestock] = useState<{ name: string; scientific_name: string | null; type: string; category: string; confidence: number; details: string }[]>([]);
 
@@ -378,7 +378,12 @@ export default function SetupWizard() {
       if (res.ok) {
         const data = await res.json();
         if (data.name && data.type !== 'unknown') {
-          setScannedGear(prev => [...prev, { name: data.brand ? `${data.brand} ${data.name}` : data.name, brand: data.brand, category: data.category, confidence: data.confidence }]);
+          const photoName = data.brand ? `${data.brand} ${data.name}` : data.name;
+          setScannedGear(prev => {
+            const existing = prev.findIndex(g => g.name === photoName);
+            if (existing >= 0) { const updated = [...prev]; updated[existing] = { ...updated[existing], qty: updated[existing].qty + 1 }; return updated; }
+            return [...prev, { name: photoName, brand: data.brand, category: data.category, confidence: data.confidence, qty: 1 }];
+          });
           // Also mark in equipment checklist
           setEquipment(prev => prev.map(eq => {
             const cat = eq.category.toLowerCase();
@@ -536,13 +541,15 @@ export default function SetupWizard() {
       if (tankErr) { setError(`Tank: ${tankErr.message}`); setSaving(false); return; }
 
       if (tankStatus === 'existing') {
-        // 3a. Save scanned gear as equipment
+        // 3a. Save scanned gear as equipment (respecting qty for duplicates)
         for (const gear of scannedGear) {
-          await createEquipment({
-            name: gear.name,
-            category: gear.category?.toLowerCase() || 'other',
-            notes: `AI-identified during setup (${Math.round(gear.confidence * 100)}% confidence)`,
-          });
+          for (let q = 0; q < gear.qty; q++) {
+            await createEquipment({
+              name: gear.qty > 1 ? `${gear.name} #${q + 1}` : gear.name,
+              category: gear.category?.toLowerCase() || 'other',
+              notes: `AI-identified during setup (${Math.round(gear.confidence * 100)}% confidence)`,
+            });
+          }
         }
         // Also save checklist "have" items
         const haveItems = equipment.filter(e => e.status === 'have');
@@ -937,19 +944,32 @@ export default function SetupWizard() {
               {/* Scanned Results */}
               {scannedGear.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-[#2ff801]/70 uppercase tracking-widest mb-2">Identified Equipment ({scannedGear.length})</p>
+                  <p className="text-[10px] font-bold text-[#2ff801]/70 uppercase tracking-widest mb-2">Identified Equipment ({scannedGear.reduce((sum, g) => sum + g.qty, 0)})</p>
                   <div className="space-y-2">
                     {scannedGear.map((g, i) => (
                       <div key={i} className="bg-[#2ff801]/10 border border-[#2ff801]/20 rounded-xl p-3 flex items-center gap-3">
                         <span className="material-symbols-outlined text-[#2ff801]">check_circle</span>
                         <div className="flex-1">
-                          <p className="text-white text-sm font-semibold">{g.name}</p>
+                          <p className="text-white text-sm font-semibold">{g.name}{g.qty > 1 ? ` ×${g.qty}` : ''}</p>
                           <p className="text-[10px] text-[#8f9097]">{g.category} · {Math.round(g.confidence * 100)}% confident</p>
                         </div>
-                        <button onClick={() => setScannedGear(prev => prev.filter((_, idx) => idx !== i))}
-                          className="text-[#8f9097] hover:text-[#ff6b6b]">
-                          <span className="material-symbols-outlined text-sm">close</span>
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setScannedGear(prev => {
+                            const updated = [...prev];
+                            if (updated[i].qty > 1) { updated[i] = { ...updated[i], qty: updated[i].qty - 1 }; return updated; }
+                            return prev.filter((_, idx) => idx !== i);
+                          })} className="w-6 h-6 rounded-full bg-[#0d1c32] flex items-center justify-center text-[#8f9097] hover:text-[#ff6b6b] transition-colors">
+                            <span className="material-symbols-outlined text-xs">{g.qty > 1 ? 'remove' : 'close'}</span>
+                          </button>
+                          <span className="text-white text-xs font-bold w-5 text-center">{g.qty}</span>
+                          <button onClick={() => setScannedGear(prev => {
+                            const updated = [...prev];
+                            updated[i] = { ...updated[i], qty: updated[i].qty + 1 };
+                            return updated;
+                          })} className="w-6 h-6 rounded-full bg-[#0d1c32] flex items-center justify-center text-[#2ff801] hover:text-[#4cd6fb] transition-colors">
+                            <span className="material-symbols-outlined text-xs">add</span>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1002,22 +1022,27 @@ export default function SetupWizard() {
                       .filter(item => !gearSearch || `${item.brand} ${item.name}`.toLowerCase().includes(gearSearch.toLowerCase()))
                       .map(item => {
                         const fullName = `${item.brand} ${item.name}`;
-                        const alreadyAdded = scannedGear.some(g => g.name === fullName);
+                        const existingIdx = scannedGear.findIndex(g => g.name === fullName);
+                        const existingQty = existingIdx >= 0 ? scannedGear[existingIdx].qty : 0;
                         return (
-                          <button key={fullName} disabled={alreadyAdded}
+                          <button key={fullName}
                             onClick={() => {
-                              setScannedGear(prev => [...prev, { name: fullName, brand: item.brand, category: gearCategory!, confidence: 1 }]);
+                              setScannedGear(prev => {
+                                const idx = prev.findIndex(g => g.name === fullName);
+                                if (idx >= 0) { const updated = [...prev]; updated[idx] = { ...updated[idx], qty: updated[idx].qty + 1 }; return updated; }
+                                return [...prev, { name: fullName, brand: item.brand, category: gearCategory!, confidence: 1, qty: 1 }];
+                              });
                             }}
-                            className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded
+                            className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${existingQty > 0
                               ? 'bg-[#2ff801]/10 border border-[#2ff801]/20'
                               : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
                           >
-                            <span className={`material-symbols-outlined text-sm ${alreadyAdded ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
-                              {alreadyAdded ? 'check_circle' : 'add_circle'}
+                            <span className={`material-symbols-outlined text-sm ${existingQty > 0 ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
+                              {existingQty > 0 ? 'check_circle' : 'add_circle'}
                             </span>
                             <div>
-                              <p className={`text-sm font-medium ${alreadyAdded ? 'text-[#2ff801]' : 'text-white'}`}>{item.name}</p>
-                              <p className="text-[10px] text-[#8f9097]">{item.brand}</p>
+                              <p className={`text-sm font-medium ${existingQty > 0 ? 'text-[#2ff801]' : 'text-white'}`}>{item.name}</p>
+                              <p className="text-[10px] text-[#8f9097]">{item.brand}{existingQty > 0 ? ` · ×${existingQty}` : ''}</p>
                             </div>
                           </button>
                         );
@@ -1028,7 +1053,7 @@ export default function SetupWizard() {
                   {gearSearch.length >= 2 && (
                     <button
                       onClick={() => {
-                        setScannedGear(prev => [...prev, { name: gearSearch.trim(), brand: null, category: gearCategory!, confidence: 1 }]);
+                        setScannedGear(prev => [...prev, { name: gearSearch.trim(), brand: null, category: gearCategory!, confidence: 1, qty: 1 }]);
                         setGearSearch('');
                       }}
                       className="w-full mt-2 p-3 rounded-xl flex items-center gap-3 text-left bg-[#FF7F50]/10 border border-[#FF7F50]/20 hover:border-[#FF7F50]/40 active:scale-[0.98] transition-all"
@@ -1496,7 +1521,7 @@ export default function SetupWizard() {
                   { label: 'Type', value: TANK_TYPES.find(t => t.key === tankType)?.label || tankType, icon: 'category' },
                   { label: 'Goal', value: REEF_GOALS.find(g => g.key === reefGoal)?.label || reefGoal, icon: 'flag' },
                   ...(tankStatus === 'existing' ? [
-                    { label: 'Equipment', value: `${scannedGear.length} AI-identified`, icon: 'build' },
+                    { label: 'Equipment', value: `${scannedGear.reduce((sum, g) => sum + g.qty, 0)} items`, icon: 'build' },
                     { label: 'Livestock', value: `${scannedLivestock.length} species found`, icon: 'pets' },
                     { label: 'Parameters', value: Object.values(params).filter(v => v !== null).length > 0 ? 'Baseline recorded ✓' : 'Not yet', icon: 'science' },
                   ] : [
