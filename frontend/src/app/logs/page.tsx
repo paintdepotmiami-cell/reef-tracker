@@ -55,7 +55,7 @@ export default function LogsPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const timeout = setTimeout(() => setLoading(false), 6000);
     getAllTests().then(t => { setCache('allTests', t); setTests(t); }).catch(() => {}).finally(() => { clearTimeout(timeout); setLoading(false); });
   }, [user]);
@@ -212,7 +212,7 @@ export default function LogsPage() {
   );
 
   return (
-    <div className="space-y-8 max-w-lg mx-auto">
+    <div className="space-y-8 max-w-lg mx-auto pb-28">
       <div>
         <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">Parameter Tracking</p>
         <h1 className="text-3xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Log Parameters</h1>

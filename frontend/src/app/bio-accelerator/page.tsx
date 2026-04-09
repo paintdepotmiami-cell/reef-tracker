@@ -109,7 +109,7 @@ export default function BioAcceleratorPage() {
 
   // Load water tests
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const cached = getCached<WaterTest[]>('water-tests');
     if (cached) { setTests(cached); setLoading(false); }
 
@@ -186,7 +186,7 @@ export default function BioAcceleratorPage() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-28">
       {/* Header */}
       <div>
         <Link href="/tools" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">

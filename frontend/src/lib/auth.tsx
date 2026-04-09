@@ -51,8 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [tank, setTank] = useState<Tank | null>(null);
-  const [loading, setLoading] = useState(true);
-  const initialized = useRef(false);
+  // DEV ONLY: skip auth wait for UI preview — REMOVE before deploy
+  const devBypass = process.env.NODE_ENV === 'development';
+  const [loading, setLoading] = useState(!devBypass);
+  const initialized = useRef(devBypass);
 
   const supabase = getSupabase();
 

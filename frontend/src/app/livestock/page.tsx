@@ -44,7 +44,7 @@ export default function LivestockPage() {
   const [addSuccess, setAddSuccess] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const timeout = setTimeout(() => setLoading(false), 6000);
     getAnimals().then(a => { setCache('animals', a); setAnimals(a); }).catch(() => {}).finally(() => { clearTimeout(timeout); setLoading(false); });
   }, [user]);
@@ -132,7 +132,7 @@ export default function LivestockPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-28">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

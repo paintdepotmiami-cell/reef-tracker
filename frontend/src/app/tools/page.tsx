@@ -25,7 +25,8 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
       { href: '/alerts', icon: 'notifications', color: '#ff4444', title: 'Smart Alerts', desc: 'Chemistry, salinity & maintenance notifications', live: true },
       { href: '/maintenance', icon: 'task_alt', color: '#F1C40F', title: 'Maintenance', desc: 'Track & schedule all tank maintenance tasks', live: true },
       { href: '/volume-calc', icon: 'straighten', color: '#4cd6fb', title: 'Volume & Weight', desc: 'Calculate capacity, weight & viability', live: true },
-      { href: '#', icon: 'restaurant', color: '#8f9097', title: 'Feeding Schedule', desc: 'Plan & track coral and fish feeding', live: false },
+      { href: '/feeding', icon: 'restaurant', color: '#F1C40F', title: 'Feeding Schedule', desc: 'Species-smart feeding plans & anti-overfeeding', live: true },
+      { href: '/stocking', icon: 'timeline', color: '#d7ffc5', title: 'Stocking Schedule', desc: 'When to add CUC, corals & fish — phase timeline', live: true },
     ],
   },
   {
@@ -43,6 +44,7 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     icon: 'support',
     tools: [
       { href: '/pest-id', icon: 'bug_report', color: '#FF7F50', title: 'Pest Identifier', desc: 'Identify pests & diseases with expert protocols', live: true },
+      { href: '/diagnostics', icon: 'stethoscope', color: '#c5a3ff', title: 'Reef Diagnostics', desc: 'Fish behavior & coral stress diagnosis quiz', live: true },
       { href: '/quarantine', icon: 'local_hospital', color: '#4cd6fb', title: 'Hospital / QT', desc: 'Disease protocols, meds & quarantine setup', live: true },
       { href: '/sos', icon: 'emergency', color: '#ffb4ab', title: 'Emergency SOS', desc: 'Diagnose & fix common reef problems fast', live: true },
       { href: '/power-outage', icon: 'power_off', color: '#ff4444', title: 'Power Outage', desc: 'Emergency protocol when you lose electricity', live: true },
@@ -52,7 +54,7 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
 
 export default function ToolsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-28">
       {/* Header */}
       <div>
         <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">Utilities</p>

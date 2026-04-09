@@ -48,9 +48,19 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<MaintenanceTask[]>(getCached<MaintenanceTask[]>('maintenanceTasks') || []);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
   const [loading, setLoading] = useState(!getCached('stats'));
+  const [dismissedFeed, setDismissedFeed] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = JSON.parse(localStorage.getItem('dismissedFeed') || '{}');
+      const today = new Date().toDateString();
+      return stored.date === today ? new Set(stored.ids as string[]) : new Set();
+    } catch { return new Set(); }
+  });
+  const [animatingFeed, setAnimatingFeed] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
 
     let animals: Animal[] = getCached<Animal[]>('animals') || [];
     let latestTest: WaterTest | null = getCached<WaterTest | null>('latestTest');
@@ -126,12 +136,6 @@ export default function Dashboard() {
 
   // Maintenance task helpers
   const now = new Date();
-  const overdueTasks = tasks.filter(t => t.next_due_at && new Date(t.next_due_at) < new Date(now.toDateString()));
-  const todayTasks = tasks.filter(t => {
-    if (!t.next_due_at) return false;
-    const due = new Date(t.next_due_at);
-    return due.toDateString() === now.toDateString();
-  });
   const upcomingTasks = tasks.filter(t => {
     if (!t.next_due_at) return false;
     const due = new Date(t.next_due_at);
@@ -147,6 +151,27 @@ export default function Dashboard() {
       setCache('maintenanceTasks', tasks.map(t => t.id === taskId ? updated : t));
     }
     setCompletingTask(null);
+  }
+
+  async function handleDismissFeed(itemId: string) {
+    setAnimatingFeed(itemId);
+
+    // If it's a maintenance feed item, complete the underlying task
+    const maintMatch = itemId.match(/^maint-(.+)$/);
+    if (maintMatch) {
+      await handleCompleteTask(maintMatch[1]);
+    }
+
+    // Animate out, then dismiss
+    setTimeout(() => {
+      const next = new Set(dismissedFeed);
+      next.add(itemId);
+      setDismissedFeed(next);
+      setAnimatingFeed(null);
+      try {
+        localStorage.setItem('dismissedFeed', JSON.stringify({ date: new Date().toDateString(), ids: Array.from(next) }));
+      } catch {}
+    }, 350);
   }
 
   // Consumable tasks
@@ -208,7 +233,7 @@ export default function Dashboard() {
   ] : [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-28">
       {/* HERO — Tank Viewport */}
       <section className="relative -mx-4 -mt-4 h-56 md:h-72 rounded-b-3xl overflow-hidden shadow-2xl group">
         {/* Background: photo or gradient */}
@@ -370,180 +395,165 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* TODAY FEED */}
-      {feed.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+      {/* TODAY — Accordion sections */}
+      {(() => {
+        const activeFeed = feed.filter(i => !dismissedFeed.has(i.id));
+        const sections: { key: string; label: string; icon: string; color: string; bgColor: string; items: typeof activeFeed }[] = [
+          { key: 'alerts', label: 'Alerts', icon: 'warning', color: 'text-[#ffb4ab]', bgColor: 'bg-[#ffb4ab]/10', items: activeFeed.filter(i => i.type === 'param_alert') },
+          { key: 'maintenance', label: 'Maintenance', icon: 'build', color: 'text-[#F1C40F]', bgColor: 'bg-[#F1C40F]/10', items: activeFeed.filter(i => i.type === 'maintenance') },
+          { key: 'compatibility', label: 'Compatibility', icon: 'swap_horiz', color: 'text-[#4cd6fb]', bgColor: 'bg-[#4cd6fb]/10', items: activeFeed.filter(i => i.type === 'compatibility') },
+          { key: 'general', label: 'General', icon: 'info', color: 'text-[#c5c6cd]', bgColor: 'bg-[#c5c6cd]/10', items: activeFeed.filter(i => !['param_alert', 'maintenance', 'compatibility'].includes(i.type)) },
+        ].filter(s => s.items.length > 0);
+
+        const totalDone = dismissedFeed.size;
+        const totalActive = activeFeed.length;
+
+        if (totalActive === 0 && totalDone === 0) return null;
+
+        return (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="text-xl font-[family-name:var(--font-headline)] font-extrabold text-white">Today</h2>
-              {criticalCount > 0 && (
-                <span className="px-2.5 py-0.5 bg-[#93000a]/30 text-[#ffb4ab] rounded-full text-[10px] font-bold flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">warning</span>
-                  {criticalCount} action{criticalCount > 1 ? 's' : ''} needed
-                </span>
-              )}
-              {warningCount > 0 && criticalCount === 0 && (
-                <span className="px-2.5 py-0.5 bg-[#F1C40F]/10 text-[#F1C40F] rounded-full text-[10px] font-bold">
-                  {warningCount} to review
+              {totalDone > 0 && (
+                <span className="text-[10px] text-[#2ff801] font-bold flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">check_circle</span>
+                  {totalDone} done
                 </span>
               )}
             </div>
-          </div>
 
-          <div className="space-y-3">
-            {feed.map(item => (
-              <div
-                key={item.id}
-                className={`bg-[#0d1c32] rounded-xl p-4 flex items-start gap-4 border-l-4 shadow-[0_4px_16px_rgba(1,14,36,0.2)] ${
-                  item.priority === 'critical' ? 'border-[#ffb4ab]' :
-                  item.priority === 'warning' ? 'border-[#F1C40F]' :
-                  'border-[#4cd6fb]'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  item.priority === 'critical' ? 'bg-[#ffb4ab]/10' :
-                  item.priority === 'warning' ? 'bg-[#F1C40F]/10' :
-                  'bg-[#4cd6fb]/10'
-                }`}>
-                  <span className={`material-symbols-outlined ${
-                    item.priority === 'critical' ? 'text-[#ffb4ab]' :
-                    item.priority === 'warning' ? 'text-[#F1C40F]' :
-                    'text-[#4cd6fb]'
-                  }`}>{item.icon}</span>
+            {/* Progress bar */}
+            {(totalActive + totalDone) > 0 && (
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1.5 bg-[#1c2a41] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#2ff801] to-[#4cd6fb] rounded-full transition-all duration-500"
+                    style={{ width: `${totalDone / (totalActive + totalDone) * 100}%` }}
+                  />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-[family-name:var(--font-headline)] font-bold text-white text-sm">{item.title}</p>
-                  <p className="text-xs text-[#c5c6cd] mt-1 leading-relaxed">{item.description}</p>
-                  {item.action && (
-                    <button className="mt-2 text-[10px] font-bold text-[#FF7F50] uppercase tracking-wider flex items-center gap-1 hover:underline">
-                      {item.action} <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                    </button>
-                  )}
-                </div>
+                <span className="text-[10px] text-[#c5c6cd]/50 font-mono">{totalDone}/{totalActive + totalDone}</span>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Maintenance Tracker */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-[family-name:var(--font-headline)] font-extrabold text-[#ffb59c]">Maintenance</h2>
-            {overdueTasks.length > 0 && (
-              <span className="px-2.5 py-0.5 bg-[#93000a]/30 text-[#ffb4ab] rounded-full text-[10px] font-bold">
-                {overdueTasks.length} overdue
-              </span>
             )}
-          </div>
-        </div>
 
-        {/* Overdue */}
-        {overdueTasks.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[10px] font-bold text-[#ffb4ab] uppercase tracking-widest flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#ffb4ab] shadow-[0_0_6px_#ffb4ab]"></span>
-              Overdue
-            </p>
-            {overdueTasks.map(t => {
-              const daysOverdue = Math.floor((now.getTime() - new Date(t.next_due_at!).getTime()) / 86400000);
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => handleCompleteTask(t.id)}
-                  disabled={completingTask === t.id}
-                  className="w-full bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4 border-l-4 border-[#ffb4ab] text-left active:scale-[0.98] transition-all disabled:opacity-50 shadow-[0_4px_16px_rgba(1,14,36,0.2)]"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-[#ffb4ab]/10 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[#ffb4ab]">{getCategoryIcon(t.category)}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-[family-name:var(--font-headline)] font-bold text-white text-sm">{t.task_name}</p>
-                    <p className="text-[10px] text-[#ffb4ab] mt-0.5">{daysOverdue} day{daysOverdue > 1 ? 's' : ''} overdue \u00b7 every {t.interval_days}d</p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border-2 border-[#ffb4ab]/30 flex items-center justify-center shrink-0">
-                    {completingTask === t.id ? (
-                      <span className="material-symbols-outlined text-[#ffb4ab] text-sm animate-spin">progress_activity</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[#ffb4ab]/40 text-sm">check</span>
+            {/* All done state */}
+            {totalActive === 0 && totalDone > 0 && (
+              <div className="bg-[#2ff801]/10 border border-[#2ff801]/20 rounded-xl p-6 text-center">
+                <span className="material-symbols-outlined text-3xl text-[#2ff801]">task_alt</span>
+                <p className="text-[#2ff801] font-bold mt-2">All done for today!</p>
+                <p className="text-[10px] text-[#c5c6cd]/50 mt-1">{totalDone} task{totalDone > 1 ? 's' : ''} completed</p>
+              </div>
+            )}
+
+            {/* Accordion sections */}
+            <div className="space-y-3">
+              {sections.map(section => {
+                const isCollapsed = collapsedSections.has(section.key);
+                return (
+                  <div key={section.key} className="bg-[#0d1c32] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(1,14,36,0.2)]">
+                    {/* Accordion header */}
+                    <button
+                      onClick={() => setCollapsedSections(prev => {
+                        const next = new Set(prev);
+                        if (next.has(section.key)) next.delete(section.key);
+                        else next.add(section.key);
+                        return next;
+                      })}
+                      className="w-full flex items-center gap-3 p-4 text-left active:bg-[#1c2a41]/50 transition-colors"
+                    >
+                      <div className={`w-8 h-8 rounded-lg ${section.bgColor} flex items-center justify-center`}>
+                        <span className={`material-symbols-outlined text-base ${section.color}`}>{section.icon}</span>
+                      </div>
+                      <span className="flex-1 font-[family-name:var(--font-headline)] font-bold text-white text-sm">{section.label}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-[#1c2a41] text-[10px] font-bold text-[#c5c6cd]">
+                        {section.items.length}
+                      </span>
+                      <span className={`material-symbols-outlined text-[#c5c6cd]/40 text-lg transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`}>
+                        expand_more
+                      </span>
+                    </button>
+
+                    {/* Accordion content */}
+                    {!isCollapsed && (
+                      <div className="px-4 pb-3 space-y-2">
+                        {section.items.map(item => (
+                          <div
+                            key={item.id}
+                            className={`rounded-lg p-3 flex items-start gap-3 transition-all duration-300 ${
+                              animatingFeed === item.id ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100'
+                            } ${
+                              item.priority === 'critical' ? 'bg-[#ffb4ab]/5 border border-[#ffb4ab]/15' :
+                              item.priority === 'warning' ? 'bg-[#F1C40F]/5 border border-[#F1C40F]/10' :
+                              'bg-[#1c2a41]/40 border border-[#1c2a41]'
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-white text-[13px] leading-tight">{item.title}</p>
+                              <p className="text-[11px] text-[#c5c6cd]/70 mt-1 leading-relaxed">{item.description}</p>
+                            </div>
+                            <button
+                              onClick={() => handleDismissFeed(item.id)}
+                              disabled={animatingFeed === item.id}
+                              className="group/chk w-8 h-8 rounded-full border-2 border-[#c5c6cd]/20 flex items-center justify-center shrink-0 mt-0.5 hover:border-[#2ff801] hover:bg-[#2ff801]/15 active:scale-90 transition-all disabled:opacity-50"
+                            >
+                              {animatingFeed === item.id ? (
+                                <span className="material-symbols-outlined text-[#2ff801] text-sm animate-spin">progress_activity</span>
+                              ) : (
+                                <span className="material-symbols-outlined text-[#c5c6cd]/30 group-hover/chk:text-[#2ff801] text-sm transition-colors">check</span>
+                              )}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
 
-        {/* Today */}
-        {todayTasks.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[10px] font-bold text-[#F1C40F] uppercase tracking-widest flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#F1C40F] shadow-[0_0_6px_#F1C40F]"></span>
-              Today
-            </p>
-            {todayTasks.map(t => (
-              <button
-                key={t.id}
-                onClick={() => handleCompleteTask(t.id)}
-                disabled={completingTask === t.id}
-                className="w-full bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4 border-l-4 border-[#F1C40F] text-left active:scale-[0.98] transition-all disabled:opacity-50 shadow-[0_4px_16px_rgba(1,14,36,0.2)]"
-              >
-                <div className="w-10 h-10 rounded-xl bg-[#F1C40F]/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[#F1C40F]">{getCategoryIcon(t.category)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-[family-name:var(--font-headline)] font-bold text-white text-sm">{t.task_name}</p>
-                  <p className="text-[10px] text-[#F1C40F]/70 mt-0.5">Due today \u00b7 every {t.interval_days}d</p>
-                </div>
-                <div className="w-8 h-8 rounded-full border-2 border-[#F1C40F]/30 flex items-center justify-center shrink-0">
-                  {completingTask === t.id ? (
-                    <span className="material-symbols-outlined text-[#F1C40F] text-sm animate-spin">progress_activity</span>
-                  ) : (
-                    <span className="material-symbols-outlined text-[#F1C40F]/40 text-sm">check</span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Upcoming */}
-        {upcomingTasks.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[10px] font-bold text-[#2ff801] uppercase tracking-widest flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#2ff801] shadow-[0_0_6px_#2ff801]"></span>
-              Upcoming
-            </p>
-            {upcomingTasks.map(t => {
-              const daysUntil = Math.ceil((new Date(t.next_due_at!).getTime() - now.getTime()) / 86400000);
-              return (
-                <div
-                  key={t.id}
-                  className="bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4 border-l-4 border-[#2ff801]/30 shadow-[0_4px_16px_rgba(1,14,36,0.2)]"
+            {/* Coming Up */}
+            {upcomingTasks.length > 0 && (
+              <div className="bg-[#0d1c32]/50 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setCollapsedSections(prev => {
+                    const next = new Set(prev);
+                    if (next.has('upcoming')) next.delete('upcoming');
+                    else next.add('upcoming');
+                    return next;
+                  })}
+                  className="w-full flex items-center gap-3 p-4 text-left active:bg-[#1c2a41]/50 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-[#2ff801]/10 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[#2ff801]/60">{getCategoryIcon(t.category)}</span>
+                  <div className="w-8 h-8 rounded-lg bg-[#c5c6cd]/5 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-base text-[#c5c6cd]/40">schedule</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-[family-name:var(--font-headline)] font-bold text-[#c5c6cd] text-sm">{t.task_name}</p>
-                    <p className="text-[10px] text-[#2ff801]/50 mt-0.5">In {daysUntil} day{daysUntil > 1 ? 's' : ''} \u00b7 every {t.interval_days}d</p>
+                  <span className="flex-1 font-[family-name:var(--font-headline)] font-bold text-[#c5c6cd]/50 text-sm">Coming Up</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#1c2a41]/50 text-[10px] font-bold text-[#c5c6cd]/40">
+                    {upcomingTasks.length}
+                  </span>
+                  <span className={`material-symbols-outlined text-[#c5c6cd]/30 text-lg transition-transform duration-200 ${collapsedSections.has('upcoming') ? '' : 'rotate-180'}`}>
+                    expand_more
+                  </span>
+                </button>
+                {!collapsedSections.has('upcoming') && (
+                  <div className="px-4 pb-3 space-y-2">
+                    {upcomingTasks.map(t => {
+                      const daysUntil = Math.ceil((new Date(t.next_due_at!).getTime() - now.getTime()) / 86400000);
+                      return (
+                        <div key={t.id} className="rounded-lg p-3 flex items-center gap-3 bg-[#1c2a41]/20">
+                          <span className="material-symbols-outlined text-[#c5c6cd]/30 text-lg">{getCategoryIcon(t.category)}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] text-[#c5c6cd]/60 font-medium">{t.task_name}</p>
+                          </div>
+                          <span className="text-[10px] text-[#c5c6cd]/35 font-mono shrink-0">{daysUntil}d</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {tasks.length === 0 && (
-          <div className="bg-[#0d1c32] rounded-2xl p-8 text-center shadow-[0_4px_16px_rgba(1,14,36,0.2)]">
-            <span className="material-symbols-outlined text-4xl text-[#ffb59c]/30">task_alt</span>
-            <p className="text-[#c5c6cd] text-sm mt-3">No maintenance tasks yet.</p>
-            <p className="text-[10px] text-[#c5c6cd]/50 mt-1">Tasks will appear once your tank is set up.</p>
-          </div>
-        )}
-      </section>
+                )}
+              </div>
+            )}
+          </section>
+        );
+      })()}
 
       {/* ReefOS Videos */}
       <ContextVideos page="/" />

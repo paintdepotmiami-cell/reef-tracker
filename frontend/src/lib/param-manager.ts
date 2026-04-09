@@ -193,11 +193,40 @@ function getPhosphateActions(value: number): ActionItem[] {
     });
   }
 
+  // OTS: Substrate phosphate saturation (tanks > 2 years)
+  actions.push({
+    type: 'mechanical', icon: 'cleaning_services', color: '#F1C40F', urgent: false,
+    title: 'OTS: Deep Sand Bed Sifonado',
+    description: 'In mature tanks (2+ years), the sand bed and rock act as phosphate sinks — absorbing calcium phosphate over time. Any pH or temperature fluctuation releases stored phosphate in a burst. Siphon the top 1cm of sand in SECTIONS (never all at once), one section per water change, to gradually purge accumulated detritus without crashing the system.',
+  });
+
+  // OTS: Allelopathy carbon for mixed reefs
+  if (value > 0.05) {
+    actions.push({
+      type: 'chemical', icon: 'filter_alt', color: '#c5a3ff', urgent: false,
+      title: 'OTS: Activated Carbon (Allelopathy Defense)',
+      description: 'In mixed reefs with soft corals (Sarcophyton, Sinularia, Xenia) and SPS/LPS together, soft corals release terpenes that poison SPS. High-quality activated carbon absorbs these chemical warfare compounds. Replace carbon every 3-4 weeks — exhausted carbon leaches toxins back.',
+      product: { name: 'ROX 0.8 Carbon', brand: 'BRS', why: 'High-porosity pelletized carbon — absorbs terpenes and phenols', buyUrl: null, placeholder: true },
+    });
+  }
+
   return actions;
 }
 
 function getNitrateActions(value: number): ActionItem[] {
   const actions: ActionItem[] = [];
+
+  // OTS: Zero nutrients = Dinoflagellate trap
+  if (value === 0) {
+    actions.push({
+      type: 'biological', icon: 'warning', color: '#ff4444', urgent: true,
+      title: '⚠️ OTS: Dinoflagellate Danger — NO₃ at ZERO!',
+      description: 'Zero nitrate creates a sterile biological vacuum. Beneficial bacteria die, and dinoflagellates (mixotrophic organisms) exploit the void. STOP all nutrient reduction! Dose potassium nitrate (KNO₃) to raise NO₃ to 2-5 ppm. Add live copepods as biological control. Dinoflagellates appear as brown snotty film during lights-on that retracts at night.',
+      product: { name: 'Potassium Nitrate (KNO₃)', brand: 'Brightwell NeoNitro', why: 'Safely raises NO₃ without adding phosphate', buyUrl: null, placeholder: true },
+    });
+    return actions;
+  }
+
   if (value <= 10) return actions;
 
   actions.push({
@@ -236,11 +265,16 @@ function getSalinityActions(value: number): ActionItem[] {
   const actions: ActionItem[] = [];
 
   if (value > 1.026) {
-    // HIGH — evaporation
+    // HIGH — evaporation OR ionic drift
     actions.push({
       type: 'routine', icon: 'water_drop', color: '#4cd6fb', urgent: value > 1.028,
       title: 'Add Fresh RO/DI Water',
       description: 'Water evaporates but salt stays behind. Top off with FRESH reverse osmosis water only — NEVER add saltwater. Add slowly over several hours to avoid shocking livestock.',
+    });
+    actions.push({
+      type: 'chemical', icon: 'swap_horiz', color: '#FF7F50', urgent: false,
+      title: 'OTS: Check for Ionic Drift',
+      description: 'If you use 2-Part (Balling) dosing AND do infrequent water changes, rising salinity may be caused by NaCl accumulation — a byproduct of every 2-Part dose. Each CaCO₃ molecule consumed produces 2 NaCl molecules. A 20% water change acts as an "Ionic Reset", restoring natural seawater trace element ratios.',
     });
     actions.push({
       type: 'mechanical', icon: 'sensors', color: '#2ff801', urgent: false,
@@ -310,8 +344,8 @@ function getTemperatureActions(value: number): ActionItem[] {
     });
     actions.push({
       type: 'mechanical', icon: 'settings', color: '#ff4444', urgent: true,
-      title: 'Use a Heater Controller',
-      description: 'An external controller (Inkbird, Neptune) provides a failsafe — if the heater sticks on, the controller cuts power before it cooks the tank.',
+      title: 'OTS: Heater Controller — #1 Life Insurance',
+      description: 'The heater is the MOST DANGEROUS equipment in your tank. When heaters fail, they fail ON — cooking the entire tank overnight. An external controller (Inkbird, Neptune) cuts power if temp exceeds your setpoint. This is the single most important safety purchase for any reef.',
       product: { name: 'ITC-306T', brand: 'Inkbird', why: 'Dual-relay heater controller with overheat protection', buyUrl: null, placeholder: true },
     });
     actions.push({
@@ -449,6 +483,11 @@ function getMagnesiumActions(value: number): ActionItem[] {
       title: 'Fix Before Dosing Ca/Alk',
       description: 'Stop dosing calcium and alkalinity until magnesium is above 1250 ppm. Dosing Ca/Alk with low Mg wastes product and causes instability.',
     });
+    actions.push({
+      type: 'mechanical', icon: 'settings', color: '#FF7F50', urgent: false,
+      title: 'OTS: Abiotic Precipitation Warning',
+      description: 'Without adequate Mg, calcium carbonate precipitates SPONTANEOUSLY on hot surfaces — pump impellers, heater elements, reactor media, and even rock surfaces. This "abiotic precipitation" drains Ca and Alk faster than coral consumption. White crystalline deposits on your equipment = Mg is too low.',
+    });
   }
 
   if (value > 1450) {
@@ -496,7 +535,7 @@ export function assessAllParameters(test: WaterTest | null): ParamAssessment[] {
         case 'phosphate':
           actions = getPhosphateActions(value);
           summary = value <= 0.03 ? `PO₄ at ${value} ppm — optimal range.` : `PO₄ at ${value} ppm (target: <0.03). High phosphate inhibits coral calcification and fuels nuisance algae.`;
-          science = 'Phosphate enters primarily through fish food. It fuels algae growth and at high levels blocks coral skeleton formation. GFO, macroalgae, and Kalkwasser all help remove it.';
+          science = 'Phosphate enters through fish food and decomposing organics. In mature tanks (2+ years), sand beds and rock adsorb calcium phosphate, becoming "phosphate sinks" that release stored PO₄ during pH or temperature swings — the foundation of Old Tank Syndrome (OTS). GFO, macroalgae, Kalkwasser, and periodic deep sifonado all help manage it.';
           break;
         case 'nitrate':
           actions = getNitrateActions(value);
@@ -516,12 +555,12 @@ export function assessAllParameters(test: WaterTest | null): ParamAssessment[] {
         case 'magnesium':
           actions = getMagnesiumActions(value);
           summary = value >= 1280 && value <= 1380 ? `Mg at ${value} ppm — optimal.` : value < 1280 ? `Mg at ${value} ppm — low. Ca and Alk CANNOT hold stable without proper Mg. Fix this FIRST.` : `Mg at ${value} ppm — above target, reduce dosing.`;
-          science = 'Magnesium prevents spontaneous calcium carbonate precipitation. Without enough Mg, Ca and Alk crash together. Mg is the foundation that holds the Ca/Alk balance stable.';
+          science = 'Magnesium is the anti-precipitation shield. Mg ions occupy crystal lattice sites on CaCO₃ surfaces, preventing spontaneous (abiotic) precipitation. Without adequate Mg, calcium carbonate deposits form on pump rotors, heater elements, and reactor media — draining Ca/Alk reserves faster than coral consumption. Mg is the foundation of the Ca/Alk/Mg triad.';
           break;
         case 'salinity':
           actions = getSalinityActions(value);
           summary = value >= 1.024 && value <= 1.026 ? `Salinity at ${value} — perfect.` : value > 1.026 ? `Salinity at ${value} — rising. Water is evaporating and concentrating salt. Top off with RO/DI water (NOT saltwater).` : `Salinity at ${value} — low. ATO may be adding too much fresh water.`;
-          science = 'Saltwater evaporates but salt stays behind, concentrating salinity. ATO (Auto Top-Off) adds fresh water to compensate. Without ATO, salinity can spike 0.002+ per day.';
+          science = 'Saltwater evaporates but salt stays behind, concentrating salinity. ATO adds fresh water to compensate. In tanks using 2-Part dosing, salinity can also creep up from NaCl byproduct accumulation (ionic drift). Regular water changes serve as an "ionic reset" — not just nutrient export, but restoration of natural seawater mineral ratios.';
           break;
         case 'ph':
           actions = getPhActions(value);

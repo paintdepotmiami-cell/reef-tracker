@@ -530,10 +530,11 @@ export default function SetupWizard() {
             <>
               <div className="bg-[#0d1c32] rounded-2xl p-5 space-y-5 border border-[#1c2a41]">
                 {[
-                  { num: 1, icon: 'water_drop', title: 'Fill with RO/DI Water', desc: 'Use purified water only — never tap water. TDS meter should read 0.', color: '#4cd6fb' },
-                  { num: 2, icon: 'science', title: 'Add Salt Mix', desc: `For ${gallons || 40} gallons: approximately ${Math.round((gallons || 40) * 0.5)} cups of salt mix. Target: 35 ppt (1.026 SG).`, color: '#FF7F50' },
-                  { num: 3, icon: 'autorenew', title: 'Mix for 24 Hours', desc: 'Add a heater (set to 77°F) and a pump. Let it circulate overnight to fully dissolve and aerate.', color: '#F1C40F' },
-                  { num: 4, icon: 'straighten', title: 'Verify with Refractometer', desc: 'Measure salinity — should read 1.025-1.026. Adjust salt/water if needed before adding to tank.', color: '#2ff801' },
+                  { num: 1, icon: 'water_drop', title: 'Fill with RO/DI Water FIRST', desc: 'Fill the tank with purified freshwater ONLY. Aerate with a powerhead for 30 minutes to release trapped gases before adding salt. TDS meter should read 0. Never use tap water.', color: '#4cd6fb' },
+                  { num: 2, icon: 'science', title: 'Dissolve Salt Slowly', desc: `For ${gallons || 40} gallons: approximately ${Math.round((gallons || 40) * 0.5)} cups of salt mix. Add salt gradually while the pump circulates. Target: 35 ppt (1.026 SG). Verify with refractometer as you go.`, color: '#FF7F50' },
+                  { num: 3, icon: 'autorenew', title: 'Mix & Heat for 24 Hours', desc: 'Set heater to 77°F and let the pump circulate overnight. This fully dissolves salt and stabilizes temperature. Turn on ALL equipment (skimmer, return pump, wavemakers) to verify flow and check for leaks.', color: '#F1C40F' },
+                  { num: 4, icon: 'landscape', title: 'Aquascape: Rock FIRST, Sand LATER', desc: 'Place live rock directly on the glass bottom to create caves and overhangs. Do NOT put sand first — fish dig and can topple rocks. Pro tip: you can add sand after 4-6 weeks to avoid trapping detritus during the cycling phase.', color: '#c5a3ff' },
+                  { num: 5, icon: 'straighten', title: 'Verify Parameters', desc: 'Measure salinity (1.025-1.026), temperature (76-78°F), and pH (8.0-8.4). Everything must be stable before starting the nitrogen cycle.', color: '#2ff801' },
                 ].map(s => (
                   <div key={s.num} className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${s.color}15` }}>
@@ -581,10 +582,11 @@ export default function SetupWizard() {
                 {/* Visual Timeline */}
                 <div className="space-y-4">
                   {[
-                    { week: 'Week 1-2', title: 'Ammonia Spike', desc: 'Bacteria begin colonizing rock. NH3 rises — this is normal and expected.', color: '#ffb4ab', icon: 'trending_up' },
-                    { week: 'Week 2-3', title: 'Nitrite Spike', desc: 'Nitrosomonas bacteria convert NH3 → NO2. Nitrite peaks then slowly falls.', color: '#F1C40F', icon: 'swap_horiz' },
-                    { week: 'Week 3-5', title: 'Nitrate Appears', desc: 'Nitrospira bacteria convert NO2 → NO3. Nitrate rises while NH3 and NO2 drop to zero.', color: '#FF7F50', icon: 'trending_down' },
-                    { week: 'Week 4-6', title: '🟢 Safe to Stock', desc: 'NH3 = 0, NO2 = 0, NO3 present. Cycle is complete! Start with cleanup crew.', color: '#2ff801', icon: 'check_circle' },
+                    { week: 'Week 1-2', title: 'Ammonia Spike', desc: 'Bacteria begin colonizing rock. NH₃ rises — this is 100% NORMAL. Do NOT panic and do NOT add fish. The spike is food for beneficial bacteria.', color: '#ffb4ab', icon: 'trending_up' },
+                    { week: 'Week 2-3', title: 'Nitrite Spike', desc: 'Nitrosomonas bacteria convert NH₃ → NO₂. Nitrite peaks then slowly falls. Still toxic — patience is key.', color: '#F1C40F', icon: 'swap_horiz' },
+                    { week: 'Week 3-5', title: 'Nitrate Appears', desc: 'Nitrospira bacteria convert NO₂ → NO₃. Nitrate rises while NH₃ and NO₂ drop to zero. You\'re almost there!', color: '#FF7F50', icon: 'trending_down' },
+                    { week: 'Week 5-6', title: 'Stabilization', desc: 'Temporary NO₃ spike (20-40 ppm) is expected during weeks 5-6. This is normal maturation. A 25% water change before stocking will bring it down.', color: '#c5a3ff', icon: 'timeline' },
+                    { week: 'Week 6+', title: 'Safe to Stock!', desc: 'NH₃ = 0, NO₂ = 0 across 2-3 consecutive tests. Cycle is complete! Do a water change and start with your Cleanup Crew.', color: '#2ff801', icon: 'check_circle' },
                   ].map((phase, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">

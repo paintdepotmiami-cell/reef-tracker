@@ -96,7 +96,7 @@ export default function AcclimatePage() {
   }
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-28">
       {/* Header */}
       <div>
         <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">New Arrivals</p>
@@ -161,7 +161,7 @@ function StepByStep({
   const progress = completedSteps.size / method.steps.length * 100;
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-28">
       {/* Back + method title */}
       <div>
         <button onClick={onBack} className="flex items-center gap-1 text-[#c5c6cd] text-sm mb-4 hover:text-[#FF7F50] transition-colors">

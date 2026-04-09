@@ -1,13 +1,14 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
+import Link from 'next/link';
 
 export default function TopBar() {
   const { profile, tank } = useAuth();
 
   return (
     <header className="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#041329]/80 backdrop-blur-xl shadow-[0_8px_24px_rgba(1,14,36,0.3)]">
-      <div className="flex items-center gap-3">
+      <Link href="/" className="flex items-center gap-3">
         <span className="material-symbols-outlined text-[#FF7F50]">waves</span>
         <div>
           <span className="font-[family-name:var(--font-headline)] font-extrabold italic tracking-tight text-[#FF7F50] text-xl">
@@ -19,7 +20,7 @@ export default function TopBar() {
             </p>
           )}
         </div>
-      </div>
+      </Link>
       <div className="flex items-center gap-2">
         <button className="w-9 h-9 flex items-center justify-center rounded-full text-[#c5c6cd] hover:bg-[#1c2a41] transition-colors">
           <span className="material-symbols-outlined text-xl">notifications</span>

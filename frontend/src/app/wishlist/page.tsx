@@ -59,7 +59,7 @@ export default function WishlistPage() {
   );
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-28">
       {/* Header */}
       <div>
         <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">Want List</p>

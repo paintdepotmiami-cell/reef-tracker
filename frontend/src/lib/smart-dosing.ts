@@ -163,16 +163,16 @@ function getMethodAdvice(
     });
   }
 
-  // ── Water Change ──
+  // ── Water Change (Ionic Reset) ──
   methods.push({
     method: 'water_change',
-    methodName: 'Water Change',
+    methodName: 'Water Change (Ionic Reset)',
     methodIcon: 'sync',
     methodColor: '#FF7F50',
     recommended: isSmallAdjustment,
-    reason: `A ${isSmallAdjustment ? '10-15%' : '20%'} water change with quality salt mix naturally adjusts parameters. Salt mixes are formulated to target ideal levels.`,
+    reason: `A ${isSmallAdjustment ? '10-15%' : '20%'} water change with quality salt mix naturally adjusts parameters AND performs an "Ionic Reset" — flushing accumulated NaCl byproducts from 2-Part dosing and restoring trace elements (Sr, B, I, Fe) to natural seawater proportions.`,
     warnings: isSmallAdjustment
-      ? []
+      ? ['Even if parameters look fine, regular water changes are critical for ionic balance when using 2-Part dosing long-term.']
       : ['For large deficits, water changes alone won\'t be enough. Use in combination with 2-Part dosing.'],
     schedule: isSmallAdjustment ? 'Single water change may resolve it' : 'Weekly 10-15% water changes as supplemental support',
   });
@@ -281,29 +281,43 @@ export function calculateSmartDosing(
     tips.push('Dose Alk at NIGHT — pH naturally drops after lights-out, and the alkalinity buffer counteracts this.');
     if (ctx.hasSPS) {
       tips.push('SPS corals consume Alk fastest. Test 2-3x per week and adjust dosing as colony grows.');
+      tips.push('⚠️ OTS: As coral colonies grow, consumption rises EXPONENTIALLY — not linearly. A thriving tank at 2 years may need 3-4x the dose it started with. Re-evaluate dosing every 3 months.');
     }
     tips.push('Alk stability is more important than the exact number. A stable 8.0 is better than swinging between 8 and 10.');
+    tips.push('📏 Calibrate your Hanna/KH checker every 4 weeks. A drifting probe will make your reactor or dosing pump deliver wrong amounts — cascading error.');
   }
   if (lowerParam === 'calcium') {
     tips.push('Always dose Ca and Alk in equal proportions to maintain ionic balance.');
     tips.push('If Ca won\'t rise despite dosing, check Magnesium first — low Mg prevents Ca from holding.');
+    tips.push('⚠️ OTS: Check dosing tubes every 6-12 months — calcium chloride crystallizes inside tubing, reducing flow. Your dosing pump may be delivering LESS than you think.');
   }
   if (lowerParam === 'magnesium') {
     tips.push('Fix Mg FIRST before adjusting Ca or Alk. Low Magnesium makes it impossible to maintain Ca/Alk stability.');
     tips.push('Mg is consumed much slower than Ca/Alk. Monthly testing and dosing is usually sufficient.');
+    tips.push('🔬 OTS: Magnesium is the ANTI-PRECIPITATION shield. Without adequate Mg (>1280 ppm), calcium carbonate precipitates spontaneously on hot surfaces — pump rotors, heater elements, reactor media. This is "abiotic precipitation" and it drains Ca/Alk faster than your corals do.');
+  }
+
+  // ── OTS: Ionic Drift Warning (applies to all 2-Part dosing) ──
+  tips.push('🧪 Ionic Drift: Every dose of 2-Part (Balling) produces NaCl as a byproduct. Over months, sodium and chloride accumulate, displacing trace elements (Sr, B, I, Fe). Water changes are NOT just for nutrient export — they are an "ionic reset" that restores natural seawater proportions.');
+  if (ctx.hasDosingSPump) {
+    tips.push('💡 With automated dosing, it\'s easy to forget water changes. But with 2-Part, regular 10-15% weekly water changes are ESSENTIAL to flush accumulated NaCl. No water change = ionic drift → mysterious coral decline.');
   }
 
   // ── Cross-parameter warnings ──
   const crossWarnings: string[] = [];
 
   if (ctx.currentMg !== null && ctx.currentMg < 1200) {
-    crossWarnings.push(`Magnesium is low (${ctx.currentMg} ppm). Raise Mg to 1300+ ppm BEFORE adjusting ${param}. Ca and Alk cannot be maintained with low Mg.`);
+    crossWarnings.push(`⚠️ Magnesium is low (${ctx.currentMg} ppm). Raise Mg to 1300+ ppm BEFORE adjusting ${param}. Ca and Alk cannot be maintained with low Mg. Low Mg also causes abiotic CaCO₃ precipitation on pump rotors and heater elements.`);
   }
   if (lowerParam === 'calcium' && ctx.currentAlk !== null && ctx.currentAlk < 7) {
     crossWarnings.push(`Alkalinity is critically low (${ctx.currentAlk} dKH). Address Alk first — it affects coral health more immediately than Calcium.`);
   }
   if (lowerParam === 'alkalinity' && ctx.currentCa !== null && ctx.currentCa < 380) {
     crossWarnings.push(`Calcium is also low (${ctx.currentCa} ppm). Dose both Ca and Alk proportionally to maintain balance.`);
+  }
+  // OTS: Mg too HIGH — possible overdosing or salt mix issue
+  if (ctx.currentMg !== null && ctx.currentMg > 1500) {
+    crossWarnings.push(`Mg is elevated (${ctx.currentMg} ppm). While high Mg is less dangerous than low, check your salt mix brand — some run high on Mg. A water change with a balanced salt mix will normalize it.`);
   }
 
   return {

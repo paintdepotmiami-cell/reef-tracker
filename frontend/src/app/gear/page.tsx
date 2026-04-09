@@ -317,7 +317,7 @@ export default function GearPage() {
   const [fNotes, setFNotes] = useState('');
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const timeout = setTimeout(() => setLoading(false), 6000);
     Promise.allSettled([
       getEquipment().then(e => { setCache('equipment', e); setEquipment(e); }),

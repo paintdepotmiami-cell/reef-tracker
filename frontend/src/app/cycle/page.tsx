@@ -273,7 +273,7 @@ export default function CyclePage() {
   const [expandedPhase, setExpandedPhase] = useState<CyclePhase>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     getAllTests().then(t => {
       setTests(t);
       setCache('allTests', t);
@@ -317,7 +317,7 @@ export default function CyclePage() {
   );
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-28">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/tools" className="w-9 h-9 rounded-xl bg-[#1c2a41] flex items-center justify-center shrink-0">

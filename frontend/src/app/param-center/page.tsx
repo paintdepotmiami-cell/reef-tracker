@@ -26,7 +26,7 @@ export default function ParamCenterPage() {
   const [filterMode, setFilterMode] = useState<'all' | 'issues'>('issues');
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const cached = getCached<WaterTest>('latest-test');
     if (cached) { setTest(cached); setLoading(false); }
 
@@ -70,7 +70,7 @@ export default function ParamCenterPage() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-28">
       {/* Header */}
       <div>
         <Link href="/tools" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">

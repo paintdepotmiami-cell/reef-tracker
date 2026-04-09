@@ -143,7 +143,7 @@ export default function PowerOutagePage() {
   const [tab, setTab] = useState<'protocol' | 'survival' | 'kit'>('protocol');
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-28">
       {/* Header */}
       <div>
         <Link href="/tools" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">

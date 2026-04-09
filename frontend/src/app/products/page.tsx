@@ -70,7 +70,7 @@ export default function ProductsPage() {
   const myProductIds = new Set(myProducts.map(up => up.product_id));
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     Promise.allSettled([
       getProducts().then(setProducts),
       getUserProducts().then(setMyProducts),

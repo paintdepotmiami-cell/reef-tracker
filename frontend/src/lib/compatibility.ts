@@ -61,9 +61,15 @@ const CONFLICT_MATRIX: [string, string, 'critical' | 'warning' | 'info', string]
   ['Torch', 'Mushroom', 'warning', 'Euphyllia sweepers can damage mushroom corals. Keep 6" minimum distance.'],
   ['Galaxy Coral', '*', 'warning', 'Galaxy coral (Galaxea) has very long sweeper tentacles (up to 12"). Keep far from all other corals.'],
   ['Leather', 'SPS', 'warning', 'Leather corals release terpenes that can inhibit SPS growth. Run activated carbon.'],
+  ['Sarcophyton', 'SPS', 'critical', '⚠️ ALLELOPATHY: Sarcophyton (Toadstool Leather) releases potent terpenes that cause tissue necrosis in SPS corals (especially Acropora). Requires continuous high-quality activated carbon AND strong flow to dilute toxins. Many expert reefers avoid mixing these genera entirely.'],
+  ['Sarcophyton', 'Acropora', 'critical', '⚠️ ALLELOPATHY: Sarcophyton terpenes are lethal to Acropora. Chemical warfare occurs even without physical contact — toxins travel through the water column. Run carbon 24/7 and replace every 3 weeks.'],
+  ['Sinularia', 'SPS', 'critical', '⚠️ ALLELOPATHY: Sinularia (Finger Leather) produces terpenes toxic to SPS corals. Same chemical warfare as Sarcophyton. Continuous activated carbon is mandatory in mixed reefs with Sinularia + SPS.'],
+  ['Sinularia', 'Acropora', 'critical', '⚠️ ALLELOPATHY: Sinularia terpenes cause RTN (Rapid Tissue Necrosis) in Acropora and other SPS. These cannot safely coexist without aggressive chemical filtration.'],
+  ['Galaxea', '*', 'critical', '⚠️ ALLELOPATHY: Galaxea (Galaxy Coral) has sweeper tentacles up to 20cm (8 inches) — much longer than most corals. Will kill ANYTHING within reach at night when tentacles fully extend. Keep 20cm+ minimum from ALL neighbors.'],
   ['GSP', '*', 'warning', 'Green Star Polyps grow aggressively and will overgrow neighboring corals. Keep on isolated rock.'],
   ['Xenia', '*', 'info', 'Xenia spreads rapidly and can become invasive. Consider keeping on a frag island.'],
   ['Kenya Tree', '*', 'info', 'Kenya Trees drop branches that root everywhere. Can become a nuisance. Place carefully.'],
+  ['Palythoa', '*', 'warning', 'Palythoa contain palytoxin — one of the deadliest natural toxins. NEVER boil, frag with open cuts, or scrub without gloves. Dangerous to humans, not just tankmates.'],
 
   // Anemone conflicts
   ['Anemone', 'coral', 'warning', 'Anemones move freely and will sting any coral they touch. They need space.'],
@@ -248,6 +254,25 @@ export function checkCompatibility(
   // 7. Difficulty warning
   if (candidate.difficulty === 'Hard' || candidate.difficulty === 'Expert') {
     tips.push(`${candidateName} is rated "${candidate.difficulty}". Make sure your parameters are stable and you have experience with similar species before adding.`);
+  }
+
+  // 8. OTS: Allelopathy general warning for mixed reefs (soft + SPS)
+  if (candidateCat === 'coral') {
+    const hasSoftCorals = currentAnimals.some(a =>
+      a.type === 'coral' && ['Leather', 'Sarcophyton', 'Sinularia', 'Toadstool', 'Xenia', 'Kenya', 'Mushroom', 'Rhodactis', 'Ricordea'].some(s => a.name.includes(s) || (a.subtype || '').includes(s))
+    );
+    const hasSPS = currentAnimals.some(a =>
+      a.type === 'coral' && ['Acropora', 'Montipora', 'Stylophora', 'Pocillopora', 'Seriatopora', 'SPS'].some(s => a.name.includes(s) || (a.subtype || '').includes(s))
+    );
+    const candidateIsSoft = ['Leather', 'Sarcophyton', 'Sinularia', 'Toadstool', 'Xenia', 'Kenya', 'Mushroom'].some(s => candidateName.includes(s) || candidateSub.includes(s));
+    const candidateIsSPS = ['Acropora', 'Montipora', 'Stylophora', 'Pocillopora', 'Seriatopora', 'SPS'].some(s => candidateName.includes(s) || candidateSub.includes(s));
+
+    if ((candidateIsSoft && hasSPS) || (candidateIsSPS && hasSoftCorals)) {
+      tips.push('🧪 OTS Allelopathy Warning: Mixing soft corals with SPS in the same system requires continuous activated carbon filtration. Soft corals release terpenes that inhibit SPS growth and can cause tissue necrosis. Replace carbon every 3-4 weeks.');
+    }
+
+    // Growth spacing warning
+    tips.push(`📐 Plan for FUTURE growth: ${candidateName} will grow over time. Leave space between colonies — corals that touch compete chemically. Use the Planner to visualize spacing.`);
   }
 
   // 8. Diet/feeding tips

@@ -195,6 +195,48 @@ export function generateChemistryAlerts(tests: WaterTest[]): ReefAlert[] {
     });
   }
 
+  // ── OTS: Dinoflagellate Trap (NO₃ = 0 AND PO₄ = 0) ──
+  const no3 = latest.nitrate ?? -1;
+  if (no3 === 0 && po4 === 0) {
+    alerts.push({
+      id: `dino-trap-${now}`,
+      severity: 'critical',
+      category: 'chemistry',
+      title: '⚠️ Dinoflagellate Trap — Ultra-Low Nutrients!',
+      message: 'NO₃ = 0 AND PO₄ = 0. Your tank is TOO CLEAN. Zero nutrients kill beneficial bacteria, creating a biological vacuum that dinoflagellates exploit.',
+      action: 'STOP reducing nutrients! Do NOT do large water changes. Dose KNO₃ to raise nitrate to 2-5 ppm and NaH₂PO₄ to raise phosphate to 0.03 ppm. Add live copepods (biological control). Dinoflagellates are brown snotty film that appear during lights-on and retract at night.',
+      icon: 'warning',
+      color: '#ff4444',
+      param: 'nitrate',
+      value: 0,
+      threshold: 0,
+      linkTo: '/pest-id',
+      timestamp: now,
+      dismissible: false,
+    });
+  }
+
+  // ── OTS: Ionic Drift Warning (high-range NO₃ with low Alk pattern) ──
+  if (alk > 0 && alk < 7.5 && salinity > 1.026) {
+    const alkTrend = tests.slice(0, 5).map(t => t.alkalinity ?? 0).filter(v => v > 0);
+    const isChronic = alkTrend.length >= 3 && alkTrend.every(v => v < 8);
+    if (isChronic) {
+      alerts.push({
+        id: `ionic-drift-${now}`,
+        severity: 'warning',
+        category: 'chemistry',
+        title: 'Possible Ionic Drift (OTS)',
+        message: 'Chronically low Alk + elevated salinity may indicate NaCl accumulation from 2-Part dosing. Over months, ionic drift displaces trace elements and destabilizes the Ca/Alk/Mg triad.',
+        action: 'Perform a substantial water change (20-25%) as an "Ionic Reset". This restores natural seawater mineral ratios that 2-Part dosing gradually displaces with NaCl byproducts. Resume with adjusted dosing.',
+        icon: 'swap_horiz',
+        color: '#FF7F50',
+        linkTo: '/dosing',
+        timestamp: now,
+        dismissible: true,
+      });
+    }
+  }
+
   return alerts;
 }
 
@@ -283,6 +325,66 @@ export function generateMaintenanceAlerts(config: {
       dismissible: true,
     });
   }
+
+  // ── OTS: Probe Calibration (monthly) ──
+  alerts.push({
+    id: `probe-cal-${now}`,
+    severity: 'reminder',
+    category: 'hardware',
+    title: 'Monthly Probe Calibration',
+    message: 'pH and KH electronic probes drift over time. Uncalibrated probes feed wrong data to dosing pumps and calcium reactors, causing cascading errors.',
+    action: 'Calibrate pH probe with 7.0 and 10.0 buffer solutions. Clean the probe tip with soft brush. For Hanna checkers, verify with reference solution. Calibrate refractometer with 35ppt calibration fluid (NOT RO/DI water).',
+    icon: 'tune',
+    color: '#c5a3ff',
+    linkTo: '/maintenance',
+    timestamp: now,
+    dismissible: true,
+  });
+
+  // ── OTS: Dosing Tube Inspection (every 6 months) ──
+  alerts.push({
+    id: `dosing-tube-${now}`,
+    severity: 'reminder',
+    category: 'hardware',
+    title: 'Inspect Dosing Tubes',
+    message: 'Calcium and alkalinity solutions crystallize inside dosing tubes over 6-12 months, reducing flow rate. Your pump thinks it\'s dosing 50mL but may only deliver 30mL.',
+    action: 'Remove dosing tubes and inspect for white calcium deposits. Replace tubes if clogged. Soak in vinegar to dissolve buildup. Check tube connections for leaks.',
+    icon: 'plumbing',
+    color: '#F1C40F',
+    linkTo: '/maintenance',
+    timestamp: now,
+    dismissible: true,
+  });
+
+  // ── OTS: Heater Controller Warning ──
+  alerts.push({
+    id: `heater-warn-${now}`,
+    severity: 'reminder',
+    category: 'hardware',
+    title: 'Heater Safety Check',
+    message: 'The heater is the most dangerous equipment in your tank. When heaters fail, they fail ON — cooking the entire tank. An external controller is the #1 life insurance for your reef.',
+    action: 'Verify your heater controller (Inkbird/Neptune) is working. Test by lowering the setpoint — the relay should click OFF. If you don\'t have a controller, this is the single most important purchase you can make.',
+    icon: 'local_fire_department',
+    color: '#ff4444',
+    linkTo: '/gear',
+    timestamp: now,
+    dismissible: true,
+  });
+
+  // ── OTS: Coral Pruning / Shadow Check (annual for tanks > 2 years) ──
+  alerts.push({
+    id: `coral-prune-${now}`,
+    severity: 'info',
+    category: 'maintenance',
+    title: 'Annual Coral Shadow Audit',
+    message: 'As colonies grow, upper corals (especially Acropora and branching LPS) create shadow zones that starve lower corals of light, causing tissue necrosis from the base up.',
+    action: 'Inspect your aquascape from below with a flashlight. Frag (prune) any colony whose shadow covers other corals. Consider adding a supplemental side-mount LED bar to wrap light around the structure.',
+    icon: 'content_cut',
+    color: '#2ff801',
+    linkTo: '/maintenance',
+    timestamp: now,
+    dismissible: true,
+  });
 
   return alerts;
 }

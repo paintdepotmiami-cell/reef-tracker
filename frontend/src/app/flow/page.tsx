@@ -15,7 +15,7 @@ export default function FlowPage() {
   const [expandedPump, setExpandedPump] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const timeout = setTimeout(() => setLoading(false), 6000);
 
     Promise.allSettled([
@@ -56,7 +56,7 @@ export default function FlowPage() {
   const scoreBg = report.overallScore >= 80 ? 'bg-[#2ff801]/10' : report.overallScore >= 60 ? 'bg-[#F1C40F]/10' : 'bg-[#ffb4ab]/10';
 
   return (
-    <div className="space-y-6 pb-4">
+    <div className="space-y-6 pb-28">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/gear" className="w-9 h-9 rounded-xl bg-[#1c2a41] flex items-center justify-center shrink-0">

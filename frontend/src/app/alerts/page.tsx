@@ -24,7 +24,7 @@ export default function AlertsPage() {
   const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const cached = getCached<WaterTest[]>('water-tests');
     if (cached) { setTests(cached); setLoading(false); }
 
@@ -85,12 +85,12 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-28">
       {/* Header */}
       <div>
-        <Link href="/" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">
+        <Link href="/tools" className="flex items-center gap-1 text-[#c5c6cd]/60 text-xs mb-2 active:opacity-60">
           <span className="material-symbols-outlined text-sm">arrow_back</span>
-          Home
+          Tools
         </Link>
         <div className="flex items-center gap-3 mb-1">
           <div className="w-12 h-12 rounded-2xl bg-[#FF7F50]/15 flex items-center justify-center relative">

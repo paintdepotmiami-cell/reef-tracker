@@ -6,12 +6,16 @@ import { useEffect } from 'react';
 
 const PUBLIC_PATHS = ['/login'];
 
+// DEV ONLY: bypass auth for UI preview — REMOVE before deploy
+const DEV_BYPASS = process.env.NODE_ENV === 'development';
+
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
+    if (DEV_BYPASS) return;
     if (loading) return;
 
     const isPublic = PUBLIC_PATHS.includes(pathname);
@@ -33,7 +37,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, profile, loading, pathname, router]);
 
-  if (loading) {
+  if (loading && !DEV_BYPASS) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -50,7 +54,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Don't render protected content until user is confirmed
-  if (!user) return null;
+  if (!user && !DEV_BYPASS) return null;
 
   // Allow onboarding page
   if (pathname === '/onboarding') {
@@ -58,7 +62,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Block until onboarding is done
-  if (profile && !profile.onboarding_completed) return null;
+  if (!DEV_BYPASS && profile && !profile.onboarding_completed) return null;
 
   return <>{children}</>;
 }

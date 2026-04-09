@@ -70,7 +70,7 @@ export default function LibraryPage() {
   /* ── data loading ─────────────────────────────────────────── */
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const timeout = setTimeout(() => setLoading(false), 6000);
 
     getSpecies()
@@ -159,7 +159,7 @@ export default function LibraryPage() {
   /* ── main render ──────────────────────────────────────────── */
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-28">
 
       {/* Header */}
       <div>

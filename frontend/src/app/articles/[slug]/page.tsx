@@ -96,7 +96,7 @@ export default function ArticleDetailPage() {
   const label = CATEGORY_LABELS[article.category] || article.category;
 
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       {/* Back button */}
       <button
         onClick={() => router.push('/articles')}
