@@ -16,13 +16,9 @@ const categories: { label: string; icon: string; tools: ToolItem[] }[] = [
     label: 'Manage',
     icon: 'tune',
     tools: [
-      { href: '/param-center', icon: 'monitoring', color: '#FF7F50', title: 'Param Center', desc: '360° action plans for ALL 10 parameters', live: true },
-      { href: '/dosing', icon: 'science', color: '#2ff801', title: 'Dosing Calculator', desc: 'Calculate Alk, Ca & Mg doses for your tank', live: true },
       { href: '/cycle', icon: 'cycle', color: '#4cd6fb', title: 'Cycle Tracker', desc: 'Monitor NH3, NO2 & NO3 during tank cycling', live: true },
       { href: '/bio-accelerator', icon: 'biotech', color: '#2ff801', title: 'Bio Accelerator', desc: 'Bacteria dosing, cycling methods & recovery', live: true },
       { href: '/bioload', icon: 'balance', color: '#FF7F50', title: 'Bioload Calculator', desc: 'Check fish capacity & stocking timeline', live: true },
-      { href: '/trends', icon: 'monitoring', color: '#d7ffc5', title: 'Trend Graphs', desc: 'Track parameters over time with safe zones', live: true },
-      { href: '/alerts', icon: 'notifications', color: '#ff4444', title: 'Smart Alerts', desc: 'Chemistry, salinity & maintenance notifications', live: true },
       { href: '/maintenance', icon: 'task_alt', color: '#F1C40F', title: 'Maintenance', desc: 'Track & schedule all tank maintenance tasks', live: true },
       { href: '/volume-calc', icon: 'straighten', color: '#4cd6fb', title: 'Volume & Weight', desc: 'Calculate capacity, weight & viability', live: true },
       { href: '/feeding', icon: 'restaurant', color: '#F1C40F', title: 'Feeding Schedule', desc: 'Species-smart feeding plans & anti-overfeeding', live: true },
