@@ -540,28 +540,31 @@ export default function SetupWizard() {
 
       if (tankErr) { setError(`Tank: ${tankErr.message}`); setSaving(false); return; }
 
+      // All inserts run in parallel for speed
+      const promises: Promise<unknown>[] = [];
+
       if (tankStatus === 'existing') {
         // 3a. Save scanned gear as equipment (respecting qty for duplicates)
         for (const gear of scannedGear) {
           for (let q = 0; q < gear.qty; q++) {
-            await createEquipment({
+            promises.push(createEquipment({
               name: gear.qty > 1 ? `${gear.name} #${q + 1}` : gear.name,
               category: gear.category?.toLowerCase() || 'other',
               notes: `AI-identified during setup (${Math.round(gear.confidence * 100)}% confidence)`,
-            });
+            }));
           }
         }
         // Also save checklist "have" items
         const haveItems = equipment.filter(e => e.status === 'have');
         for (const item of haveItems) {
           if (!scannedGear.find(g => g.name.toLowerCase().includes(item.name.toLowerCase()))) {
-            await createEquipment({ name: item.name, category: item.category.toLowerCase(), notes: 'Added via Setup Wizard' });
+            promises.push(createEquipment({ name: item.name, category: item.category.toLowerCase(), notes: 'Added via Setup Wizard' }));
           }
         }
 
         // 3b. Save scanned livestock
         for (const animal of scannedLivestock) {
-          await supabase.from('reef_animals').insert({
+          promises.push(supabase.from('reef_animals').insert({
             user_id: user.id,
             tank_id: newTank?.id || null,
             name: animal.name,
@@ -571,28 +574,28 @@ export default function SetupWizard() {
             quantity: 1,
             condition: 'healthy',
             description: animal.details,
-          });
+          }));
         }
 
         // 3c. Save initial water test if params exist
         const hasParams = Object.values(params).some(v => v !== null);
         if (hasParams) {
-          await createWaterTest({
+          promises.push(createWaterTest({
             user_id: user.id,
             tank_id: newTank?.id || null,
             ...params,
             notes: 'Baseline test from onboarding setup',
-          });
+          }));
         }
       } else {
         // 3. New tank: Auto-add equipment that user marked as "have"
         const haveItems = equipment.filter(e => e.status === 'have');
         for (const item of haveItems) {
-          await createEquipment({
+          promises.push(createEquipment({
             name: item.name,
             category: item.category.toLowerCase(),
             notes: 'Added via Setup Wizard',
-          });
+          }));
         }
       }
 
@@ -600,12 +603,15 @@ export default function SetupWizard() {
       const taskSize = gallons || 40;
       const defaultTasks = getDefaultTasks(taskSize);
       for (const task of defaultTasks) {
-        await createMaintenanceTask({
+        promises.push(createMaintenanceTask({
           ...task,
           user_id: user.id,
           tank_id: newTank?.id || null,
-        });
+        }));
       }
+
+      // Run all inserts in parallel
+      await Promise.all(promises);
 
       await refreshProfile();
       await refreshTank();
