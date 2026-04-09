@@ -32,7 +32,7 @@ export default function LoginPage() {
       if (err) {
         setError(err);
       } else {
-        router.push('/');
+        router.push('/dashboard');
       }
     }
     setLoading(false);

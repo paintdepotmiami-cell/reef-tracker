@@ -25,7 +25,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (user && pathname === '/login') {
+    if (user && (pathname === '/login' || pathname === '/')) {
       router.replace('/dashboard');
       return;
     }
