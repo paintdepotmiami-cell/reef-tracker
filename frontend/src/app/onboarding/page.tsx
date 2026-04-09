@@ -548,6 +548,8 @@ export default function SetupWizard() {
         for (const gear of scannedGear) {
           for (let q = 0; q < gear.qty; q++) {
             promises.push(createEquipment({
+              user_id: user.id,
+              tank_id: newTank?.id || null,
               name: gear.qty > 1 ? `${gear.name} #${q + 1}` : gear.name,
               category: gear.category?.toLowerCase() || 'other',
               notes: `AI-identified during setup (${Math.round(gear.confidence * 100)}% confidence)`,
@@ -558,7 +560,7 @@ export default function SetupWizard() {
         const haveItems = equipment.filter(e => e.status === 'have');
         for (const item of haveItems) {
           if (!scannedGear.find(g => g.name.toLowerCase().includes(item.name.toLowerCase()))) {
-            promises.push(createEquipment({ name: item.name, category: item.category.toLowerCase(), notes: 'Added via Setup Wizard' }));
+            promises.push(createEquipment({ user_id: user.id, tank_id: newTank?.id || null, name: item.name, category: item.category.toLowerCase(), notes: 'Added via Setup Wizard' }));
           }
         }
 
@@ -583,6 +585,7 @@ export default function SetupWizard() {
           promises.push(createWaterTest({
             user_id: user.id,
             tank_id: newTank?.id || null,
+            test_date: new Date().toISOString(),
             ...params,
             notes: 'Baseline test from onboarding setup',
           }));
@@ -592,6 +595,8 @@ export default function SetupWizard() {
         const haveItems = equipment.filter(e => e.status === 'have');
         for (const item of haveItems) {
           promises.push(createEquipment({
+            user_id: user.id,
+            tank_id: newTank?.id || null,
             name: item.name,
             category: item.category.toLowerCase(),
             notes: 'Added via Setup Wizard',
