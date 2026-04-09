@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
-import { createEquipment, createMaintenanceTask, createWaterTest, getSpecies } from '@/lib/queries';
+import { createEquipment, createMaintenanceTask, createWaterTest, getSpecies, getProducts } from '@/lib/queries';
 
 /* ── Step Definitions ─────────────────────────────────── */
 
@@ -218,8 +218,9 @@ export default function SetupWizard() {
   const [speciesDb, setSpeciesDb] = useState<{ common_name: string; scientific_name: string; category: string; subcategory: string; difficulty: string }[]>([]);
   const [livestockSearch, setLivestockSearch] = useState('');
   const [livestockTab, setLivestockTab] = useState<'fish' | 'coral' | 'invertebrate'>('fish');
-  // Gear manual search
+  // Gear manual search + products DB
   const [gearSearch, setGearSearch] = useState('');
+  const [productsDb, setProductsDb] = useState<{ name: string; brand: string; category: string }[]>([]);
 
   // Existing tank: Current parameters
   const [scanningParams, setScanningParams] = useState(false);
@@ -229,10 +230,11 @@ export default function SetupWizard() {
     salinity: null, temperature: null,
   });
 
-  // Load species database for manual livestock selection
+  // Load species + products databases for manual selection
   useEffect(() => {
     if (tankStatus === 'existing') {
       getSpecies().then(data => setSpeciesDb(data as typeof speciesDb));
+      getProducts().then(data => setProductsDb((data || []).map(p => ({ name: p.name, brand: p.brand, category: p.category }))));
     }
   }, [tankStatus]);
 
@@ -836,26 +838,35 @@ export default function SetupWizard() {
                 <div className="flex-1 h-px bg-[#1c2a41]" />
               </div>
 
-              {/* Manual Gear Search */}
+              {/* Manual Gear Search — products DB + generic list + custom */}
               <div>
                 <input
                   type="text"
                   value={gearSearch}
                   onChange={e => setGearSearch(e.target.value)}
                   className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 text-sm"
-                  placeholder="Search equipment... (skimmer, light, pump, etc.)"
+                  placeholder="Search by brand or name... (Kessil, Vortech, Reef Octopus...)"
                 />
-                {gearSearch.length >= 2 && (
-                  <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5">
-                    {INITIAL_EQUIPMENT
-                      .filter(e => e.name.toLowerCase().includes(gearSearch.toLowerCase()) || e.category.toLowerCase().includes(gearSearch.toLowerCase()))
-                      .map(item => {
+                {gearSearch.length >= 2 && (() => {
+                  const q = gearSearch.toLowerCase();
+                  // Combine products DB + generic equipment, dedup
+                  const productMatches = productsDb
+                    .filter(p => p.name.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q))
+                    .map(p => ({ name: p.brand ? `${p.brand} ${p.name}` : p.name, brand: p.brand, category: p.category }));
+                  const genericMatches = INITIAL_EQUIPMENT
+                    .filter(e => e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q))
+                    .map(e => ({ name: e.name, brand: null as string | null, category: e.category }));
+                  const allMatches = [...productMatches, ...genericMatches]
+                    .filter((item, idx, arr) => arr.findIndex(x => x.name === item.name) === idx)
+                    .slice(0, 15);
+                  return (
+                    <div className="mt-2 max-h-52 overflow-y-auto space-y-1.5">
+                      {allMatches.map(item => {
                         const alreadyAdded = scannedGear.some(g => g.name === item.name);
                         return (
                           <button key={item.name} disabled={alreadyAdded}
                             onClick={() => {
-                              setScannedGear(prev => [...prev, { name: item.name, brand: null, category: item.category, confidence: 1 }]);
-                              setEquipment(prev => prev.map(eq => eq.name === item.name ? { ...eq, status: 'have' } : eq));
+                              setScannedGear(prev => [...prev, { name: item.name, brand: item.brand, category: item.category, confidence: 1 }]);
                               setGearSearch('');
                             }}
                             className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded ? 'bg-[#2ff801]/10 border border-[#2ff801]/20' : 'bg-[#0d1c32] border border-transparent hover:border-[#1c2a41] active:scale-[0.98]'}`}
@@ -865,13 +876,31 @@ export default function SetupWizard() {
                             </span>
                             <div>
                               <p className={`text-sm font-medium ${alreadyAdded ? 'text-[#2ff801]' : 'text-white'}`}>{item.name}</p>
-                              <p className="text-[10px] text-[#8f9097]">{item.category}</p>
+                              <p className="text-[10px] text-[#8f9097]">{item.category}{item.brand && ` · ${item.brand}`}</p>
                             </div>
                           </button>
                         );
                       })}
-                  </div>
-                )}
+
+                      {/* Custom add — type any gear name */}
+                      {!allMatches.some(m => m.name.toLowerCase() === q) && (
+                        <button
+                          onClick={() => {
+                            setScannedGear(prev => [...prev, { name: gearSearch.trim(), brand: null, category: 'custom', confidence: 1 }]);
+                            setGearSearch('');
+                          }}
+                          className="w-full p-3 rounded-xl flex items-center gap-3 text-left bg-[#FF7F50]/10 border border-[#FF7F50]/20 hover:border-[#FF7F50]/40 active:scale-[0.98] transition-all"
+                        >
+                          <span className="material-symbols-outlined text-sm text-[#FF7F50]">add_circle</span>
+                          <div>
+                            <p className="text-sm font-medium text-[#FF7F50]">Add &quot;{gearSearch.trim()}&quot;</p>
+                            <p className="text-[10px] text-[#8f9097]">Custom equipment</p>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
                 {gearSearch.length < 2 && scannedGear.length === 0 && (
                   <p className="text-center text-[#8f9097] text-xs mt-3">Take a photo or search to add your equipment.</p>
                 )}
