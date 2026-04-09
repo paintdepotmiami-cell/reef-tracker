@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Vercel serverless timeout — max 60s on Pro, 10s on Hobby
-export const maxDuration = 30;
+// Vercel serverless timeout — 10s on Hobby, 60s on Pro
+export const maxDuration = 60;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -98,9 +98,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
+    if (!GEMINI_API_KEY) {
+      return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
+    }
+
     // image should be base64 encoded (data:image/jpeg;base64,...)
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const mimeType = image.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
+
+    console.log(`[identify] context=${context}, imageSize=${Math.round(base64Data.length / 1024)}KB`);
 
     const response = await fetch(GEMINI_URL, {
       method: 'POST',

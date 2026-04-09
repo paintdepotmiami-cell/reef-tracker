@@ -254,12 +254,12 @@ export default function SetupWizard() {
         const img = new window.Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const max = 800;
+          const max = 640; // Smaller for faster Gemini processing
           let w = img.width, h = img.height;
           if (w > max || h > max) { const r = Math.min(max / w, max / h); w *= r; h *= r; }
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.7));
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
         };
         img.src = reader.result as string;
       };
@@ -303,18 +303,46 @@ export default function SetupWizard() {
     setScanningLivestock(true);
     try {
       const base64 = await compressImage(file);
+      // Send the active tab as context so AI focuses on the right type
       const res = await fetch('/api/identify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, context: 'auto' }),
+        body: JSON.stringify({ image: base64, context: livestockTab }),
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.name && ['fish', 'coral', 'invertebrate'].includes(data.type)) {
+        if (data.name) {
+          // If AI returned a different type than selected tab, skip it
+          // (e.g., user on "coral" tab but photo has a fish — ignore the fish)
+          const validType = data.type === livestockTab;
+          if (!validType && ['fish', 'coral', 'invertebrate'].includes(data.type)) {
+            alert(`Detected a ${data.type} (${data.name}), but you're adding ${livestockTab}s. Switch tabs or try a closer photo.`);
+            return;
+          }
+
+          // Try to match against species database for full data
+          const aiName = (data.name || '').toLowerCase().trim();
+          const aiSci = (data.scientific_name || '').toLowerCase().trim();
+          const dbMatch = speciesDb.find(s => {
+            const dbName = (s.common_name || '').toLowerCase();
+            const dbSci = (s.scientific_name || '').toLowerCase();
+            // Exact match first
+            if (dbName === aiName || dbSci === aiSci) return true;
+            // Partial match
+            if (aiName.length > 3 && (dbName.includes(aiName) || aiName.includes(dbName))) return true;
+            if (aiSci.length > 3 && (dbSci.includes(aiSci) || aiSci.includes(dbSci))) return true;
+            return false;
+          });
+
           setScannedLivestock(prev => [...prev, {
-            name: data.name, scientific_name: data.scientific_name,
-            type: data.type, category: data.category,
-            confidence: data.confidence, details: data.details || '',
+            name: dbMatch?.common_name || data.name,
+            scientific_name: dbMatch?.scientific_name || data.scientific_name,
+            type: dbMatch?.category?.toLowerCase() || data.type || livestockTab,
+            category: dbMatch?.subcategory || data.category,
+            confidence: data.confidence,
+            details: dbMatch
+              ? `${dbMatch.difficulty} difficulty. ${data.details || ''}`
+              : (data.details || ''),
           }]);
         }
       }

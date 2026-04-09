@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('user_id', userId)
         .eq('is_primary', true)
-        .single();
+        .maybeSingle();
       setTank(data);
       return data;
     } catch { return null; }
