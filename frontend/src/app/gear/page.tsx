@@ -12,6 +12,7 @@ import type { Equipment, Supplement, Animal } from '@/lib/queries';
 import Link from 'next/link';
 import { getCached, setCache } from '@/lib/cache';
 import { searchCatalog, type CatalogItem } from '@/lib/equipment-catalog';
+import { searchSupplements, type SupCatalogItem } from '@/lib/supplement-catalog';
 
 /* ─── Equipment Knowledge Base ─── */
 interface EquipmentGuide {
@@ -317,19 +318,30 @@ export default function GearPage() {
   const [fConfig, setFConfig] = useState('');
   const [fNotes, setFNotes] = useState('');
 
-  // Catalog search
+  // Catalog search (works for both equipment and supplements)
   const [showSuggestions, setShowSuggestions] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
   const catalogResults = useMemo(() => {
-    if (!fName.trim() || fName.length < 2 || tab === 'supplements') return [];
+    if (!fName.trim() || fName.length < 2) return [];
+    if (tab === 'supplements') {
+      return searchSupplements(fName, fType !== 'other' ? fType : undefined);
+    }
     return searchCatalog(fName, fCategory !== 'other' ? fCategory : undefined);
-  }, [fName, fCategory, tab]);
+  }, [fName, fCategory, fType, tab]);
 
   const pickCatalogItem = (item: CatalogItem) => {
     setFName(`${item.brand} ${item.name}`);
     setFBrand(item.brand);
     setFCategory(item.category);
+    setShowSuggestions(false);
+  };
+
+  const pickSupItem = (item: SupCatalogItem) => {
+    setFName(`${item.brand} ${item.name}`);
+    setFBrand(item.brand);
+    setFType(item.type);
     setShowSuggestions(false);
   };
 
@@ -898,7 +910,7 @@ export default function GearPage() {
               <div className="relative">
                 <label className="font-[family-name:var(--font-headline)] text-[9px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium block mb-1.5">
                   Name *
-                  {tab !== 'supplements' && <span className="text-[#FF7F50]/60 ml-2 normal-case tracking-normal">Search or type custom</span>}
+                  <span className="text-[#FF7F50]/60 ml-2 normal-case tracking-normal">Search or type custom</span>
                 </label>
                 <div className="relative">
                   <input
@@ -908,16 +920,14 @@ export default function GearPage() {
                     onChange={e => { setFName(e.target.value); setShowSuggestions(true); }}
                     onFocus={() => setShowSuggestions(true)}
                     className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 px-4 pr-10 text-white text-sm focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent placeholder:text-slate-500"
-                    placeholder={tab === 'supplements' ? 'e.g. Kalkwasser' : 'Search... AI Hydra, Vortech, Tunze...'}
+                    placeholder={tab === 'supplements' ? 'Search... Red Sea, Brightwell, Seachem...' : 'Search... AI Hydra, Vortech, Tunze...'}
                     autoFocus
                   />
-                  {tab !== 'supplements' && (
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#c5c6cd]/30 text-lg pointer-events-none">search</span>
-                  )}
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#c5c6cd]/30 text-lg pointer-events-none">search</span>
                 </div>
 
                 {/* Catalog Suggestions Dropdown */}
-                {showSuggestions && tab !== 'supplements' && fName.trim().length >= 2 && (
+                {showSuggestions && fName.trim().length >= 2 && (
                   <div
                     ref={suggestionsRef}
                     className="absolute left-0 right-0 top-full mt-1 bg-[#0d1c32] border border-[#1c2a41] rounded-xl overflow-hidden z-10 shadow-2xl max-h-[280px] overflow-y-auto"
@@ -927,33 +937,52 @@ export default function GearPage() {
                         <div className="px-3 py-1.5 border-b border-[#1c2a41]">
                           <p className="text-[8px] text-[#c5c6cd]/40 uppercase tracking-widest font-bold">{catalogResults.length} Result{catalogResults.length !== 1 ? 's' : ''}</p>
                         </div>
-                        {catalogResults.map((item, i) => (
-                          <button
-                            key={`${item.brand}-${item.name}-${i}`}
-                            onClick={() => pickCatalogItem(item)}
-                            className="w-full px-3 py-2.5 flex items-center gap-3 text-left hover:bg-[#1c2a41]/50 active:bg-[#1c2a41] transition-colors border-b border-[#1c2a41]/30 last:border-0"
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-[#FF7F50]/10 flex items-center justify-center shrink-0">
-                              <span className="material-symbols-outlined text-[#FF7F50] text-sm">
-                                {item.category === 'lighting' ? 'light_mode' :
-                                 item.category === 'circulation' ? 'waves' :
-                                 item.category === 'filtration' ? 'filter_alt' :
-                                 item.category === 'heating' ? 'thermostat' :
-                                 item.category === 'water_management' ? 'water_drop' :
-                                 item.category === 'testing' ? 'science' :
-                                 item.category === 'controller' ? 'settings_remote' :
-                                 item.category === 'sump' ? 'plumbing' : 'settings'}
-                              </span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-white text-sm font-medium truncate">{item.brand} {item.name}</p>
-                              <p className="text-[#c5c6cd]/40 text-[10px] capitalize">{item.category.replace('_', ' ')}</p>
-                            </div>
-                            {item.popular && (
-                              <span className="text-[7px] font-bold text-[#F1C40F] bg-[#F1C40F]/10 px-1.5 py-0.5 rounded uppercase">Top</span>
-                            )}
-                          </button>
-                        ))}
+                        {catalogResults.map((item, i) => {
+                          const isSup = tab === 'supplements';
+                          const typeOrCat = isSup ? (item as SupCatalogItem).type : (item as CatalogItem).category;
+                          return (
+                            <button
+                              key={`${item.brand}-${item.name}-${i}`}
+                              onClick={() => isSup ? pickSupItem(item as SupCatalogItem) : pickCatalogItem(item as CatalogItem)}
+                              className="w-full px-3 py-2.5 flex items-center gap-3 text-left hover:bg-[#1c2a41]/50 active:bg-[#1c2a41] transition-colors border-b border-[#1c2a41]/30 last:border-0"
+                            >
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSup ? 'bg-[#2ff801]/10' : 'bg-[#FF7F50]/10'}`}>
+                                <span className={`material-symbols-outlined text-sm ${isSup ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
+                                  {isSup ? (
+                                    typeOrCat.includes('calcium') ? 'labs' :
+                                    typeOrCat.includes('alkalinity') ? 'shield' :
+                                    typeOrCat.includes('magnesium') ? 'experiment' :
+                                    typeOrCat.includes('trace') ? 'auto_awesome' :
+                                    typeOrCat.includes('coral food') ? 'restaurant' :
+                                    typeOrCat.includes('bacteria') ? 'biotech' :
+                                    typeOrCat.includes('phosphate') || typeOrCat.includes('nitrate') ? 'filter_alt' :
+                                    typeOrCat.includes('salt') ? 'water_drop' :
+                                    typeOrCat.includes('dip') ? 'local_hospital' :
+                                    typeOrCat.includes('fish food') ? 'set_meal' :
+                                    typeOrCat.includes('amino') ? 'colorize' :
+                                    typeOrCat.includes('buffer') || typeOrCat.includes('ph') ? 'straighten' : 'science'
+                                  ) : (
+                                    typeOrCat === 'lighting' ? 'light_mode' :
+                                    typeOrCat === 'circulation' ? 'waves' :
+                                    typeOrCat === 'filtration' ? 'filter_alt' :
+                                    typeOrCat === 'heating' ? 'thermostat' :
+                                    typeOrCat === 'water_management' ? 'water_drop' :
+                                    typeOrCat === 'testing' ? 'science' :
+                                    typeOrCat === 'controller' ? 'settings_remote' :
+                                    typeOrCat === 'sump' ? 'plumbing' : 'settings'
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-sm font-medium truncate">{item.brand} {item.name}</p>
+                                <p className="text-[#c5c6cd]/40 text-[10px] capitalize">{typeOrCat.replace(/_/g, ' ')}</p>
+                              </div>
+                              {item.popular && (
+                                <span className="text-[7px] font-bold text-[#F1C40F] bg-[#F1C40F]/10 px-1.5 py-0.5 rounded uppercase">Top</span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </>
                     ) : (
                       <div className="p-4 text-center space-y-3">
@@ -961,7 +990,7 @@ export default function GearPage() {
                         <p className="text-[#c5c6cd]/50 text-xs">No matches for &ldquo;{fName}&rdquo;</p>
                         <div className="flex gap-2">
                           <a
-                            href={`https://www.google.com/search?q=${encodeURIComponent(fName + ' reef aquarium equipment')}`}
+                            href={`https://www.google.com/search?q=${encodeURIComponent(fName + (tab === 'supplements' ? ' reef aquarium supplement' : ' reef aquarium equipment'))}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-[#4cd6fb]/10 text-[#4cd6fb] active:scale-95 transition-transform"
