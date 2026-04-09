@@ -89,6 +89,68 @@ export default function ReefOSLanding() {
 
   return (
     <div className="min-h-screen bg-[#010e24] text-[#c5c6cd]" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* VideoObject structured data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            itemListElement: [
+              {
+                '@type': 'VideoObject',
+                position: 1,
+                name: 'Complete ReefOS App Walkthrough — Free Reef Tank Management App',
+                description: 'Full tour of every ReefOS feature — parameter tracking, AI identification, smart dosing, livestock management, alerts, and 3D reef planner.',
+                thumbnailUrl: 'https://img.youtube.com/vi/NFo2FZzeuUQ/maxresdefault.jpg',
+                uploadDate: '2026-04-07',
+                contentUrl: 'https://www.youtube.com/watch?v=NFo2FZzeuUQ',
+                embedUrl: 'https://www.youtube-nocookie.com/embed/NFo2FZzeuUQ',
+              },
+              {
+                '@type': 'VideoObject',
+                position: 2,
+                name: 'ReefOS AI Test Photo Recognition — Read Water Tests with Your Camera',
+                description: 'How ReefOS uses AI to read water test results from photos. Supports Hanna Checkers, API kits, and more.',
+                thumbnailUrl: 'https://img.youtube.com/vi/OX8lQW-5qj4/maxresdefault.jpg',
+                uploadDate: '2026-04-07',
+                contentUrl: 'https://www.youtube.com/watch?v=OX8lQW-5qj4',
+                embedUrl: 'https://www.youtube-nocookie.com/embed/OX8lQW-5qj4',
+              },
+              {
+                '@type': 'VideoObject',
+                position: 3,
+                name: 'ReefOS Smart Dosing Calculator — Precise 2-Part Dosing',
+                description: 'How ReefOS calculates exact BRS 2-Part dosing amounts based on your water parameters and tank size.',
+                thumbnailUrl: 'https://img.youtube.com/vi/b9fziAWpSbQ/maxresdefault.jpg',
+                uploadDate: '2026-04-07',
+                contentUrl: 'https://www.youtube.com/watch?v=b9fziAWpSbQ',
+                embedUrl: 'https://www.youtube-nocookie.com/embed/b9fziAWpSbQ',
+              },
+              {
+                '@type': 'VideoObject',
+                position: 4,
+                name: 'ReefOS Livestock & Compatibility Manager',
+                description: 'Managing fish, corals, and invertebrates with health tracking and compatibility checks in ReefOS.',
+                thumbnailUrl: 'https://img.youtube.com/vi/wKJwlgvCR9k/maxresdefault.jpg',
+                uploadDate: '2026-04-07',
+                contentUrl: 'https://www.youtube.com/watch?v=wKJwlgvCR9k',
+                embedUrl: 'https://www.youtube-nocookie.com/embed/wKJwlgvCR9k',
+              },
+              {
+                '@type': 'VideoObject',
+                position: 5,
+                name: 'ReefOS 3D Reef Planner Demo',
+                description: 'Plan your reef tank layout in 3D with flow simulation and PAR distribution visualization.',
+                thumbnailUrl: 'https://img.youtube.com/vi/iilKh5fQeCQ/maxresdefault.jpg',
+                uploadDate: '2026-04-07',
+                contentUrl: 'https://www.youtube.com/watch?v=iilKh5fQeCQ',
+                embedUrl: 'https://www.youtube-nocookie.com/embed/iilKh5fQeCQ',
+              },
+            ],
+          }),
+        }}
+      />
       {/* Background glows */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute left-[-10%] top-[-5%] h-80 w-80 rounded-full bg-[#4cd6fb]/10 blur-[100px]" />
@@ -109,6 +171,7 @@ export default function ReefOSLanding() {
           <nav className="hidden items-center gap-8 text-sm text-[#c5c6cd] md:flex">
             <a href="#features" className="transition hover:text-white">Features</a>
             <a href="#screenshots" className="transition hover:text-white">Screenshots</a>
+            <a href="#videos" className="transition hover:text-white">Videos</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href="#faq" className="transition hover:text-white">FAQ</a>
           </nav>
@@ -145,9 +208,9 @@ export default function ReefOSLanding() {
                 <span className="material-symbols-outlined text-lg">rocket_launch</span>
                 Start Free
               </a>
-              <a href="#features" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20 hover:bg-white/10 flex items-center justify-center gap-2">
+              <a href="#videos" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20 hover:bg-white/10 flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-lg">play_circle</span>
-                See How It Works
+                Watch Videos
               </a>
             </div>
           </div>
@@ -286,6 +349,76 @@ export default function ReefOSLanding() {
                 <span className="text-xs font-bold text-[#8f9097] uppercase tracking-wider">{s.alt}</span>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* YOUTUBE VIDEOS */}
+        <section id="videos" className="mx-auto max-w-7xl px-6 py-20">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF0000]">YouTube</p>
+            <h2 className="mt-3 text-3xl font-[900] text-white tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              Watch ReefOS in Action
+            </h2>
+            <p className="mt-4 text-[#c5c6cd]">
+              Tutorials, walkthroughs, and reef keeping tips from the ReefOS channel.
+            </p>
+          </div>
+
+          {/* Featured video - large */}
+          <div className="mb-8">
+            <div className="rounded-3xl border border-white/[0.06] bg-[#0d1c32] p-4 lg:p-6 max-w-4xl mx-auto">
+              <div className="relative w-full rounded-2xl overflow-hidden" style={{ paddingBottom: '56.25%' }}>
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src="https://www.youtube-nocookie.com/embed/NFo2FZzeuUQ"
+                  title="Complete ReefOS App Walkthrough — Free Reef Tank Management App"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="mt-4 text-lg font-bold text-white">Complete ReefOS App Walkthrough</h3>
+              <p className="mt-1 text-sm text-[#8f9097]">Full tour of every feature — from parameter tracking to AI identification</p>
+            </div>
+          </div>
+
+          {/* Grid of other videos */}
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+            {[
+              { id: 'OX8lQW-5qj4', title: 'AI Test Photo Recognition', desc: 'How ReefOS reads water test results from photos' },
+              { id: 'b9fziAWpSbQ', title: 'Smart Dosing Calculator', desc: 'Precise 2-Part dosing based on your parameters' },
+              { id: 'wKJwlgvCR9k', title: 'Livestock & Compatibility', desc: 'Managing fish, corals, and compatibility checks' },
+              { id: 'iilKh5fQeCQ', title: '3D Reef Planner Demo', desc: 'Plan your tank layout with flow simulation' },
+            ].map(video => (
+              <div key={video.id} className="rounded-2xl border border-white/[0.06] bg-[#0d1c32] overflow-hidden group">
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={`https://www.youtube-nocookie.com/embed/${video.id}`}
+                    title={video.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="text-sm font-bold text-white">{video.title}</h3>
+                  <p className="mt-1 text-xs text-[#8f9097]">{video.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <a
+              href="https://youtube.com/@ReefOS_US"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#FF0000]/20 bg-[#FF0000]/10 px-6 py-3 text-sm font-bold text-[#FF0000] transition hover:bg-[#FF0000]/20"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              Subscribe to @ReefOS_US
+            </a>
           </div>
         </section>
 
