@@ -124,15 +124,15 @@ export default function ParamCenterPage() {
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-[#0d1c32] rounded-2xl p-3 text-center">
             <p className="text-xl font-bold" style={{ color: issueCount > 0 ? '#ff4444' : '#2ff801' }}>{issueCount}</p>
-            <p className="text-[9px] text-[#c5c6cd]/50 uppercase">Issues</p>
+            <p className="text-[11px] text-[#c5c6cd]/50 uppercase font-medium">Issues</p>
           </div>
           <div className="bg-[#0d1c32] rounded-2xl p-3 text-center">
             <p className="text-xl font-bold text-[#2ff801]">{optimalCount}</p>
-            <p className="text-[9px] text-[#c5c6cd]/50 uppercase">Optimal</p>
+            <p className="text-[11px] text-[#c5c6cd]/50 uppercase font-medium">Optimal</p>
           </div>
           <div className="bg-[#0d1c32] rounded-2xl p-3 text-center">
             <p className="text-xl font-bold text-[#8f9097]">{noDataCount}</p>
-            <p className="text-[9px] text-[#c5c6cd]/50 uppercase">No Data</p>
+            <p className="text-[11px] text-[#c5c6cd]/50 uppercase font-medium">No Data</p>
           </div>
         </div>
       )}
@@ -142,13 +142,14 @@ export default function ParamCenterPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setFilterMode('issues')}
-            className={`flex-1 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               filterMode === 'issues' ? 'bg-[#ff4444]/15 text-[#ff4444]' : 'bg-[#0d1c32] text-[#c5c6cd]/50'
             }`}
           >🚨 Issues ({issueCount})</button>
+
           <button
             onClick={() => setFilterMode('all')}
-            className={`flex-1 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               filterMode === 'all' ? 'bg-[#FF7F50]/15 text-[#FF7F50]' : 'bg-[#0d1c32] text-[#c5c6cd]/50'
             }`}
           >📊 All Parameters</button>
@@ -185,22 +186,22 @@ export default function ParamCenterPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-white text-sm font-medium">{param.label}</p>
-                    <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: `${param.statusColor}15`, color: param.statusColor }}>
+                    <p className="text-white text-base font-medium">{param.label}</p>
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded" style={{ backgroundColor: `${param.statusColor}15`, color: param.statusColor }}>
                       {param.statusLabel}
                     </span>
                   </div>
-                  <p className="text-[#c5c6cd]/50 text-[10px] mt-0.5">Target: {param.target}</p>
+                  <p className="text-[#c5c6cd]/50 text-xs mt-0.5">Target: {param.target}</p>
                 </div>
                 <div className="text-right shrink-0">
                   {param.current !== null ? (
-                    <p className="text-lg font-[family-name:var(--font-headline)] font-bold" style={{ color: param.statusColor }}>
+                    <p className="text-xl font-[family-name:var(--font-headline)] font-bold" style={{ color: param.statusColor }}>
                       {param.current}
                     </p>
                   ) : (
                     <p className="text-sm text-[#8f9097]">—</p>
                   )}
-                  <p className="text-[9px] text-[#c5c6cd]/30">{param.unit}</p>
+                  <p className="text-[11px] text-[#c5c6cd]/30">{param.unit}</p>
                 </div>
               </div>
 
@@ -217,14 +218,14 @@ export default function ParamCenterPage() {
             {isExpanded && (
               <div className="bg-[#0d1c32]/60 rounded-2xl p-4 mt-1 ml-2 mr-1 space-y-4">
                 {/* Summary */}
-                <p className="text-[#c5c6cd] text-xs leading-relaxed">{param.summary}</p>
+                <p className="text-[#c5c6cd] text-sm leading-relaxed">{param.summary}</p>
 
                 {/* Value Bar */}
                 {param.current !== null && (
                   <div className="bg-[#041329] rounded-xl p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] text-[#c5c6cd]/50">Current</span>
-                      <span className="text-[10px] text-[#c5c6cd]/50">Target: {param.target}</span>
+                      <span className="text-xs text-[#c5c6cd]/50">Current</span>
+                      <span className="text-xs text-[#c5c6cd]/50">Target: {param.target}</span>
                     </div>
                     <div className="h-2 bg-[#1c2a41] rounded-full overflow-hidden relative">
                       {/* Target zone */}
@@ -251,7 +252,7 @@ export default function ParamCenterPage() {
                 {/* Action Plan */}
                 {param.actions.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-[#FF7F50] uppercase tracking-widest">360° Action Plan</p>
+                    <p className="text-xs font-bold text-[#FF7F50] uppercase tracking-widest">360° Action Plan</p>
                     {param.actions.map((action, i) => (
                       <ActionCard key={i} action={action} index={i} />
                     ))}
@@ -269,23 +270,23 @@ export default function ParamCenterPage() {
                 {/* Science */}
                 {param.science && (
                   <div className="bg-[#041329] rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-[#4cd6fb] uppercase tracking-wider mb-1">Science</p>
-                    <p className="text-[#c5c6cd] text-[11px] leading-relaxed">{param.science}</p>
+                    <p className="text-xs font-bold text-[#4cd6fb] uppercase tracking-wider mb-1">Science</p>
+                    <p className="text-[#c5c6cd] text-xs leading-relaxed">{param.science}</p>
                   </div>
                 )}
 
                 {/* Quick Links */}
                 <div className="flex gap-2">
-                  <Link href="/trends" className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-bold bg-[#041329] text-[#4cd6fb]">
-                    <span className="material-symbols-outlined text-xs">monitoring</span>
+                  <Link href="/trends" className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-[#041329] text-[#4cd6fb]">
+                    <span className="material-symbols-outlined text-sm">monitoring</span>
                     Trends
                   </Link>
-                  <Link href="/dosing" className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-bold bg-[#041329] text-[#2ff801]">
-                    <span className="material-symbols-outlined text-xs">science</span>
+                  <Link href="/dosing" className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-[#041329] text-[#2ff801]">
+                    <span className="material-symbols-outlined text-sm">science</span>
                     Dosing
                   </Link>
-                  <Link href="/alerts" className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-bold bg-[#041329] text-[#FF7F50]">
-                    <span className="material-symbols-outlined text-xs">notifications</span>
+                  <Link href="/alerts" className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-[#041329] text-[#FF7F50]">
+                    <span className="material-symbols-outlined text-sm">notifications</span>
                     Alerts
                   </Link>
                 </div>
@@ -296,12 +297,12 @@ export default function ParamCenterPage() {
       })}
 
       {/* Legend */}
-      <div className="bg-[#041329] rounded-2xl p-4 space-y-2">
-        <p className="text-[10px] font-bold text-[#c5c6cd]/50 uppercase tracking-widest">Action Types</p>
+      <div className="bg-[#041329] rounded-2xl p-4 space-y-2.5">
+        <p className="text-xs font-bold text-[#c5c6cd]/50 uppercase tracking-widest">Action Types</p>
         {Object.entries(ACTION_TYPE_META).map(([, meta]) => (
-          <div key={meta.label} className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm" style={{ color: meta.color }}>{meta.icon}</span>
-            <p className="text-[#c5c6cd] text-[11px]"><span className="font-bold" style={{ color: meta.color }}>{meta.label}</span> — {
+          <div key={meta.label} className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-base" style={{ color: meta.color }}>{meta.icon}</span>
+            <p className="text-[#c5c6cd] text-xs"><span className="font-bold" style={{ color: meta.color }}>{meta.label}</span> — {
               meta.label === 'Equipment' ? 'Physical/mechanical actions and equipment adjustments' :
               meta.label === 'Biological' ? 'Living solutions: bacteria, macroalgae, refugium' :
               meta.label === 'Chemical / Product' ? 'Supplements, additives, and commercial products' :
@@ -320,24 +321,24 @@ function ActionCard({ action, index }: { action: ActionItem; index: number }) {
   const meta = ACTION_TYPE_META[action.type];
 
   return (
-    <div className={`rounded-xl p-3 space-y-2 ${action.urgent ? 'bg-[#ff4444]/5 border border-[#ff4444]/15' : 'bg-[#041329]'}`}>
-      <div className="flex items-start gap-2">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${action.color}15` }}>
-          <span className="material-symbols-outlined text-sm" style={{ color: action.color }}>{action.icon}</span>
+    <div className={`rounded-xl p-3.5 space-y-2.5 ${action.urgent ? 'bg-[#ff4444]/5 border border-[#ff4444]/15' : 'bg-[#041329]'}`}>
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${action.color}15` }}>
+          <span className="material-symbols-outlined text-base" style={{ color: action.color }}>{action.icon}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: `${meta.color}15`, color: meta.color }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded" style={{ backgroundColor: `${meta.color}15`, color: meta.color }}>
               {meta.label}
             </span>
             {action.urgent && (
-              <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-[#ff4444]/15 text-[#ff4444]">
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#ff4444]/15 text-[#ff4444]">
                 Urgent
               </span>
             )}
           </div>
-          <p className="text-white text-xs font-medium">{action.title}</p>
-          <p className="text-[#c5c6cd]/60 text-[11px] leading-relaxed mt-0.5">{action.description}</p>
+          <p className="text-white text-sm font-medium">{action.title}</p>
+          <p className="text-[#c5c6cd]/60 text-xs leading-relaxed mt-0.5">{action.description}</p>
         </div>
       </div>
 
@@ -345,17 +346,17 @@ function ActionCard({ action, index }: { action: ActionItem; index: number }) {
       {action.product && (
         <Link
           href={`/wishlist?add=${encodeURIComponent(action.product.brand + ' ' + action.product.name)}`}
-          className="ml-9 bg-[#0d1c32] rounded-lg p-2.5 flex items-center gap-3 border border-[#1c2a41]/50 active:scale-[0.98] transition-transform block"
+          className="ml-11 bg-[#0d1c32] rounded-lg p-3 flex items-center gap-3 border border-[#1c2a41]/50 active:scale-[0.98] transition-transform block"
         >
-          <div className="w-8 h-8 rounded-lg bg-[#4cd6fb]/10 flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[#4cd6fb] text-sm">science</span>
+          <div className="w-9 h-9 rounded-lg bg-[#4cd6fb]/10 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[#4cd6fb] text-base">science</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-[11px] font-medium">{action.product.brand} {action.product.name}</p>
-            <p className="text-[#c5c6cd]/40 text-[10px]">{action.product.why}</p>
+            <p className="text-white text-xs font-medium">{action.product.brand} {action.product.name}</p>
+            <p className="text-[#c5c6cd]/40 text-[11px]">{action.product.why}</p>
           </div>
-          <div className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#4cd6fb]/15 text-[#4cd6fb] text-[10px] font-bold">
-            <span className="material-symbols-outlined text-xs">add</span>
+          <div className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg bg-[#4cd6fb]/15 text-[#4cd6fb] text-xs font-bold">
+            <span className="material-symbols-outlined text-sm">add</span>
             Wishlist
           </div>
         </Link>

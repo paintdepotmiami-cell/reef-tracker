@@ -917,41 +917,68 @@ export default function GearPage() {
                 </div>
 
                 {/* Catalog Suggestions Dropdown */}
-                {showSuggestions && catalogResults.length > 0 && (
+                {showSuggestions && tab !== 'supplements' && fName.trim().length >= 2 && (
                   <div
                     ref={suggestionsRef}
-                    className="absolute left-0 right-0 top-full mt-1 bg-[#0d1c32] border border-[#1c2a41] rounded-xl overflow-hidden z-10 shadow-2xl max-h-[240px] overflow-y-auto"
+                    className="absolute left-0 right-0 top-full mt-1 bg-[#0d1c32] border border-[#1c2a41] rounded-xl overflow-hidden z-10 shadow-2xl max-h-[280px] overflow-y-auto"
                   >
-                    <div className="px-3 py-1.5 border-b border-[#1c2a41]">
-                      <p className="text-[8px] text-[#c5c6cd]/40 uppercase tracking-widest font-bold">Popular Equipment</p>
-                    </div>
-                    {catalogResults.map((item, i) => (
-                      <button
-                        key={`${item.brand}-${item.name}-${i}`}
-                        onClick={() => pickCatalogItem(item)}
-                        className="w-full px-3 py-2.5 flex items-center gap-3 text-left hover:bg-[#1c2a41]/50 active:bg-[#1c2a41] transition-colors border-b border-[#1c2a41]/30 last:border-0"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-[#FF7F50]/10 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[#FF7F50] text-sm">
-                            {item.category === 'lighting' ? 'light_mode' :
-                             item.category === 'circulation' ? 'waves' :
-                             item.category === 'filtration' ? 'filter_alt' :
-                             item.category === 'heating' ? 'thermostat' :
-                             item.category === 'water_management' ? 'water_drop' :
-                             item.category === 'testing' ? 'science' :
-                             item.category === 'controller' ? 'settings_remote' :
-                             item.category === 'sump' ? 'plumbing' : 'settings'}
-                          </span>
+                    {catalogResults.length > 0 ? (
+                      <>
+                        <div className="px-3 py-1.5 border-b border-[#1c2a41]">
+                          <p className="text-[8px] text-[#c5c6cd]/40 uppercase tracking-widest font-bold">{catalogResults.length} Result{catalogResults.length !== 1 ? 's' : ''}</p>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-medium truncate">{item.brand} {item.name}</p>
-                          <p className="text-[#c5c6cd]/40 text-[10px] capitalize">{item.category.replace('_', ' ')}</p>
+                        {catalogResults.map((item, i) => (
+                          <button
+                            key={`${item.brand}-${item.name}-${i}`}
+                            onClick={() => pickCatalogItem(item)}
+                            className="w-full px-3 py-2.5 flex items-center gap-3 text-left hover:bg-[#1c2a41]/50 active:bg-[#1c2a41] transition-colors border-b border-[#1c2a41]/30 last:border-0"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-[#FF7F50]/10 flex items-center justify-center shrink-0">
+                              <span className="material-symbols-outlined text-[#FF7F50] text-sm">
+                                {item.category === 'lighting' ? 'light_mode' :
+                                 item.category === 'circulation' ? 'waves' :
+                                 item.category === 'filtration' ? 'filter_alt' :
+                                 item.category === 'heating' ? 'thermostat' :
+                                 item.category === 'water_management' ? 'water_drop' :
+                                 item.category === 'testing' ? 'science' :
+                                 item.category === 'controller' ? 'settings_remote' :
+                                 item.category === 'sump' ? 'plumbing' : 'settings'}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-sm font-medium truncate">{item.brand} {item.name}</p>
+                              <p className="text-[#c5c6cd]/40 text-[10px] capitalize">{item.category.replace('_', ' ')}</p>
+                            </div>
+                            {item.popular && (
+                              <span className="text-[7px] font-bold text-[#F1C40F] bg-[#F1C40F]/10 px-1.5 py-0.5 rounded uppercase">Top</span>
+                            )}
+                          </button>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="p-4 text-center space-y-3">
+                        <span className="material-symbols-outlined text-2xl text-[#c5c6cd]/20">search_off</span>
+                        <p className="text-[#c5c6cd]/50 text-xs">No matches for &ldquo;{fName}&rdquo;</p>
+                        <div className="flex gap-2">
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(fName + ' reef aquarium equipment')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-[#4cd6fb]/10 text-[#4cd6fb] active:scale-95 transition-transform"
+                          >
+                            <span className="material-symbols-outlined text-sm">travel_explore</span>
+                            Search Google
+                          </a>
+                          <button
+                            onClick={() => setShowSuggestions(false)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-[#FF7F50]/10 text-[#FF7F50] active:scale-95 transition-transform"
+                          >
+                            <span className="material-symbols-outlined text-sm">edit</span>
+                            Add Custom
+                          </button>
                         </div>
-                        {item.popular && (
-                          <span className="text-[7px] font-bold text-[#F1C40F] bg-[#F1C40F]/10 px-1.5 py-0.5 rounded uppercase">Top</span>
-                        )}
-                      </button>
-                    ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
