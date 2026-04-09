@@ -1,144 +1,125 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getSupabase } from '@/lib/supabase';
-
-interface PlannerLayout {
-  id: string;
-  name: string;
-  tank_length_in: number | null;
-  tank_width_in: number | null;
-  tank_height_in: number | null;
-  pumps: unknown[];
-  lights: unknown[];
-  corals: unknown[];
-  updated_at: string;
-}
 
 export default function PlannerPage() {
   const { user, tank } = useAuth();
-  const [layout, setLayout] = useState<PlannerLayout | null>(null);
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showInfo, setShowInfo] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    getSupabase()
-      .from('reef_planner_layouts')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        setLayout(data);
-        setLoading(false);
-      });
-  }, [user]);
+    async function buildUrl() {
+      const base = 'https://reefos-planner.vercel.app';
+      const params = new URLSearchParams();
+
+      // Pass auth token if available
+      try {
+        const { data } = await getSupabase().auth.getSession();
+        if (data?.session) {
+          params.set('token', data.session.access_token);
+          params.set('refresh', data.session.refresh_token);
+        }
+      } catch {}
+
+      // Pass tank dimensions if available
+      if (tank) {
+        if (tank.length_in) params.set('length', String(tank.length_in));
+        if (tank.width_in) params.set('width', String(tank.width_in));
+        if (tank.height_in) params.set('height', String(tank.height_in));
+      }
+
+      // Embed mode
+      params.set('embed', '1');
+
+      const url = params.toString() ? `${base}?${params}` : base;
+      setIframeUrl(url);
+      setLoading(false);
+    }
+
+    buildUrl();
+  }, [user, tank]);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <span className="material-symbols-outlined text-5xl text-[#FF7F50] animate-pulse">view_in_ar</span>
+      <div className="text-center">
+        <span className="material-symbols-outlined text-5xl text-[#FF7F50] animate-pulse">view_in_ar</span>
+        <p className="text-[#c5c6cd] text-sm mt-3 font-medium tracking-wider uppercase">Loading Planner...</p>
+      </div>
     </div>
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <p className="font-[family-name:var(--font-headline)] tracking-widest text-[#ffb59c] text-xs font-medium uppercase">3D Simulation</p>
-        <h1 className="text-3xl font-[family-name:var(--font-headline)] font-bold tracking-tight text-white">Planner</h1>
-        <p className="text-[#c5c6cd] text-sm mt-1">Flow, PAR & placement advisor for your reef</p>
+    <div className="fixed inset-0 pt-16 pb-[4.5rem] bg-[#010e24] z-10">
+      {/* Mini toolbar */}
+      <div className="flex items-center justify-between px-4 py-2 bg-[#041329]/90 backdrop-blur-md border-b border-[#1c2a41]">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#FF7F50] text-lg">view_in_ar</span>
+          <span className="font-[family-name:var(--font-headline)] font-bold text-white text-sm">3D Planner</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowInfo(!showInfo)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#c5c6cd]/60 hover:text-white hover:bg-[#1c2a41] transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">info</span>
+          </button>
+          <button
+            onClick={() => {
+              if (iframeUrl) window.open(iframeUrl.replace('embed=1', ''), '_blank');
+            }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#c5c6cd]/60 hover:text-white hover:bg-[#1c2a41] transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">open_in_new</span>
+          </button>
+          <button
+            onClick={() => iframeRef.current?.contentWindow?.location.reload()}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#c5c6cd]/60 hover:text-white hover:bg-[#1c2a41] transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">refresh</span>
+          </button>
+        </div>
       </div>
 
-      {/* Layout Card or Empty State */}
-      {layout ? (
-        <div className="bg-[#0d1c32] rounded-2xl p-6 space-y-4">
+      {/* Info overlay */}
+      {showInfo && (
+        <div className="absolute inset-x-0 top-[7rem] mx-4 bg-[#0d1c32] rounded-2xl p-5 space-y-3 z-20 shadow-2xl border border-[#1c2a41]">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-lg">{layout.name}</h3>
-              <p className="text-xs text-[#c5c6cd]">
-                {layout.tank_length_in}&quot; x {layout.tank_width_in}&quot; x {layout.tank_height_in}&quot;
-              </p>
-            </div>
-            <div className="bg-[#FF7F50]/10 rounded-xl px-3 py-1.5">
-              <span className="text-[#FF7F50] text-xs font-bold">{(layout.corals as unknown[]).length} corals</span>
-            </div>
+            <h3 className="font-[family-name:var(--font-headline)] font-bold text-white">Planner Features</h3>
+            <button onClick={() => setShowInfo(false)} className="text-[#c5c6cd]/60">
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[#010e24] rounded-xl p-3 text-center">
-              <span className="material-symbols-outlined text-[#4cd6fb] text-lg">waves</span>
-              <p className="text-white font-bold text-sm mt-1">{(layout.pumps as unknown[]).length}</p>
-              <p className="text-[#8f9097] text-[9px] uppercase">Pumps</p>
+          {[
+            { icon: 'waves', color: '#4cd6fb', title: 'Flow Simulation', desc: 'Real pump specs, dead zone detection' },
+            { icon: 'light_mode', color: '#F1C40F', title: 'PAR Mapping', desc: 'Light spread & depth attenuation' },
+            { icon: 'swords', color: '#ffb4ab', title: 'Conflict Detection', desc: 'Sweeper reach & spacing warnings' },
+            { icon: 'psychology', color: '#2ff801', title: 'AI Advisor', desc: 'Optimized coral placement' },
+          ].map(f => (
+            <div key={f.title} className="flex items-center gap-3">
+              <span className="material-symbols-outlined" style={{ color: f.color }}>{f.icon}</span>
+              <div>
+                <p className="text-white text-sm font-semibold">{f.title}</p>
+                <p className="text-[#8f9097] text-xs">{f.desc}</p>
+              </div>
             </div>
-            <div className="bg-[#010e24] rounded-xl p-3 text-center">
-              <span className="material-symbols-outlined text-[#F1C40F] text-lg">light_mode</span>
-              <p className="text-white font-bold text-sm mt-1">{(layout.lights as unknown[]).length}</p>
-              <p className="text-[#8f9097] text-[9px] uppercase">Lights</p>
-            </div>
-            <div className="bg-[#010e24] rounded-xl p-3 text-center">
-              <span className="material-symbols-outlined text-[#2ff801] text-lg">spa</span>
-              <p className="text-white font-bold text-sm mt-1">{(layout.corals as unknown[]).length}</p>
-              <p className="text-[#8f9097] text-[9px] uppercase">Corals</p>
-            </div>
-          </div>
-          <p className="text-[9px] text-[#8f9097] text-center">
-            Last updated: {new Date(layout.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </p>
-        </div>
-      ) : (
-        <div className="bg-[#0d1c32] rounded-2xl p-8 text-center space-y-4">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-[#FF7F50]/10 flex items-center justify-center">
-            <span className="material-symbols-outlined text-4xl text-[#FF7F50]">view_in_ar</span>
-          </div>
-          <div>
-            <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-lg">No Layout Yet</h3>
-            <p className="text-[#c5c6cd] text-sm mt-1">Open the 3D Planner to design your reef layout with flow simulation and PAR mapping.</p>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Open Planner Button */}
-      <button
-        onClick={async () => {
-          const base = 'https://reefos-planner.vercel.app';
-          try {
-            const { data } = await getSupabase().auth.getSession();
-            if (data?.session) {
-              window.open(`${base}?token=${data.session.access_token}&refresh=${data.session.refresh_token}`, '_blank');
-            } else {
-              window.open(base, '_blank');
-            }
-          } catch {
-            window.open(base, '_blank');
-          }
-        }}
-        className="block w-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white font-[family-name:var(--font-headline)] font-bold py-5 rounded-2xl text-base tracking-widest uppercase shadow-xl shadow-[#FF7F50]/20 active:scale-[0.97] transition-transform duration-150 text-center cursor-pointer"
-      >
-        <span className="material-symbols-outlined text-xl align-middle mr-2">open_in_new</span>
-        Open 3D Planner
-      </button>
-
-      {/* Features */}
-      <div className="space-y-3">
-        <h3 className="font-[family-name:var(--font-headline)] text-[10px] tracking-[0.15em] text-[#c5c6cd] uppercase font-medium">What the Planner does</h3>
-        {[
-          { icon: 'waves', color: '#4cd6fb', title: 'Flow Simulation', desc: 'Real pump specs, dead zone detection, turnover analysis' },
-          { icon: 'light_mode', color: '#F1C40F', title: 'PAR Mapping', desc: 'Light spread, depth attenuation, coverage analysis' },
-          { icon: 'swords', color: '#ffb4ab', title: 'Conflict Detection', desc: 'Sweeper tentacle reach, spacing warnings, aggression checks' },
-          { icon: 'psychology', color: '#2ff801', title: 'Placement Advisor', desc: 'AI-powered suggestions to optimize coral placement' },
-        ].map(f => (
-          <div key={f.title} className="bg-[#0d1c32] rounded-xl p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${f.color}15` }}>
-              <span className="material-symbols-outlined text-lg" style={{ color: f.color }}>{f.icon}</span>
-            </div>
-            <div>
-              <p className="font-[family-name:var(--font-headline)] font-semibold text-white text-sm">{f.title}</p>
-              <p className="text-[#8f9097] text-xs">{f.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Fullscreen iframe */}
+      {iframeUrl && (
+        <iframe
+          ref={iframeRef}
+          src={iframeUrl}
+          className="w-full h-full border-0"
+          allow="accelerometer; gyroscope"
+          title="ReefOS 3D Planner"
+        />
+      )}
     </div>
   );
 }
