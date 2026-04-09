@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const maxDuration = 60;
+
 const SYSTEM_PROMPT = `You are an aquarium water test reader. You analyze photos of test kit results and extract parameter values.
 
 Common test kits and devices:
@@ -32,12 +34,25 @@ Returns: {"alkalinity": 11.1, "calcium": 443, "magnesium": 1596, "nitrate": 0, "
 
 IMPORTANT: Return ONLY the JSON object, no markdown, no explanation, no code blocks.`;
 
+function getGeminiConfig() {
+  const key = process.env.GEMINI_API_KEY;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+  return { key, url };
+}
+
 /**
  * POST /api/analyze-test
  * Receives a base64 image of a water test kit photo.
- * Uses OpenAI GPT-4o Vision to read the values and return parsed parameters.
+ * Uses Gemini Flash to read values and return parsed parameters.
  */
 export async function POST(req: NextRequest) {
+  const { key: GEMINI_KEY, url: GEMINI_URL } = getGeminiConfig();
+
+  if (!GEMINI_KEY) {
+    console.error('[analyze-test] GEMINI_API_KEY not set');
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+  }
+
   try {
     const { image, mimeType } = await req.json();
 
@@ -45,57 +60,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-    }
+    // Strip data URL prefix if present
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const mime = mimeType || 'image/jpeg';
 
-    const dataUrl = `data:${mimeType || 'image/jpeg'};base64,${image}`;
+    console.log(`[analyze-test] imageSize=${Math.round(base64Data.length / 1024)}KB`);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 512,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: { url: dataUrl, detail: 'high' },
+        contents: [{
+          parts: [
+            { text: SYSTEM_PROMPT + '\n\nRead the water test results from this photo. Return only the JSON.' },
+            {
+              inline_data: {
+                mime_type: mime,
+                data: base64Data,
               },
-              {
-                type: 'text',
-                text: 'Read the water test results from this photo. Return only the JSON.',
-              },
-            ],
-          },
-        ],
+            },
+          ],
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 512,
+        },
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.error('OpenAI API error:', err);
-      return NextResponse.json({ error: 'AI analysis failed' }, { status: 500 });
+      console.error('[analyze-test] Gemini API error:', err);
+      return NextResponse.json({ error: 'AI analysis failed' }, { status: 502 });
     }
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || '{}';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
 
-    // Parse the JSON response (strip any accidental markdown)
-    const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-    const params = JSON.parse(cleaned);
+    // Parse JSON from response (handle potential markdown wrapping)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('[analyze-test] Could not parse:', text);
+      return NextResponse.json({ error: 'Could not parse AI response', raw: text }, { status: 500 });
+    }
 
+    const params = JSON.parse(jsonMatch[0]);
     return NextResponse.json({ params });
-  } catch (err) {
-    console.error('Analyze test error:', err);
-    return NextResponse.json({ error: 'Failed to analyze image' }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[analyze-test] Error:', msg);
+    return NextResponse.json({ error: `Failed to analyze image: ${msg}` }, { status: 500 });
   }
 }
