@@ -28,6 +28,8 @@ interface Tank {
   is_primary: boolean;
   cycle_started_at: string | null;
   setup_completed_at: string | null;
+  cycle_completed: boolean | null;
+  model: string | null;
   created_at: string;
 }
 

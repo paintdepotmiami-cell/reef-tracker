@@ -122,6 +122,10 @@ export interface Equipment {
   category: string | null;
   config: string | null;
   notes: string | null;
+  user_id: string | null;
+  tank_id: string | null;
+  image_url: string | null;
+  created_at?: string;
 }
 
 export interface Supplement {
@@ -130,6 +134,10 @@ export interface Supplement {
   brand: string | null;
   type: string | null;
   notes: string | null;
+  user_id: string | null;
+  tank_id: string | null;
+  image_url: string | null;
+  created_at?: string;
 }
 
 export interface Recommendation {
