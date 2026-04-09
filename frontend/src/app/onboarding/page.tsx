@@ -321,11 +321,7 @@ export default function SetupWizard() {
   const [livestockSubcat, setLivestockSubcat] = useState<string | null>(null);
 
   // Dosing pump config (appears when user adds a dosing pump)
-  const [dosingChannels, setDosingChannels] = useState<DosingChannel[]>([
-    { channel: 1, product: '', parameter: 'alkalinity', ml_per_day: 0, doses_per_day: 6, enabled: false },
-    { channel: 2, product: '', parameter: 'calcium', ml_per_day: 0, doses_per_day: 6, enabled: false },
-    { channel: 3, product: '', parameter: 'magnesium', ml_per_day: 0, doses_per_day: 2, enabled: false },
-  ]);
+  const [dosingChannels, setDosingChannels] = useState<DosingChannel[]>([]);
 
   // Existing tank: Current parameters
   const [scanningParams, setScanningParams] = useState(false);
@@ -614,8 +610,8 @@ export default function SetupWizard() {
         }
       }
 
-      // 4. Save dosing config if user has a dosing pump with active channels
-      const activeChannels = dosingChannels.filter(ch => ch.enabled && ch.ml_per_day > 0);
+      // 4. Save dosing config if user has a dosing pump with channels
+      const activeChannels = dosingChannels.filter(ch => ch.product.trim().length > 0);
       if (activeChannels.length > 0) {
         const pumpGear = scannedGear.find(g => g.category.toLowerCase().includes('dos'));
         promises.push(createDosingConfig({
@@ -1115,69 +1111,114 @@ export default function SetupWizard() {
               {/* Dosing Pump Configuration — appears when a dosing pump is in the gear list */}
               {scannedGear.some(g => g.category.toLowerCase().includes('dos')) && (
                 <div className="mt-4">
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-2">
                     <span className="material-symbols-outlined text-[#4cd6fb]">science</span>
-                    <p className="text-[10px] font-bold text-[#4cd6fb]/70 uppercase tracking-widest">Dosing Configuration</p>
+                    <p className="text-[10px] font-bold text-[#4cd6fb]/70 uppercase tracking-widest">What are you dosing?</p>
                   </div>
-                  <p className="text-xs text-[#8f9097] mb-3">Set up your auto-dosing channels. This helps ReefOS give accurate recommendations.</p>
+                  <p className="text-xs text-[#8f9097] mb-3">Add each product your pump doses. This helps ReefOS give smarter recommendations.</p>
 
-                  <div className="space-y-3">
+                  {/* Existing channels */}
+                  <div className="space-y-2 mb-3">
                     {dosingChannels.map((ch, i) => (
-                      <div key={ch.channel} className={`rounded-xl border p-3 transition-all ${ch.enabled
-                        ? 'bg-[#4cd6fb]/5 border-[#4cd6fb]/30'
-                        : 'bg-[#0d1c32] border-[#1c2a41]'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${ch.enabled ? 'bg-[#4cd6fb] text-[#010e24]' : 'bg-[#1c2a41] text-[#8f9097]'}`}>{ch.channel}</span>
-                            <span className="text-xs font-semibold text-white capitalize">{ch.parameter}</span>
-                          </div>
-                          <button onClick={() => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, enabled: !c.enabled } : c))}
-                            className={`w-10 h-5 rounded-full relative transition-all ${ch.enabled ? 'bg-[#4cd6fb]' : 'bg-[#1c2a41]'}`}>
-                            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${ch.enabled ? 'left-5' : 'left-0.5'}`} />
+                      <div key={i} className="bg-[#4cd6fb]/5 border border-[#4cd6fb]/20 rounded-xl p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[#4cd6fb] text-xs font-bold">CH{i + 1}</span>
+                          <span className="text-white text-sm font-medium flex-1">{ch.product || 'Unnamed'}</span>
+                          <button onClick={() => setDosingChannels(prev => prev.filter((_, idx) => idx !== i))}
+                            className="text-[#8f9097] hover:text-[#ff6b6b]">
+                            <span className="material-symbols-outlined text-sm">close</span>
                           </button>
                         </div>
-
-                        {ch.enabled && (
-                          <div className="space-y-2 mt-2">
-                            <input
-                              type="text" value={ch.product} placeholder="Product name (e.g. BRS Alk, All For Reef)"
-                              onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, product: e.target.value } : c))}
-                              className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-2 px-3 text-white text-xs placeholder:text-slate-500 focus:ring-1 focus:ring-[#4cd6fb]/50"
-                            />
-                            <div className="flex gap-2">
-                              <div className="flex-1">
-                                <label className="text-[9px] text-[#8f9097] uppercase">mL/day</label>
-                                <input
-                                  type="number" value={ch.ml_per_day || ''} placeholder="0"
-                                  onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, ml_per_day: Number(e.target.value) } : c))}
-                                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-2 px-3 text-white text-xs focus:ring-1 focus:ring-[#4cd6fb]/50"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <label className="text-[9px] text-[#8f9097] uppercase">Doses/day</label>
-                                <select
-                                  value={ch.doses_per_day}
-                                  onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, doses_per_day: Number(e.target.value) } : c))}
-                                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-2 px-3 text-white text-xs focus:ring-1 focus:ring-[#4cd6fb]/50"
-                                >
-                                  {[1,2,3,4,6,8,12,24].map(n => <option key={n} value={n}>{n}×</option>)}
-                                </select>
-                              </div>
-                            </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[8px] text-[#8f9097] uppercase">Affects</label>
+                            <select value={ch.parameter}
+                              onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, parameter: e.target.value } : c))}
+                              className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-1.5 px-2 text-white text-[10px] focus:ring-1 focus:ring-[#4cd6fb]/50">
+                              <option value="alkalinity">Alkalinity</option>
+                              <option value="calcium">Calcium</option>
+                              <option value="magnesium">Magnesium</option>
+                              <option value="all-in-one">All-in-One</option>
+                              <option value="food">Coral Food</option>
+                              <option value="supplement">Supplement</option>
+                              <option value="water-out">Water Out</option>
+                              <option value="water-in">Water In</option>
+                              <option value="medication">Medication</option>
+                              <option value="kalkwasser">Kalkwasser</option>
+                              <option value="other">Other</option>
+                            </select>
                           </div>
-                        )}
+                          <div>
+                            <label className="text-[8px] text-[#8f9097] uppercase">mL/day</label>
+                            <input type="number" value={ch.ml_per_day || ''} placeholder="0"
+                              onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, ml_per_day: Number(e.target.value) } : c))}
+                              className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-1.5 px-2 text-white text-[10px] focus:ring-1 focus:ring-[#4cd6fb]/50"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[8px] text-[#8f9097] uppercase">×/day</label>
+                            <select value={ch.doses_per_day}
+                              onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, doses_per_day: Number(e.target.value) } : c))}
+                              className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-1.5 px-2 text-white text-[10px] focus:ring-1 focus:ring-[#4cd6fb]/50">
+                              {[1,2,3,4,6,8,12,24].map(n => <option key={n} value={n}>{n}×</option>)}
+                            </select>
+                          </div>
+                        </div>
                       </div>
                     ))}
+                  </div>
 
-                    {/* Add more channels */}
-                    {dosingChannels.length < 6 && (
-                      <button onClick={() => setDosingChannels(prev => [...prev, {
-                        channel: prev.length + 1, product: '', parameter: 'other', ml_per_day: 0, doses_per_day: 2, enabled: false
-                      }])}
-                        className="w-full py-2 rounded-xl border border-dashed border-[#1c2a41] text-[#8f9097] text-xs hover:border-[#4cd6fb]/40 hover:text-[#4cd6fb] transition-all">
-                        + Add Channel
-                      </button>
-                    )}
+                  {/* Quick-add common products */}
+                  {dosingChannels.length === 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {[
+                        { product: 'BRS Soda Ash', parameter: 'alkalinity' },
+                        { product: 'BRS Calcium', parameter: 'calcium' },
+                        { product: 'All For Reef', parameter: 'all-in-one' },
+                        { product: 'Kalkwasser', parameter: 'kalkwasser' },
+                        { product: 'Reef-Roids', parameter: 'food' },
+                        { product: 'Red Sea Foundation A', parameter: 'alkalinity' },
+                      ].map(q => (
+                        <button key={q.product} onClick={() => setDosingChannels(prev => [...prev, {
+                          channel: prev.length + 1, product: q.product, parameter: q.parameter, ml_per_day: 0, doses_per_day: 6, enabled: true
+                        }])}
+                          className="p-2 rounded-lg bg-[#0d1c32] border border-[#1c2a41] hover:border-[#4cd6fb]/40 text-left transition-all active:scale-[0.97]">
+                          <p className="text-white text-[10px] font-medium">{q.product}</p>
+                          <p className="text-[8px] text-[#8f9097] capitalize">{q.parameter}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add custom channel */}
+                  <div className="flex gap-2">
+                    <input
+                      id="newDosingProduct" type="text" placeholder="Product name..."
+                      className="flex-1 bg-[#010e24] border border-[#1c2a41] rounded-xl py-2.5 px-3 text-white text-xs placeholder:text-slate-500 focus:ring-1 focus:ring-[#4cd6fb]/50"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const input = e.target as HTMLInputElement;
+                          if (input.value.trim()) {
+                            setDosingChannels(prev => [...prev, {
+                              channel: prev.length + 1, product: input.value.trim(), parameter: 'other', ml_per_day: 0, doses_per_day: 6, enabled: true
+                            }]);
+                            input.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <button onClick={() => {
+                      const input = document.getElementById('newDosingProduct') as HTMLInputElement;
+                      if (input?.value.trim()) {
+                        setDosingChannels(prev => [...prev, {
+                          channel: prev.length + 1, product: input.value.trim(), parameter: 'other', ml_per_day: 0, doses_per_day: 6, enabled: true
+                        }]);
+                        input.value = '';
+                      }
+                    }}
+                      className="px-4 py-2.5 bg-[#4cd6fb]/10 border border-[#4cd6fb]/30 rounded-xl text-[#4cd6fb] text-xs font-bold hover:bg-[#4cd6fb]/20 transition-all active:scale-[0.97]">
+                      + Add
+                    </button>
                   </div>
                 </div>
               )}
