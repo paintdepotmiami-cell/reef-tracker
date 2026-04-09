@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-const PUBLIC_PATHS = ['/login'];
+const PUBLIC_PATHS = ['/login', '/landing'];
 
 // DEV ONLY: bypass auth for UI preview — REMOVE before deploy
 const DEV_BYPASS = process.env.NODE_ENV === 'development';
