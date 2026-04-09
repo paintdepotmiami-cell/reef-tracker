@@ -152,9 +152,13 @@ export default function ReefOSLanding() {
             </div>
           </div>
 
-          {/* Hero Screenshot */}
-          <div className="mt-12 max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.5)] border border-white/[0.08]">
-            <Image src="/screenshots/dashboard.png" alt="ReefOS Dashboard — reef tank management app" width={1200} height={675} className="w-full" priority />
+          {/* Hero Screenshot - Phone Frame */}
+          <div className="mt-12 flex justify-center">
+            <div className="rounded-[2.5rem] border-[3px] border-white/[0.12] bg-[#0a0a0a] p-2 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.05)]" style={{ maxWidth: 300 }}>
+              <div className="rounded-[2rem] overflow-hidden">
+                <Image src="/screenshots/dashboard.png" alt="ReefOS Dashboard — reef tank management app" width={390} height={844} className="w-full" priority />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -229,10 +233,14 @@ export default function ReefOSLanding() {
 
           <div className="space-y-6">
             {features.map((feature, i) => (
-              <div key={feature.title} className={`rounded-3xl border border-white/[0.06] bg-[#0d1c32] p-6 lg:p-8 grid gap-8 items-center ${i % 2 === 0 ? 'lg:grid-cols-[1fr_1.2fr]' : 'lg:grid-cols-[1.2fr_1fr]'}`}>
+              <div key={feature.title} className={`rounded-3xl border border-white/[0.06] bg-[#0d1c32] p-6 lg:p-8 grid gap-8 items-center ${i % 2 === 0 ? 'lg:grid-cols-[1fr_auto]' : 'lg:grid-cols-[auto_1fr]'}`}>
                 {i % 2 === 1 && (
-                  <div className="rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/[0.06] hidden lg:block">
-                    <Image src={feature.screenshot} alt={feature.alt} width={800} height={500} className="w-full" />
+                  <div className="hidden lg:flex justify-center">
+                    <div className="rounded-[2rem] border-[3px] border-white/[0.12] bg-[#0a0a0a] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" style={{ maxWidth: 220 }}>
+                      <div className="rounded-[1.6rem] overflow-hidden">
+                        <Image src={feature.screenshot} alt={feature.alt} width={390} height={844} className="w-full" />
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div>
@@ -247,8 +255,12 @@ export default function ReefOSLanding() {
                   <h3 className="text-2xl font-bold text-white mb-3">{feature.title}</h3>
                   <p className="text-[#c5c6cd] leading-relaxed">{feature.text}</p>
                 </div>
-                <div className={`rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/[0.06] ${i % 2 === 1 ? 'lg:hidden' : ''}`}>
-                  <Image src={feature.screenshot} alt={feature.alt} width={800} height={500} className="w-full" />
+                <div className={`flex justify-center ${i % 2 === 1 ? 'lg:hidden' : ''}`}>
+                  <div className="rounded-[2rem] border-[3px] border-white/[0.12] bg-[#0a0a0a] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" style={{ maxWidth: 220 }}>
+                    <div className="rounded-[1.6rem] overflow-hidden">
+                      <Image src={feature.screenshot} alt={feature.alt} width={390} height={844} className="w-full" />
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -263,10 +275,15 @@ export default function ReefOSLanding() {
               Real Screenshots From a Real Reef Tank
             </h2>
           </div>
-          <div className="flex gap-4 overflow-x-auto px-6 pb-4 snap-x snap-mandatory" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-6 overflow-x-auto px-6 pb-4 snap-x snap-mandatory justify-start lg:justify-center" style={{ WebkitOverflowScrolling: 'touch' }}>
             {screenshots.map(s => (
-              <div key={s.alt} className="min-w-[min(85vw,550px)] snap-center flex-shrink-0 rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-white/[0.06]">
-                <Image src={s.src} alt={s.alt} width={800} height={500} className="w-full" />
+              <div key={s.alt} className="snap-center flex-shrink-0 flex flex-col items-center gap-3">
+                <div className="rounded-[2rem] border-[3px] border-white/[0.12] bg-[#0a0a0a] p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)]" style={{ width: 180 }}>
+                  <div className="rounded-[1.6rem] overflow-hidden">
+                    <Image src={s.src} alt={s.alt} width={390} height={844} className="w-full" />
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-[#8f9097] uppercase tracking-wider">{s.alt}</span>
               </div>
             ))}
           </div>
@@ -319,8 +336,12 @@ export default function ReefOSLanding() {
                 ))}
               </div>
             </div>
-            <div className="rounded-3xl overflow-hidden border border-white/[0.06] shadow-[0_8px_40px_rgba(0,0,0,0.3)]">
-              <Image src="/screenshots/cycle.png" alt="ReefOS cycle tracker showing tank maturity" width={800} height={500} className="w-full" />
+            <div className="flex items-center justify-center">
+              <div className="rounded-[2rem] border-[3px] border-white/[0.12] bg-[#0a0a0a] p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)]" style={{ maxWidth: 240 }}>
+                <div className="rounded-[1.6rem] overflow-hidden">
+                  <Image src="/screenshots/cycle.png" alt="ReefOS cycle tracker showing tank maturity" width={390} height={844} className="w-full" />
+                </div>
+              </div>
             </div>
           </div>
         </section>
