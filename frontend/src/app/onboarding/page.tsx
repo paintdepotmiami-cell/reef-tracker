@@ -501,21 +501,20 @@ export default function SetupWizard() {
   /* ── Save & Finish ──────────────────────────────────── */
 
   const handleFinish = async () => {
-    if (!user) return;
+    if (!user || saving) return;
     setSaving(true);
     setError('');
 
     try {
       const supabase = getSupabase();
 
-      // 1. Update profile
+      // 1. Update profile (WITHOUT onboarding_completed yet — set it LAST after all data saves)
       const { error: profileErr } = await supabase.from('reef_profiles').update({
         experience_level: experience,
         location_city: city || null,
         location_state: state || null,
         units,
         language,
-        onboarding_completed: true,
         updated_at: new Date().toISOString(),
       }).eq('id', user.id);
 
@@ -638,9 +637,24 @@ export default function SetupWizard() {
 
       // Run all inserts in parallel (use allSettled so one failure doesn't block others)
       const results = await Promise.allSettled(promises);
-      const failures = results.filter(r => r.status === 'rejected');
-      if (failures.length > 0) {
-        console.warn(`${failures.length} of ${results.length} inserts failed:`, failures);
+      const rejected = results.filter(r => r.status === 'rejected');
+      // Also detect null returns (helpers return null on failure instead of throwing)
+      const nullResults = results.filter(r => r.status === 'fulfilled' && r.value === null);
+      if (rejected.length > 0 || nullResults.length > 0) {
+        console.warn(`Inserts: ${rejected.length} rejected, ${nullResults.length} returned null out of ${results.length} total`);
+      }
+
+      // 6. FINAL STEP: Mark onboarding complete ONLY after all data is saved
+      const { error: completeErr } = await supabase.from('reef_profiles').update({
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      }).eq('id', user.id);
+
+      if (completeErr) {
+        console.error('Failed to mark onboarding complete:', completeErr);
+        setError('Setup saved but failed to finalize. Please try again.');
+        setSaving(false);
+        return;
       }
 
       try { await refreshProfile(); } catch (e) { console.warn('refreshProfile failed:', e); }

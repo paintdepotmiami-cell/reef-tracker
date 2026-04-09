@@ -30,10 +30,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Redirect to onboarding if not completed (except on onboarding page itself)
-    if (user && profile && !profile.onboarding_completed && pathname !== '/onboarding') {
-      router.replace('/onboarding');
-      return;
+    // Redirect to onboarding if profile missing or not completed (except on onboarding page itself)
+    if (user && pathname !== '/onboarding') {
+      if (!profile || !profile.onboarding_completed) {
+        router.replace('/onboarding');
+        return;
+      }
     }
   }, [user, profile, loading, pathname, router]);
 
@@ -61,8 +63,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Block until onboarding is done
-  if (!DEV_BYPASS && profile && !profile.onboarding_completed) return null;
+  // Block until onboarding is done (also block if profile hasn't loaded yet)
+  if (!DEV_BYPASS && (!profile || !profile.onboarding_completed)) return null;
 
   return <>{children}</>;
 }
