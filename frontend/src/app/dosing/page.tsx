@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth';
-import { getLatestTest, getUserProducts, getSupplements } from '@/lib/queries';
-import type { WaterTest, UserProduct, Supplement, Product } from '@/lib/queries';
+import { getLatestTest, getUserProducts, getSupplements, getDosingConfig } from '@/lib/queries';
+import type { WaterTest, UserProduct, Supplement, Product, DosingConfig } from '@/lib/queries';
 import { calculateSmartDosing } from '@/lib/smart-dosing';
-import type { SmartDosingResult } from '@/lib/smart-dosing';
+import type { SmartDosingResult, AutoDosingInfo } from '@/lib/smart-dosing';
 import { getCached, setCache } from '@/lib/cache';
 import Link from 'next/link';
 
@@ -64,6 +64,7 @@ export default function DosingPage() {
   const [latestTest, setLatestTest] = useState<WaterTest | null>(null);
   const [userProducts, setUserProducts] = useState<UserProduct[]>([]);
   const [supplements, setSupplements] = useState<Supplement[]>([]);
+  const [dosingConfig, setDosingConfig] = useState<DosingConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [values, setValues] = useState<Record<string, { current: string; target: string }>>({});
@@ -71,19 +72,34 @@ export default function DosingPage() {
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
+  // Build auto-dosing info from config
+  const autoDosing: AutoDosingInfo[] = useMemo(() => {
+    if (!dosingConfig?.channels) return [];
+    return dosingConfig.channels
+      .filter(ch => ch.enabled && ch.ml_per_day > 0)
+      .map(ch => ({
+        parameter: ch.parameter,
+        product: ch.product,
+        ml_per_day: ch.ml_per_day,
+        doses_per_day: ch.doses_per_day,
+      }));
+  }, [dosingConfig]);
+
   // Fetch data
   useEffect(() => {
     if (!user) { setLoading(false); return; }
 
     async function load() {
-      const [test, prods, supps] = await Promise.all([
+      const [test, prods, supps, doseCfg] = await Promise.all([
         getLatestTest(),
         getUserProducts(),
         getSupplements(),
+        getDosingConfig(),
       ]);
       setLatestTest(test);
       setUserProducts(prods);
       setSupplements(supps);
+      setDosingConfig(doseCfg);
 
       // Pre-fill from latest test
       const init: Record<string, { current: string; target: string }> = {};
@@ -126,10 +142,11 @@ export default function DosingPage() {
       hasSPS: true,
       hasLPS: true,
       hasATO: true,
-      hasDosingSPump: false,
+      hasDosingSPump: autoDosing.length > 0,
       currentAlk: values['Alkalinity']?.current ? parseFloat(values['Alkalinity'].current) : null,
       currentCa: values['Calcium']?.current ? parseFloat(values['Calcium'].current) : null,
       currentMg: values['Magnesium']?.current ? parseFloat(values['Magnesium'].current) : null,
+      autoDosing,
     };
 
     const result = calculateSmartDosing(paramKey, current, target, ctx);
@@ -192,6 +209,31 @@ export default function DosingPage() {
             <p className="text-[#c5c6cd]/60 text-xs">Log a test to auto-fill values</p>
           </div>
           <Link href="/logs" className="text-[#FF7F50] text-xs font-medium">Log Test</Link>
+        </div>
+      )}
+
+      {/* Auto-Dosing Status Banner */}
+      {autoDosing.length > 0 ? (
+        <div className="bg-[#4cd6fb]/5 border border-[#4cd6fb]/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-[#4cd6fb] text-lg">precision_manufacturing</span>
+            <p className="text-white text-sm font-semibold">Auto-Dosing Active</p>
+            <span className="ml-auto text-[9px] bg-[#4cd6fb]/20 text-[#4cd6fb] px-2 py-0.5 rounded-full font-bold uppercase">{dosingConfig?.pump_model || 'Dosing Pump'}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {autoDosing.map(d => (
+              <div key={d.parameter} className="bg-[#010e24] rounded-lg p-2 text-center">
+                <p className="text-[9px] text-[#8f9097] uppercase font-bold">{d.parameter.slice(0,3)}</p>
+                <p className="text-white text-sm font-bold">{d.ml_per_day}<span className="text-[9px] text-[#8f9097]"> mL/d</span></p>
+                <p className="text-[8px] text-[#4cd6fb] truncate">{d.product || '—'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-[#1c2a41]/50 border border-[#1c2a41] rounded-2xl p-3 flex items-center gap-3">
+          <span className="material-symbols-outlined text-[#8f9097] text-base">info</span>
+          <p className="text-[#8f9097] text-xs">No auto-dosing configured. Set up a dosing pump in <Link href="/gear" className="text-[#FF7F50] underline">Gear</Link> for smarter recommendations.</p>
         </div>
       )}
 

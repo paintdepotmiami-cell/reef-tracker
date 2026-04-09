@@ -59,6 +59,13 @@ export interface SmartDosingResult {
   crossWarnings: string[];
 }
 
+export interface AutoDosingInfo {
+  parameter: string;     // 'alkalinity' | 'calcium' | 'magnesium'
+  product: string;       // e.g. "BRS Alkalinity"
+  ml_per_day: number;
+  doses_per_day: number;
+}
+
 export interface TankContext {
   gallons: number;
   hasSPS: boolean;
@@ -68,6 +75,7 @@ export interface TankContext {
   currentAlk: number | null;
   currentCa: number | null;
   currentMg: number | null;
+  autoDosing?: AutoDosingInfo[]; // active auto-dosing channels
 }
 
 /**
@@ -274,8 +282,36 @@ export function calculateSmartDosing(
   const allMethods = getMethodAdvice(param, deficit, ctx);
   const primaryMethod = allMethods.find(m => m.recommended) || allMethods[0];
 
+  // ── Auto-dosing awareness ──
+  const currentAutoDose = ctx.autoDosing?.find(d => d.parameter === lowerParam);
+  let autoDosingNote = '';
+
+  if (currentAutoDose && currentAutoDose.ml_per_day > 0) {
+    if (deficit > 0) {
+      // Already dosing but levels are STILL dropping → consumption exceeds dose
+      const currentDailyMl = currentAutoDose.ml_per_day;
+      // Calculate what daily dose SHOULD be to cover deficit + maintenance
+      const correctionMlPerDay = doseAmount / Math.max(daysToComplete, 1);
+      const suggestedTotal = Math.round(currentDailyMl + correctionMlPerDay);
+      autoDosingNote = `⚡ You're auto-dosing ${currentDailyMl} mL/day of ${currentAutoDose.product} but ${param} is still low. Your corals are consuming more than the pump delivers. Increase to ~${suggestedTotal} mL/day (+${Math.round(correctionMlPerDay)} mL).`;
+      // Adjust the frequency to reflect pump adjustment instead of manual dosing
+      frequency = `Increase dosing pump from ${currentDailyMl} → ${suggestedTotal} mL/day (${currentAutoDose.doses_per_day} doses). Retest in 3-5 days.`;
+    } else {
+      // Levels are good AND auto-dosing → pump is dialed in correctly
+      autoDosingNote = `✅ Auto-dosing ${currentAutoDose.ml_per_day} mL/day of ${currentAutoDose.product} — levels look good. Pump is dialed in.`;
+    }
+  } else if (deficit > 0 && ctx.hasDosingSPump) {
+    // Has a pump but NOT dosing this parameter → suggest setting it up
+    autoDosingNote = `💡 You have a dosing pump but ${param} isn't configured for auto-dosing. Set up a channel with ~${Math.round(doseAmount / Math.max(daysToComplete, 1))} mL/day to maintain stable levels.`;
+  }
+
   // ── Expert tips ──
   const tips: string[] = [];
+
+  // Auto-dosing insight goes first — most actionable
+  if (autoDosingNote) {
+    tips.unshift(autoDosingNote);
+  }
 
   if (lowerParam === 'alkalinity') {
     tips.push('Dose Alk at NIGHT — pH naturally drops after lights-out, and the alkalinity buffer counteracts this.');
@@ -290,6 +326,9 @@ export function calculateSmartDosing(
     tips.push('Always dose Ca and Alk in equal proportions to maintain ionic balance.');
     tips.push('If Ca won\'t rise despite dosing, check Magnesium first — low Mg prevents Ca from holding.');
     tips.push('⚠️ OTS: Check dosing tubes every 6-12 months — calcium chloride crystallizes inside tubing, reducing flow. Your dosing pump may be delivering LESS than you think.');
+    if (currentAutoDose && deficit > 0) {
+      tips.push('🔍 Verify tube flow: run a calibration test. Collect output for 1 minute and measure with a syringe. Crystallization may have reduced actual delivery by 20-40%.');
+    }
   }
   if (lowerParam === 'magnesium') {
     tips.push('Fix Mg FIRST before adjusting Ca or Alk. Low Magnesium makes it impossible to maintain Ca/Alk stability.');

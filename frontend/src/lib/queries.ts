@@ -550,6 +550,68 @@ export async function getDoseLogs(limit = 50): Promise<DoseLog[]> {
   return data || [];
 }
 
+// --- Dosing Config ---
+
+export interface DosingChannel {
+  channel: number;
+  product: string;       // e.g. "BRS Alkalinity"
+  parameter: string;     // 'alkalinity' | 'calcium' | 'magnesium' | 'other'
+  ml_per_day: number;
+  doses_per_day: number; // how many times per day the pump runs
+  enabled: boolean;
+}
+
+export interface DosingConfig {
+  id: string;
+  user_id: string;
+  tank_id: string | null;
+  pump_model: string | null;
+  pump_brand: string | null;
+  method: 'pump' | 'manual' | 'kalkwasser' | 'reactor';
+  channels: DosingChannel[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getDosingConfig(): Promise<DosingConfig | null> {
+  const { data } = await getSupabase()
+    .from('reef_dosing_config')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+export async function saveDosingConfig(config: Partial<DosingConfig>): Promise<DosingConfig | null> {
+  const { data } = await getSupabase()
+    .from('reef_dosing_config')
+    .upsert({ ...config, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+    .select()
+    .single();
+  return data;
+}
+
+export async function createDosingConfig(config: Omit<DosingConfig, 'id' | 'created_at' | 'updated_at'>): Promise<DosingConfig | null> {
+  const { data } = await getSupabase()
+    .from('reef_dosing_config')
+    .insert(config)
+    .select()
+    .single();
+  return data;
+}
+
+export async function updateDosingConfig(id: string, updates: Partial<DosingConfig>): Promise<DosingConfig | null> {
+  const { data } = await getSupabase()
+    .from('reef_dosing_config')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  return data;
+}
+
 export async function getStats() {
   const [fish, corals, inverts, equipment] = await Promise.allSettled([
     getSupabase().from('reef_animals').select('quantity').eq('type', 'fish'),

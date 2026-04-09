@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
-import { createEquipment, createMaintenanceTask, createWaterTest, getSpecies, getProducts } from '@/lib/queries';
+import { createEquipment, createMaintenanceTask, createWaterTest, createDosingConfig, getSpecies, getProducts } from '@/lib/queries';
+import type { DosingChannel } from '@/lib/queries';
 
 /* ── Step Definitions ─────────────────────────────────── */
 
@@ -319,6 +320,13 @@ export default function SetupWizard() {
   // Livestock subcategory browser
   const [livestockSubcat, setLivestockSubcat] = useState<string | null>(null);
 
+  // Dosing pump config (appears when user adds a dosing pump)
+  const [dosingChannels, setDosingChannels] = useState<DosingChannel[]>([
+    { channel: 1, product: '', parameter: 'alkalinity', ml_per_day: 0, doses_per_day: 6, enabled: false },
+    { channel: 2, product: '', parameter: 'calcium', ml_per_day: 0, doses_per_day: 6, enabled: false },
+    { channel: 3, product: '', parameter: 'magnesium', ml_per_day: 0, doses_per_day: 2, enabled: false },
+  ]);
+
   // Existing tank: Current parameters
   const [scanningParams, setScanningParams] = useState(false);
   const [params, setParams] = useState<Record<string, number | null>>({
@@ -604,7 +612,22 @@ export default function SetupWizard() {
         }
       }
 
-      // 4. Auto-seed maintenance tasks
+      // 4. Save dosing config if user has a dosing pump with active channels
+      const activeChannels = dosingChannels.filter(ch => ch.enabled && ch.ml_per_day > 0);
+      if (activeChannels.length > 0) {
+        const pumpGear = scannedGear.find(g => g.category === 'Dosing Pump');
+        promises.push(createDosingConfig({
+          user_id: user.id,
+          tank_id: newTank?.id || null,
+          pump_model: pumpGear?.name || null,
+          pump_brand: pumpGear?.brand || null,
+          method: 'pump',
+          channels: activeChannels,
+          notes: 'Configured during onboarding',
+        }));
+      }
+
+      // 5. Auto-seed maintenance tasks
       const taskSize = gallons || 40;
       const defaultTasks = getDefaultTasks(taskSize);
       for (const task of defaultTasks) {
@@ -1081,6 +1104,76 @@ export default function SetupWizard() {
 
               {scannedGear.length === 0 && !gearCategory && (
                 <p className="text-center text-[#8f9097] text-xs">Take a photo or pick a category to add your equipment.</p>
+              )}
+
+              {/* Dosing Pump Configuration — appears when a dosing pump is in the gear list */}
+              {scannedGear.some(g => g.category === 'Dosing Pump') && (
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-symbols-outlined text-[#4cd6fb]">science</span>
+                    <p className="text-[10px] font-bold text-[#4cd6fb]/70 uppercase tracking-widest">Dosing Configuration</p>
+                  </div>
+                  <p className="text-xs text-[#8f9097] mb-3">Set up your auto-dosing channels. This helps ReefOS give accurate recommendations.</p>
+
+                  <div className="space-y-3">
+                    {dosingChannels.map((ch, i) => (
+                      <div key={ch.channel} className={`rounded-xl border p-3 transition-all ${ch.enabled
+                        ? 'bg-[#4cd6fb]/5 border-[#4cd6fb]/30'
+                        : 'bg-[#0d1c32] border-[#1c2a41]'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${ch.enabled ? 'bg-[#4cd6fb] text-[#010e24]' : 'bg-[#1c2a41] text-[#8f9097]'}`}>{ch.channel}</span>
+                            <span className="text-xs font-semibold text-white capitalize">{ch.parameter}</span>
+                          </div>
+                          <button onClick={() => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, enabled: !c.enabled } : c))}
+                            className={`w-10 h-5 rounded-full relative transition-all ${ch.enabled ? 'bg-[#4cd6fb]' : 'bg-[#1c2a41]'}`}>
+                            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${ch.enabled ? 'left-5' : 'left-0.5'}`} />
+                          </button>
+                        </div>
+
+                        {ch.enabled && (
+                          <div className="space-y-2 mt-2">
+                            <input
+                              type="text" value={ch.product} placeholder="Product name (e.g. BRS Alk, All For Reef)"
+                              onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, product: e.target.value } : c))}
+                              className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-2 px-3 text-white text-xs placeholder:text-slate-500 focus:ring-1 focus:ring-[#4cd6fb]/50"
+                            />
+                            <div className="flex gap-2">
+                              <div className="flex-1">
+                                <label className="text-[9px] text-[#8f9097] uppercase">mL/day</label>
+                                <input
+                                  type="number" value={ch.ml_per_day || ''} placeholder="0"
+                                  onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, ml_per_day: Number(e.target.value) } : c))}
+                                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-2 px-3 text-white text-xs focus:ring-1 focus:ring-[#4cd6fb]/50"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <label className="text-[9px] text-[#8f9097] uppercase">Doses/day</label>
+                                <select
+                                  value={ch.doses_per_day}
+                                  onChange={e => setDosingChannels(prev => prev.map((c, idx) => idx === i ? { ...c, doses_per_day: Number(e.target.value) } : c))}
+                                  className="w-full bg-[#010e24] border border-[#1c2a41] rounded-lg py-2 px-3 text-white text-xs focus:ring-1 focus:ring-[#4cd6fb]/50"
+                                >
+                                  {[1,2,3,4,6,8,12,24].map(n => <option key={n} value={n}>{n}×</option>)}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add more channels */}
+                    {dosingChannels.length < 6 && (
+                      <button onClick={() => setDosingChannels(prev => [...prev, {
+                        channel: prev.length + 1, product: '', parameter: 'other', ml_per_day: 0, doses_per_day: 2, enabled: false
+                      }])}
+                        className="w-full py-2 rounded-xl border border-dashed border-[#1c2a41] text-[#8f9097] text-xs hover:border-[#4cd6fb]/40 hover:text-[#4cd6fb] transition-all">
+                        + Add Channel
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </>
           )}
