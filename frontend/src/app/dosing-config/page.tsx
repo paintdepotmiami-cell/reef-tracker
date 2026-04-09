@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
-import { getDosingConfig, updateDosingConfig, createDosingConfig } from '@/lib/queries';
-import type { DosingConfig, DosingChannel } from '@/lib/queries';
+import { getDosingConfig, updateDosingConfig, createDosingConfig, getProducts } from '@/lib/queries';
+import type { DosingConfig, DosingChannel, Product } from '@/lib/queries';
 import Link from 'next/link';
 import ImageIdentifier, { type IdentifyResult } from '@/components/ImageIdentifier';
 
@@ -98,10 +98,12 @@ export default function DosingConfigPage() {
   const [fAtoKalkTsp, setFAtoKalkTsp] = useState('');
 
   const searchRef = useRef<HTMLInputElement>(null);
+  const [reefProducts, setReefProducts] = useState<Product[]>([]);
 
   // Load config
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    getProducts().then(p => setReefProducts(p)).catch(() => {});
     getDosingConfig().then(cfg => {
       setConfig(cfg);
       if (cfg) {
@@ -248,24 +250,73 @@ export default function DosingConfigPage() {
     setShowAddModal(true);
   };
 
-  // Camera identify result
-  const handleIdentifyResult = (result: IdentifyResult) => {
+  // Camera identify result — cross-reference reef_products for affects_params
+  const handleIdentifyResult = async (result: IdentifyResult) => {
     setShowCamera(false);
     const name = `${result.brand || ''} ${result.name}`.trim();
     setFProduct(name);
-    const cat = result.category?.toLowerCase() || '';
-    if (cat.includes('alk') || cat.includes('buffer') || cat.includes('kh')) setFParameter('alkalinity');
-    else if (cat.includes('calc')) setFParameter('calcium');
-    else if (cat.includes('mag')) setFParameter('magnesium');
-    else if (cat.includes('food') || cat.includes('amino')) setFParameter('food');
-    else if (cat.includes('bacteria')) setFParameter('bacteria');
-    else if (cat.includes('trace')) setFParameter('trace');
-    else if (cat.includes('all-in-one') || cat.includes('all for reef')) setFParameter('all-in-one');
-    else setFParameter('supplement');
     setFMlDay('');
     setFDosesDay('24');
     setFEnabled(true);
+
+    // Try to match against reef_products DB for accurate parameter type
+    const products = reefProducts.length > 0 ? reefProducts : await getProducts().catch(() => []);
+    if (!reefProducts.length && products.length) setReefProducts(products);
+
+    const nameLower = result.name.toLowerCase();
+    const brandLower = (result.brand || '').toLowerCase();
+    const match = products.find(p => {
+      const pName = p.name.toLowerCase();
+      const pBrand = p.brand.toLowerCase();
+      if (brandLower && pBrand === brandLower && pName === nameLower) return true;
+      if (pName.includes(nameLower) || nameLower.includes(pName)) return true;
+      if (brandLower && pBrand === brandLower && (pName.includes(nameLower.split(' ')[0]) || nameLower.includes(pName.split(' ')[0]))) return true;
+      return false;
+    });
+
+    if (match) {
+      setFProduct(`${match.brand} ${match.name}`.trim());
+      // Use affects_params from DB to set the correct parameter
+      const affects = match.affects_params;
+      if (affects && affects.length > 0) {
+        const param = affects[0].toLowerCase();
+        const validParam = AFFECTS_OPTIONS.find(o => o.value === param);
+        setFParameter(validParam ? param : mapAffectsToParameter(param));
+      } else {
+        setFParameter(fallbackParameterFromCategory(result.category));
+      }
+    } else {
+      // Fallback: guess from AI category string
+      setFParameter(fallbackParameterFromCategory(result.category));
+    }
+
     setShowAddModal(true);
+  };
+
+  // Fallback: map AI category string to parameter value
+  const fallbackParameterFromCategory = (category: string | undefined): string => {
+    const cat = (category || '').toLowerCase();
+    if (cat.includes('alk') || cat.includes('buffer') || cat.includes('kh')) return 'alkalinity';
+    if (cat.includes('calc')) return 'calcium';
+    if (cat.includes('mag')) return 'magnesium';
+    if (cat.includes('food') || cat.includes('amino')) return 'food';
+    if (cat.includes('bacteria')) return 'bacteria';
+    if (cat.includes('trace')) return 'trace';
+    if (cat.includes('all-in-one') || cat.includes('all for reef')) return 'all-in-one';
+    return 'supplement';
+  };
+
+  // Map DB affects_params values to our AFFECTS_OPTIONS values
+  const mapAffectsToParameter = (param: string): string => {
+    const mapping: Record<string, string> = {
+      'alk': 'alkalinity', 'kh': 'alkalinity', 'buffer': 'alkalinity', 'dkh': 'alkalinity',
+      'ca': 'calcium', 'cal': 'calcium',
+      'mg': 'magnesium', 'mag': 'magnesium',
+      'no3': 'supplement', 'po4': 'supplement', 'nitrate': 'supplement', 'phosphate': 'supplement',
+      'amino': 'food', 'coral food': 'food',
+      'iodine': 'trace', 'strontium': 'trace', 'iron': 'trace', 'potassium': 'trace',
+    };
+    return mapping[param] || 'supplement';
   };
 
   const resetForm = () => {

@@ -307,10 +307,10 @@ export default function SetupWizard() {
   const [scanningGear, setScanningGear] = useState(false);
   const [scannedGear, setScannedGear] = useState<{ name: string; brand: string | null; category: string; confidence: number; qty: number }[]>([]);
   const [scanningLivestock, setScanningLivestock] = useState(false);
-  const [scannedLivestock, setScannedLivestock] = useState<{ name: string; scientific_name: string | null; type: string; category: string; confidence: number; details: string }[]>([]);
+  const [scannedLivestock, setScannedLivestock] = useState<{ name: string; scientific_name: string | null; type: string; category: string; confidence: number; details: string; difficulty: string | null; light_need: string | null; flow_need: string | null; aggression: string | null; growth_speed: string | null; min_distance_inches: number | null; placement_zone: string | null; reef_safe: string | null; care_notes: string | null; warnings: string[] | null; photo_url: string | null; description: string | null }[]>([]);
 
   // Species search for manual livestock add
-  const [speciesDb, setSpeciesDb] = useState<{ common_name: string; scientific_name: string; category: string; subcategory: string; difficulty: string }[]>([]);
+  const [speciesDb, setSpeciesDb] = useState<{ common_name: string; scientific_name: string; category: string; subcategory: string; difficulty: string | null; light_need: string | null; flow_need: string | null; aggression: string | null; growth_speed: string | null; min_distance_inches: number | null; placement_zone: string | null; reef_safe: string | null; care_notes: string | null; warnings: string[] | null; photo_url: string | null; description: string | null }[]>([]);
   const [livestockSearch, setLivestockSearch] = useState('');
   const [livestockTab, setLivestockTab] = useState<'fish' | 'coral' | 'invertebrate'>('fish');
   // Gear category browser
@@ -453,6 +453,18 @@ export default function SetupWizard() {
             details: dbMatch
               ? `${dbMatch.difficulty} difficulty. ${data.details || ''}`
               : (data.details || ''),
+            difficulty: dbMatch?.difficulty || null,
+            light_need: dbMatch?.light_need || null,
+            flow_need: dbMatch?.flow_need || null,
+            aggression: dbMatch?.aggression || null,
+            growth_speed: dbMatch?.growth_speed || null,
+            min_distance_inches: dbMatch?.min_distance_inches ?? null,
+            placement_zone: dbMatch?.placement_zone || null,
+            reef_safe: dbMatch?.reef_safe || null,
+            care_notes: dbMatch?.care_notes || null,
+            warnings: dbMatch?.warnings || null,
+            photo_url: dbMatch?.photo_url || null,
+            description: dbMatch?.description || data.details || null,
           }]);
         }
       }
@@ -584,7 +596,18 @@ export default function SetupWizard() {
             subtype: animal.category,
             quantity: 1,
             condition: 'healthy',
-            description: animal.details,
+            description: animal.description || animal.details,
+            difficulty: animal.difficulty,
+            light_need: animal.light_need,
+            flow_need: animal.flow_need,
+            aggression: animal.aggression,
+            growth_speed: animal.growth_speed,
+            min_distance_inches: animal.min_distance_inches,
+            placement_zone: animal.placement_zone,
+            reef_safe: animal.reef_safe,
+            care_notes: animal.care_notes,
+            warnings: animal.warnings,
+            photo_ref: animal.photo_url,
           }));
         }
 
@@ -1449,6 +1472,18 @@ export default function SetupWizard() {
                                   category: species.subcategory || livestockTab,
                                   confidence: 1,
                                   details: species.difficulty ? `${species.difficulty} difficulty` : '',
+                                  difficulty: species.difficulty || null,
+                                  light_need: species.light_need || null,
+                                  flow_need: species.flow_need || null,
+                                  aggression: species.aggression || null,
+                                  growth_speed: species.growth_speed || null,
+                                  min_distance_inches: species.min_distance_inches ?? null,
+                                  placement_zone: species.placement_zone || null,
+                                  reef_safe: species.reef_safe || null,
+                                  care_notes: species.care_notes || null,
+                                  warnings: species.warnings || null,
+                                  photo_url: species.photo_url || null,
+                                  description: species.description || null,
                                 }]);
                               }}
                               className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all ${alreadyAdded

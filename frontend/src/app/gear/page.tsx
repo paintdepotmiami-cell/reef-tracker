@@ -6,9 +6,9 @@ import {
   getEquipment, getSupplements,
   createEquipment, updateEquipment, deleteEquipment,
   createSupplement, updateSupplement, deleteSupplement,
-  getAnimals,
+  getAnimals, getProducts,
 } from '@/lib/queries';
-import type { Equipment, Supplement, Animal } from '@/lib/queries';
+import type { Equipment, Supplement, Animal, Product } from '@/lib/queries';
 import Link from 'next/link';
 import { getCached, setCache } from '@/lib/cache';
 import { searchCatalog, type CatalogItem } from '@/lib/equipment-catalog';
@@ -313,10 +313,12 @@ export default function GearPage() {
 
   // AI Camera
   const [showCamera, setShowCamera] = useState(false);
-  const handleIdentifyResult = (result: IdentifyResult) => {
+  const handleIdentifyResult = async (result: IdentifyResult) => {
     setShowCamera(false);
-    setFName(`${result.brand || ''} ${result.name}`.trim());
+    const aiName = `${result.brand || ''} ${result.name}`.trim();
+    setFName(aiName);
     setFBrand(result.brand || '');
+    setFImageUrl(null);
     if (result.type === 'supplement') {
       setTab('supplements');
       setFType(result.category || 'other');
@@ -325,6 +327,36 @@ export default function GearPage() {
       setFCategory(result.category || 'other');
     }
     setShowModal(true);
+
+    // Cross-reference with reef_products DB for rich data
+    try {
+      const products = reefProducts.length > 0 ? reefProducts : await getProducts();
+      if (!reefProducts.length) setReefProducts(products);
+      const nameLower = result.name.toLowerCase();
+      const brandLower = (result.brand || '').toLowerCase();
+      const match = products.find(p => {
+        const pName = p.name.toLowerCase();
+        const pBrand = p.brand.toLowerCase();
+        // Exact brand+name match
+        if (brandLower && pBrand === brandLower && pName === nameLower) return true;
+        // Name contains or is contained
+        if (pName.includes(nameLower) || nameLower.includes(pName)) return true;
+        // Brand + partial name
+        if (brandLower && pBrand === brandLower && (pName.includes(nameLower.split(' ')[0]) || nameLower.includes(pName.split(' ')[0]))) return true;
+        return false;
+      });
+      if (match) {
+        setFName(`${match.brand} ${match.name}`.trim());
+        setFBrand(match.brand);
+        setFImageUrl(match.image_url);
+        if (match.description) setFNotes(match.description);
+        if (result.type === 'supplement' && match.subcategory) {
+          setFType(match.subcategory);
+        } else if (result.type !== 'supplement' && match.category) {
+          setFCategory(match.category);
+        }
+      }
+    } catch { /* silently continue with AI-only data */ }
   };
 
   // Form fields
@@ -334,6 +366,8 @@ export default function GearPage() {
   const [fType, setFType] = useState('other');
   const [fConfig, setFConfig] = useState('');
   const [fNotes, setFNotes] = useState('');
+  const [fImageUrl, setFImageUrl] = useState<string | null>(null);
+  const [reefProducts, setReefProducts] = useState<Product[]>([]);
 
   // Catalog search (works for both equipment and supplements)
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -369,6 +403,7 @@ export default function GearPage() {
       getEquipment().then(e => { setCache('equipment', e); setEquipment(e); }),
       getSupplements().then(s => { setCache('supplements', s); setSupplements(s); }),
       getAnimals().then(a => setAnimals(a)),
+      getProducts().then(p => setReefProducts(p)),
     ]).finally(() => { clearTimeout(timeout); setLoading(false); });
   }, [user]);
 
@@ -388,7 +423,7 @@ export default function GearPage() {
   const openAdd = () => {
     setEditing(null);
     setFName(''); setFBrand(''); setFCategory('other'); setFType('other');
-    setFConfig(''); setFNotes('');
+    setFConfig(''); setFNotes(''); setFImageUrl(null);
     setShowModal(true);
   };
 
@@ -419,6 +454,7 @@ export default function GearPage() {
         category: fCategory,
         config: fConfig.trim() || null,
         notes: fNotes.trim() || null,
+        image_url: fImageUrl || null,
         user_id: user.id,
         tank_id: tank?.id || null,
       };
@@ -436,6 +472,7 @@ export default function GearPage() {
         brand: fBrand.trim() || null,
         type: fType,
         notes: fNotes.trim() || null,
+        image_url: fImageUrl || null,
         user_id: user.id,
         tank_id: tank?.id || null,
       };
