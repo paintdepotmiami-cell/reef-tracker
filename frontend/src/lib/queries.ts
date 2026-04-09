@@ -578,6 +578,11 @@ export interface DosingConfig {
   method: 'pump' | 'manual' | 'kalkwasser' | 'reactor';
   channels: DosingChannel[];
   notes: string | null;
+  ato_enabled: boolean;
+  ato_model: string | null;
+  ato_brand: string | null;
+  ato_kalkwasser: boolean;
+  ato_kalk_tsp_per_gal: number | null;
   created_at: string;
   updated_at: string;
 }

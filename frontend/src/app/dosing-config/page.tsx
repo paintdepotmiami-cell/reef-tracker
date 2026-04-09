@@ -43,6 +43,20 @@ const QUICK_ADD_PRODUCTS = [
   { name: 'Polyp Lab Reef-Roids', parameter: 'food' },
 ];
 
+const ATO_MODELS = [
+  { name: 'Smart ATO', brand: 'AutoAqua' },
+  { name: 'Smart ATO Duo', brand: 'AutoAqua' },
+  { name: 'Smart ATO Micro', brand: 'AutoAqua' },
+  { name: 'Tunze Osmolator 3155', brand: 'Tunze' },
+  { name: 'Tunze Osmolator Nano 3152', brand: 'Tunze' },
+  { name: 'XP AquaPod', brand: 'XP Aqua' },
+  { name: 'Duetto ATO', brand: 'XP Aqua' },
+  { name: 'ATO (built-in)', brand: 'Neptune Systems' },
+  { name: 'Hydros ATO', brand: 'CoralVue' },
+  { name: 'JBJ ATO', brand: 'JBJ' },
+  { name: 'DIY / Custom ATO', brand: 'Other' },
+];
+
 function getAffects(value: string) {
   return AFFECTS_OPTIONS.find(a => a.value === value) || AFFECTS_OPTIONS[AFFECTS_OPTIONS.length - 1];
 }
@@ -56,7 +70,7 @@ export default function DosingConfigPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   // Editing state
-  const [editingChannel, setEditingChannel] = useState<number | null>(null); // channel index
+  const [editingChannel, setEditingChannel] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -75,6 +89,14 @@ export default function DosingConfigPage() {
   const [fPumpBrand, setFPumpBrand] = useState('');
   const [fMethod, setFMethod] = useState<'pump' | 'manual' | 'kalkwasser' | 'reactor'>('pump');
 
+  // ATO state
+  const [editingAto, setEditingAto] = useState(false);
+  const [fAtoEnabled, setFAtoEnabled] = useState(false);
+  const [fAtoModel, setFAtoModel] = useState('');
+  const [fAtoBrand, setFAtoBrand] = useState('');
+  const [fAtoKalk, setFAtoKalk] = useState(false);
+  const [fAtoKalkTsp, setFAtoKalkTsp] = useState('');
+
   const searchRef = useRef<HTMLInputElement>(null);
 
   // Load config
@@ -86,6 +108,11 @@ export default function DosingConfigPage() {
         setFPumpModel(cfg.pump_model || '');
         setFPumpBrand(cfg.pump_brand || '');
         setFMethod(cfg.method as 'pump' | 'manual' | 'kalkwasser' | 'reactor');
+        setFAtoEnabled(cfg.ato_enabled || false);
+        setFAtoModel(cfg.ato_model || '');
+        setFAtoBrand(cfg.ato_brand || '');
+        setFAtoKalk(cfg.ato_kalkwasser || false);
+        setFAtoKalkTsp(cfg.ato_kalk_tsp_per_gal ? String(cfg.ato_kalk_tsp_per_gal) : '');
       }
       setLoading(false);
     });
@@ -123,6 +150,11 @@ export default function DosingConfigPage() {
           method: fMethod,
           channels: newChannels,
           notes: null,
+          ato_enabled: fAtoEnabled,
+          ato_model: fAtoModel || null,
+          ato_brand: fAtoBrand || null,
+          ato_kalkwasser: fAtoKalk,
+          ato_kalk_tsp_per_gal: fAtoKalkTsp ? parseFloat(fAtoKalkTsp) : null,
           ...extraUpdates,
         });
         if (created) setConfig(created);
@@ -193,6 +225,18 @@ export default function DosingConfigPage() {
     setEditingPump(false);
   };
 
+  // Save ATO info
+  const handleSaveAto = () => {
+    saveChannels(channels, {
+      ato_enabled: fAtoEnabled,
+      ato_model: fAtoModel || null,
+      ato_brand: fAtoBrand || null,
+      ato_kalkwasser: fAtoKalk,
+      ato_kalk_tsp_per_gal: fAtoKalkTsp ? parseFloat(fAtoKalkTsp) : null,
+    });
+    setEditingAto(false);
+  };
+
   // Quick add product
   const handleQuickAdd = (product: { name: string; parameter: string }) => {
     setFProduct(product.name);
@@ -209,7 +253,6 @@ export default function DosingConfigPage() {
     setShowCamera(false);
     const name = `${result.brand || ''} ${result.name}`.trim();
     setFProduct(name);
-    // Try to guess parameter from category
     const cat = result.category?.toLowerCase() || '';
     if (cat.includes('alk') || cat.includes('buffer') || cat.includes('kh')) setFParameter('alkalinity');
     else if (cat.includes('calc')) setFParameter('calcium');
@@ -261,7 +304,7 @@ export default function DosingConfigPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
           <span className="material-symbols-outlined text-4xl text-[#2ff801] animate-pulse">precision_manufacturing</span>
-          <p className="text-[#c5c6cd] text-sm">Loading dosing config…</p>
+          <p className="text-[#c5c6cd] text-sm">Loading dosing config...</p>
         </div>
       </div>
     );
@@ -316,7 +359,7 @@ export default function DosingConfigPage() {
                 {config?.pump_model || 'Dosing Pump'}
               </h3>
               <p className="text-[#8f9097] text-xs">
-                {config?.pump_brand || 'Not configured'} • {(config?.method || 'pump').replace('_', ' ')}
+                {config?.pump_brand || 'Not configured'} &bull; {(config?.method || 'pump').replace('_', ' ')}
               </p>
             </div>
           </div>
@@ -373,7 +416,7 @@ export default function DosingConfigPage() {
               disabled={saving}
               className="w-full bg-gradient-to-r from-[#FF7F50] to-[#d35e32] text-white font-bold text-sm py-2.5 rounded-xl active:scale-[0.98] disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save Pump Info'}
+              {saving ? 'Saving...' : 'Save Pump Info'}
             </button>
           </div>
         )}
@@ -392,10 +435,186 @@ export default function DosingConfigPage() {
           </div>
           <div className="bg-[#010e24] rounded-xl p-3 text-center">
             <p className="text-[9px] text-[#8f9097] uppercase font-bold tracking-wider">Method</p>
-            <p className="text-[#2ff801] text-xl font-bold font-[family-name:var(--font-headline)] capitalize">{config?.method || '—'}</p>
+            <p className="text-[#2ff801] text-xl font-bold font-[family-name:var(--font-headline)] capitalize">{config?.method || '---'}</p>
             <p className="text-[9px] text-[#8f9097]">{config?.pump_brand || 'N/A'}</p>
           </div>
         </div>
+      </div>
+
+      {/* ═══ ATO (Auto Top-Off) Card ═══ */}
+      <div className="bg-[#0d1c32] rounded-2xl p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[#4cd6fb]/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#4cd6fb] text-xl">water_drop</span>
+            </div>
+            <div>
+              <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-base">
+                Auto Top-Off (ATO)
+              </h3>
+              <p className="text-[#8f9097] text-xs">
+                {config?.ato_enabled
+                  ? `${config.ato_model || 'ATO'} ${config.ato_brand ? `by ${config.ato_brand}` : ''} ${config.ato_kalkwasser ? '+ Kalkwasser' : '(RODI only)'}`
+                  : 'Not configured'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setEditingAto(!editingAto)}
+            className="w-9 h-9 rounded-xl bg-[#1c2a41] flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <span className="material-symbols-outlined text-[#c5c6cd] text-sm">{editingAto ? 'close' : 'edit'}</span>
+          </button>
+        </div>
+
+        {/* ATO Status badges */}
+        {config?.ato_enabled && !editingAto && (
+          <div className="flex gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4cd6fb]/10 border border-[#4cd6fb]/20 rounded-lg">
+              <span className="material-symbols-outlined text-[#4cd6fb] text-xs">check_circle</span>
+              <span className="text-[#4cd6fb] text-[10px] font-bold">ATO Active</span>
+            </div>
+            {config.ato_kalkwasser && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F1C40F]/10 border border-[#F1C40F]/20 rounded-lg">
+                <span className="material-symbols-outlined text-[#F1C40F] text-xs">water_drop</span>
+                <span className="text-[#F1C40F] text-[10px] font-bold">
+                  Kalkwasser {config.ato_kalk_tsp_per_gal ? `(${config.ato_kalk_tsp_per_gal} tsp/gal)` : ''}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {editingAto && (
+          <div className="space-y-4 pt-2 border-t border-[#1c2a41]">
+            {/* ATO Enabled Toggle */}
+            <button
+              onClick={() => setFAtoEnabled(!fAtoEnabled)}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all w-full ${
+                fAtoEnabled ? 'bg-[#4cd6fb]/10 text-[#4cd6fb] border border-[#4cd6fb]/30' : 'bg-[#1c2a41] text-[#8f9097]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">{fAtoEnabled ? 'toggle_on' : 'toggle_off'}</span>
+              {fAtoEnabled ? 'I have an Auto Top-Off system' : 'No ATO system'}
+            </button>
+
+            {fAtoEnabled && (
+              <>
+                {/* ATO Model Selection */}
+                <div>
+                  <label className="text-[#8f9097] text-[10px] uppercase tracking-wider font-medium block mb-1.5">ATO Model</label>
+                  <div className="max-h-40 overflow-y-auto space-y-1 mb-2">
+                    {ATO_MODELS.map(ato => {
+                      const isSelected = fAtoModel === ato.name;
+                      return (
+                        <button
+                          key={ato.name}
+                          onClick={() => { setFAtoModel(ato.name); setFAtoBrand(ato.brand); }}
+                          className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${
+                            isSelected
+                              ? 'bg-[#4cd6fb]/10 border border-[#4cd6fb]/30'
+                              : 'bg-[#010e24] active:bg-[#1c2a41]'
+                          }`}
+                        >
+                          <span className={`material-symbols-outlined text-sm ${isSelected ? 'text-[#4cd6fb]' : 'text-[#8f9097]'}`}>
+                            {isSelected ? 'check_circle' : 'radio_button_unchecked'}
+                          </span>
+                          <div>
+                            <p className={`text-sm font-medium ${isSelected ? 'text-[#4cd6fb]' : 'text-white'}`}>{ato.name}</p>
+                            <p className="text-[10px] text-[#8f9097]">{ato.brand}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Custom ATO */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={fAtoModel}
+                      onChange={e => setFAtoModel(e.target.value)}
+                      placeholder="Custom model..."
+                      className="bg-[#010e24] border border-[#1c2a41] rounded-xl px-3 py-2 text-white text-sm placeholder:text-[#3a4255] focus:outline-none focus:border-[#4cd6fb]"
+                    />
+                    <input
+                      value={fAtoBrand}
+                      onChange={e => setFAtoBrand(e.target.value)}
+                      placeholder="Brand..."
+                      className="bg-[#010e24] border border-[#1c2a41] rounded-xl px-3 py-2 text-white text-sm placeholder:text-[#3a4255] focus:outline-none focus:border-[#4cd6fb]"
+                    />
+                  </div>
+                </div>
+
+                {/* Kalkwasser Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#F1C40F]">science</span>
+                    <p className="text-[10px] font-bold text-[#F1C40F]/70 uppercase tracking-widest">Kalkwasser (Calcium Hydroxide)</p>
+                  </div>
+
+                  <button
+                    onClick={() => setFAtoKalk(!fAtoKalk)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all w-full ${
+                      fAtoKalk
+                        ? 'bg-[#F1C40F]/10 text-[#F1C40F] border border-[#F1C40F]/30'
+                        : 'bg-[#1c2a41] text-[#c5c6cd]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">{fAtoKalk ? 'toggle_on' : 'toggle_off'}</span>
+                    <div className="text-left flex-1">
+                      <p className="font-semibold">{fAtoKalk ? 'Kalkwasser in ATO water' : 'No Kalkwasser'}</p>
+                      <p className="text-[10px] opacity-70 mt-0.5">
+                        {fAtoKalk
+                          ? 'Calcium hydroxide mixed into RODI top-off water. Raises Ca + Alk + pH.'
+                          : 'Top-off with plain RODI water only.'}
+                      </p>
+                    </div>
+                  </button>
+
+                  {fAtoKalk && (
+                    <div className="bg-[#F1C40F]/5 border border-[#F1C40F]/20 rounded-xl p-4 space-y-3">
+                      <div>
+                        <label className="text-[#F1C40F] text-[10px] uppercase tracking-wider font-bold block mb-1.5">
+                          Concentration (tsp per gallon)
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="number"
+                            step="0.25"
+                            min="0"
+                            max="4"
+                            value={fAtoKalkTsp}
+                            onChange={e => setFAtoKalkTsp(e.target.value)}
+                            placeholder="2"
+                            className="w-24 bg-[#010e24] border border-[#1c2a41] rounded-xl px-3 py-2.5 text-white text-sm placeholder:text-[#3a4255] focus:outline-none focus:border-[#F1C40F]"
+                          />
+                          <span className="text-[#8f9097] text-xs">tsp / gallon RODI</span>
+                        </div>
+                        <p className="text-[#8f9097] text-[10px] mt-1.5">Standard: 2 tsp/gal. Start low (1 tsp) if pH runs high.</p>
+                      </div>
+                      <div className="bg-[#ff4444]/10 border border-[#ff4444]/20 rounded-lg p-3">
+                        <div className="flex gap-2">
+                          <span className="material-symbols-outlined text-[#ff4444] text-sm shrink-0 mt-0.5">warning</span>
+                          <p className="text-[#ffb4ab] text-[10px] leading-relaxed">
+                            <strong>Safety:</strong> Kalkwasser raises pH. If dosed too fast (large ATO refill), pH can spike above 8.6 which is lethal.
+                            Only use with a reliable ATO that doses small amounts frequently. Monitor pH closely for the first week.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            <button
+              onClick={handleSaveAto}
+              disabled={saving}
+              className="w-full bg-gradient-to-r from-[#4cd6fb] to-[#2ba8d4] text-white font-bold text-sm py-2.5 rounded-xl active:scale-[0.98] disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save ATO Configuration'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ═══ Channels List ═══ */}
@@ -427,7 +646,7 @@ export default function DosingConfigPage() {
           <div className="text-center py-12 space-y-3">
             <span className="material-symbols-outlined text-5xl text-[#1c2a41]">precision_manufacturing</span>
             <p className="text-[#c5c6cd] text-sm">No dosing channels configured</p>
-            <p className="text-[#8f9097] text-xs">Add what your pump doses — alkalinity, calcium, food, supplements, water changes…</p>
+            <p className="text-[#8f9097] text-xs">Add what your pump doses --- alkalinity, calcium, food, supplements...</p>
             <div className="flex flex-wrap justify-center gap-2 mt-4">
               {QUICK_ADD_PRODUCTS.slice(0, 6).map(p => (
                 <button
@@ -450,25 +669,20 @@ export default function DosingConfigPage() {
                   className={`bg-[#0d1c32] rounded-xl p-4 space-y-2 transition-opacity ${!ch.enabled ? 'opacity-50' : ''}`}
                 >
                   <div className="flex items-center gap-3">
-                    {/* Channel number badge */}
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${affects.color}15` }}>
                       <span className="text-xs font-bold font-[family-name:var(--font-headline)]" style={{ color: affects.color }}>
                         {ch.channel}
                       </span>
                     </div>
-
-                    {/* Product info */}
                     <div className="flex-1 min-w-0">
                       <p className="font-[family-name:var(--font-headline)] font-semibold text-white text-sm truncate">{ch.product}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="material-symbols-outlined text-[10px]" style={{ color: affects.color }}>{affects.icon}</span>
                         <span className="text-[10px] font-medium" style={{ color: affects.color }}>{affects.label}</span>
-                        <span className="text-[10px] text-[#8f9097]">•</span>
+                        <span className="text-[10px] text-[#8f9097]">&bull;</span>
                         <span className="text-[10px] text-[#c5c6cd]">{ch.doses_per_day}x/day</span>
                       </div>
                     </div>
-
-                    {/* mL/day */}
                     <div className="text-right shrink-0">
                       <p className="text-lg font-bold font-[family-name:var(--font-headline)]" style={{ color: affects.color }}>
                         {ch.ml_per_day || 0}
@@ -476,8 +690,6 @@ export default function DosingConfigPage() {
                       <p className="text-[9px] text-[#8f9097]">mL/day</p>
                     </div>
                   </div>
-
-                  {/* Action buttons */}
                   <div className="flex items-center gap-2 pt-1 border-t border-[#1c2a41]/50">
                     <button
                       onClick={() => handleToggleChannel(index)}
@@ -534,9 +746,10 @@ export default function DosingConfigPage() {
         </div>
         <div className="space-y-2">
           {[
-            { icon: 'schedule', color: '#4cd6fb', tip: 'Space Alk and Ca doses 30+ minutes apart — they precipitate if mixed.' },
+            { icon: 'schedule', color: '#4cd6fb', tip: 'Space Alk and Ca doses 30+ minutes apart --- they precipitate if mixed.' },
             { icon: 'speed', color: '#F1C40F', tip: 'More doses per day = more stable parameters. 24x (once per hour) is ideal.' },
             { icon: 'straighten', color: '#2ff801', tip: 'Calibrate pump tubes monthly. Output decreases as tubing wears.' },
+            { icon: 'water_drop', color: '#c5c6cd', tip: 'Kalkwasser in ATO raises Ca + Alk + pH simultaneously. Great for maintenance, but watch pH spikes.' },
             { icon: 'photo_camera', color: '#FF7F50', tip: 'Use the camera button to scan any product bottle and auto-add it.' },
           ].map(item => (
             <div key={item.tip} className="flex items-start gap-3 bg-[#010e24] rounded-xl p-3">
@@ -551,10 +764,10 @@ export default function DosingConfigPage() {
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowAddModal(false); setEditingChannel(null); }}>
           <div
-            className="bg-[#0d1c32] rounded-t-3xl w-full max-w-lg p-6 space-y-5 animate-in slide-in-from-bottom"
+            className="bg-[#0d1c32] rounded-t-3xl w-full max-w-lg p-6 space-y-4 max-h-[85vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between sticky top-0 bg-[#0d1c32] pb-2 -mt-2 pt-2 z-10">
               <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-lg">
                 {editingChannel !== null ? `Edit Channel ${editingChannel + 1}` : 'Add Channel'}
               </h3>
@@ -649,14 +862,16 @@ export default function DosingConfigPage() {
               {fEnabled ? 'Channel Enabled' : 'Channel Disabled'}
             </button>
 
-            {/* Save */}
-            <button
-              onClick={editingChannel !== null ? () => handleUpdateChannel(editingChannel) : handleAddChannel}
-              disabled={!fProduct.trim() || saving}
-              className="w-full bg-gradient-to-r from-[#FF7F50] to-[#d35e32] text-white font-bold text-sm py-3 rounded-xl active:scale-[0.98] disabled:opacity-40 font-[family-name:var(--font-headline)] tracking-wide"
-            >
-              {saving ? 'Saving…' : editingChannel !== null ? 'Update Channel' : 'Add Channel'}
-            </button>
+            {/* Save — sticky at bottom */}
+            <div className="sticky bottom-0 bg-[#0d1c32] pt-2 pb-1">
+              <button
+                onClick={editingChannel !== null ? () => handleUpdateChannel(editingChannel) : handleAddChannel}
+                disabled={!fProduct.trim() || saving}
+                className="w-full bg-gradient-to-r from-[#FF7F50] to-[#d35e32] text-white font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] disabled:opacity-40 font-[family-name:var(--font-headline)] tracking-wide shadow-lg shadow-[#FF7F50]/25"
+              >
+                {saving ? 'Saving...' : editingChannel !== null ? 'Update Channel' : 'Add Channel'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -665,7 +880,7 @@ export default function DosingConfigPage() {
       {showQuickAdd && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowQuickAdd(false)}>
           <div
-            className="bg-[#0d1c32] rounded-t-3xl w-full max-w-lg p-6 space-y-4 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom"
+            className="bg-[#0d1c32] rounded-t-3xl w-full max-w-lg p-6 space-y-4 max-h-[80vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -675,20 +890,18 @@ export default function DosingConfigPage() {
               </button>
             </div>
 
-            {/* Search */}
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8f9097] text-sm">search</span>
               <input
                 ref={searchRef}
                 value={quickSearch}
                 onChange={e => setQuickSearch(e.target.value)}
-                placeholder="Search products…"
+                placeholder="Search products..."
                 className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl pl-9 pr-3 py-2.5 text-white text-sm placeholder:text-[#3a4255] focus:outline-none focus:border-[#FF7F50]"
                 autoFocus
               />
             </div>
 
-            {/* Product List */}
             <div className="space-y-1.5">
               {filteredQuickAdd.map(p => {
                 const affects = getAffects(p.parameter);
@@ -726,13 +939,12 @@ export default function DosingConfigPage() {
                     onClick={() => { setShowQuickAdd(false); setFProduct(quickSearch); setShowAddModal(true); }}
                     className="mt-2 text-[#FF7F50] text-xs font-bold"
                   >
-                    Add &quot;{quickSearch}&quot; as custom product →
+                    Add &quot;{quickSearch}&quot; as custom product
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Custom product shortcut */}
             <button
               onClick={() => { setShowQuickAdd(false); resetForm(); setShowAddModal(true); }}
               className="w-full flex items-center justify-center gap-2 py-3 bg-[#1c2a41] rounded-xl text-[#c5c6cd] text-sm font-medium active:scale-[0.98]"
