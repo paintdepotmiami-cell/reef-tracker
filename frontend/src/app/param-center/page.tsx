@@ -88,9 +88,9 @@ export default function ParamCenterPage() {
           <span className="material-symbols-outlined text-xl text-[#4cd6fb]">monitoring</span>
           <span className="text-[9px] text-[#c5c6cd] font-bold uppercase tracking-wider">Trends</span>
         </Link>
-        <Link href="/dosing" className="bg-[#0d1c32] p-3 rounded-xl flex flex-col items-center gap-1.5 active:scale-95 transition-all">
-          <span className="material-symbols-outlined text-xl text-[#2ff801]">colorize</span>
-          <span className="text-[9px] text-[#c5c6cd] font-bold uppercase tracking-wider">Dosing</span>
+        <Link href="/dosing-config" className="bg-[#0d1c32] p-3 rounded-xl flex flex-col items-center gap-1.5 active:scale-95 transition-all">
+          <span className="material-symbols-outlined text-xl text-[#2ff801]">precision_manufacturing</span>
+          <span className="text-[9px] text-[#c5c6cd] font-bold uppercase tracking-wider">My Pump</span>
         </Link>
         <Link href="/alerts" className="bg-[#0d1c32] p-3 rounded-xl flex flex-col items-center gap-1.5 active:scale-95 transition-all">
           <span className="material-symbols-outlined text-xl text-[#F1C40F]">notifications</span>

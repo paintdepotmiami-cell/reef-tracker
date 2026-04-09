@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const tabs = [
   { href: '/dashboard', icon: 'home', label: 'Home', match: ['/dashboard'] },
-  { href: '/param-center', icon: 'monitoring', label: 'Params', match: ['/param-center', '/logs', '/trends', '/alerts', '/dosing'] },
+  { href: '/param-center', icon: 'monitoring', label: 'Params', match: ['/param-center', '/logs', '/trends', '/alerts', '/dosing', '/dosing-config'] },
   { href: '/livestock', icon: 'pets', label: 'Livestock', match: ['/livestock', '/library', '/acclimation'] },
   { href: '/planner', icon: 'view_in_ar', label: 'Planner', match: ['/planner'] },
   { href: '/tools', icon: 'handyman', label: 'Tools', match: ['/tools', '/cycle', '/sos', '/articles', '/bioload', '/pest-id', '/videos', '/maintenance', '/power-outage', '/quarantine', '/bio-accelerator', '/volume-calc', '/sump-guide', '/stocking', '/diagnostics', '/feeding', '/flow', '/products', '/gear', '/profile'] },
