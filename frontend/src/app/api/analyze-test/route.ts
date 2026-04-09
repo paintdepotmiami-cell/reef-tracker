@@ -104,7 +104,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Could not parse AI response', raw: text }, { status: 500 });
     }
 
-    const params = JSON.parse(jsonMatch[0]);
+    let params;
+    try {
+      params = JSON.parse(jsonMatch[0]);
+    } catch {
+      console.error('[analyze-test] Invalid JSON from AI:', jsonMatch[0].slice(0, 200));
+      return NextResponse.json({ error: 'AI returned invalid JSON', raw: text.slice(0, 200) }, { status: 500 });
+    }
     return NextResponse.json({ params });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

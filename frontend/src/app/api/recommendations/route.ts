@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const maxDuration = 60;
+
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 const SYSTEM_PROMPT = `You are ReefOS AI, an expert marine aquarium advisor. You analyze a reefer's COMPLETE profile — their livestock (corals, fish, invertebrates), latest water parameters, and current products/supplements — to provide personalized product recommendations.
 
@@ -48,6 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Gather all user context in parallel
+    const supabase = getSupabaseAdmin();
     const [animalsRes, testRes, userProductsRes, catalogRes, equipmentRes] = await Promise.all([
       supabase
         .from('reef_animals')
@@ -156,7 +161,13 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content || '[]';
     const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-    const recommendations = JSON.parse(cleaned);
+    let recommendations;
+    try {
+      recommendations = JSON.parse(cleaned);
+    } catch {
+      console.error('[recommendations] Failed to parse AI response:', cleaned.slice(0, 200));
+      return NextResponse.json({ error: 'AI returned invalid JSON', raw: cleaned.slice(0, 200) }, { status: 500 });
+    }
 
     // Enrich recommendations with full product data
     const enriched = recommendations.map((rec: any) => {

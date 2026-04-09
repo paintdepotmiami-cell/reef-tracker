@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const mimeType = image.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
 
-    console.log(`[identify] context=${context}, imageSize=${Math.round(base64Data.length / 1024)}KB, keyLen=${GEMINI_API_KEY.length}`);
+    console.log(`[identify] context=${context}, imageSize=${Math.round(base64Data.length / 1024)}KB`);
 
     const response = await fetch(GEMINI_URL, {
       method: 'POST',
@@ -147,7 +147,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Could not parse AI response', raw: text }, { status: 500 });
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    let result;
+    try {
+      result = JSON.parse(jsonMatch[0]);
+    } catch {
+      console.error('[identify] Invalid JSON from AI:', jsonMatch[0].slice(0, 200));
+      return NextResponse.json({ error: 'AI returned invalid JSON', raw: text.slice(0, 200) }, { status: 500 });
+    }
     return NextResponse.json(result);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
