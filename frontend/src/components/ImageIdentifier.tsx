@@ -15,10 +15,11 @@ export interface IdentifyResult {
 interface ImageIdentifierProps {
   context?: 'equipment' | 'supplement' | 'fish' | 'coral' | 'invertebrate' | 'auto';
   onResult: (result: IdentifyResult, imageBase64: string) => void;
+  onResults?: (results: IdentifyResult[], imageBase64: string) => void;
   onClose: () => void;
 }
 
-export default function ImageIdentifier({ context = 'auto', onResult, onClose }: ImageIdentifierProps) {
+export default function ImageIdentifier({ context = 'auto', onResult, onResults, onClose }: ImageIdentifierProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [identifying, setIdentifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,15 +73,24 @@ export default function ImageIdentifier({ context = 'auto', onResult, onClose }:
         throw new Error('Identification failed');
       }
 
-      const result: IdentifyResult = await res.json();
+      const data = await res.json();
 
-      if (result.type === 'unknown') {
+      // Handle multi-item format: { items: [...] }
+      const items: IdentifyResult[] = data.items || (data.name ? [data] : []);
+      const validItems = items.filter(i => i.type !== 'unknown' && i.name);
+
+      if (validItems.length === 0) {
         setError('Could not identify this image. Try a clearer photo or closer angle.');
         setIdentifying(false);
         return;
       }
 
-      onResult(result, preview);
+      // If parent supports multi-results, send all; otherwise send first
+      if (onResults) {
+        onResults(validItems, preview);
+      } else {
+        onResult(validItems[0], preview);
+      }
     } catch {
       setError('Failed to identify. Check your connection and try again.');
     } finally {

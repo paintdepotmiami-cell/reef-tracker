@@ -11,69 +11,44 @@ function getGeminiConfig() {
 
 type IdentifyContext = 'equipment' | 'supplement' | 'fish' | 'coral' | 'invertebrate' | 'auto';
 
+const BASE_RULES = `CRITICAL: Return ONLY raw JSON. No markdown, no code fences, no backticks, no explanation. If multiple items are visible, return a JSON array. If only one item, return a single JSON object.`;
+
 const PROMPTS: Record<IdentifyContext, string> = {
-  auto: `You are ReefOS AI, an expert reef aquarium identifier. Analyze this image and identify the SINGLE MOST PROMINENT item.
-If multiple items are visible, pick the one that is most centered or largest in the frame.
-Determine if it's: equipment, supplement/product, fish, coral, or invertebrate.
-Return ONLY a single valid JSON object with NO markdown formatting, NO code fences, NO backticks:
-{"type":"equipment","name":"product name","brand":"brand or null","scientific_name":"scientific name or null","category":"specific category","confidence":0.9,"details":"brief description"}`,
+  auto: `You are ReefOS AI, an expert reef aquarium identifier. Identify ALL items visible in this image.
+For each item determine if it's: equipment, supplement/product, fish, coral, or invertebrate.
+${BASE_RULES}
+Single item: {"type":"equipment","name":"name","brand":"brand or null","scientific_name":"name or null","category":"category","confidence":0.9,"details":"brief"}
+Multiple items: [{"type":"fish","name":"name","brand":null,"scientific_name":"name","category":"cat","confidence":0.9,"details":"brief"},{"type":"equipment","name":"name","brand":"brand","scientific_name":null,"category":"cat","confidence":0.8,"details":"brief"}]`,
 
   equipment: `You are ReefOS AI, an expert at identifying reef aquarium equipment.
-Identify the SINGLE MOST PROMINENT piece of equipment in this image. If multiple items are visible, pick the one most centered or largest.
-Recognize brands like Aqua Illumination, EcoTech Marine, Kessil, Neptune, Tunze, Jebao, Reef Octopus, Bubble Magus, etc.
-Return ONLY a single valid JSON object with NO markdown formatting, NO code fences, NO backticks:
-{"type":"equipment","name":"model name","brand":"manufacturer","category":"lighting|circulation|filtration|heating|water_management|testing|controller|sump|accessories","confidence":0.9,"details":"brief description"}`,
+Identify ALL equipment visible in this image. Recognize brands like Aqua Illumination, EcoTech Marine, Kessil, Neptune, Tunze, Jebao, Reef Octopus, Bubble Magus, Hydor, Sicce, IceCap, etc.
+${BASE_RULES}
+Single: {"type":"equipment","name":"model","brand":"manufacturer","category":"lighting|circulation|filtration|heating|water_management|testing|controller|sump|dosing|skimmer|ato|accessories","confidence":0.9,"details":"brief"}
+Multiple: [{"type":"equipment","name":"model1","brand":"brand1","category":"cat1","confidence":0.9,"details":"brief"},{"type":"equipment","name":"model2","brand":"brand2","category":"cat2","confidence":0.8,"details":"brief"}]`,
 
   supplement: `You are ReefOS AI, an expert at identifying reef aquarium supplements and products.
-Identify the product in this image. Recognize brands like Red Sea, Brightwell, Seachem, Fauna Marin, Fritz, Two Little Fishies, etc.
-Return ONLY valid JSON (no markdown):
-{
-  "type": "supplement",
-  "name": "product name (e.g. Foundation A, MicroBacter7, Reef-Roids)",
-  "brand": "manufacturer (e.g. Red Sea, Brightwell Aquatics)",
-  "category": "calcium supplement | alkalinity supplement | magnesium supplement | trace elements | coral food | bacteria | phosphate remover | salt mix | coral dip | fish food | amino acids | other",
-  "confidence": 0.0-1.0,
-  "details": "brief description"
-}`,
+Identify ALL supplements/products visible in this image. Recognize brands like Red Sea, Brightwell, Seachem, Fauna Marin, Fritz, Two Little Fishies, etc.
+${BASE_RULES}
+Single: {"type":"supplement","name":"product name","brand":"manufacturer","category":"calcium supplement|alkalinity supplement|magnesium supplement|trace elements|coral food|bacteria|phosphate remover|salt mix|coral dip|fish food|amino acids|other","confidence":0.9,"details":"brief"}
+Multiple: [{"type":"supplement","name":"name1","brand":"brand1","category":"cat1","confidence":0.9,"details":"brief"},{"type":"supplement","name":"name2","brand":"brand2","category":"cat2","confidence":0.8,"details":"brief"}]`,
 
   fish: `You are ReefOS AI, a marine biologist expert at identifying reef aquarium fish.
-Identify the fish species in this image.
-Return ONLY valid JSON (no markdown):
-{
-  "type": "fish",
-  "name": "common name (e.g. Ocellaris Clownfish, Yellow Tang, Mandarin Dragonet)",
-  "scientific_name": "scientific name (e.g. Amphiprion ocellaris)",
-  "brand": null,
-  "category": "subcategory (e.g. Clownfish, Tang, Wrasse, Goby, Blenny, Angel, Damsel)",
-  "confidence": 0.0-1.0,
-  "details": "brief description including care level and temperament"
-}`,
+Identify ALL fish visible in this image, even partially visible ones.
+${BASE_RULES}
+Single: {"type":"fish","name":"common name","scientific_name":"scientific name","brand":null,"category":"Clownfish|Tang|Wrasse|Goby|Blenny|Angel|Damsel|Anthias|Butterflyfish|other","confidence":0.9,"details":"brief with care level"}
+Multiple: [{"type":"fish","name":"name1","scientific_name":"sci1","brand":null,"category":"cat1","confidence":0.9,"details":"brief"},{"type":"fish","name":"name2","scientific_name":"sci2","brand":null,"category":"cat2","confidence":0.8,"details":"brief"}]`,
 
   coral: `You are ReefOS AI, a marine biologist expert at identifying reef corals.
-Identify the coral species in this image. Distinguish between SPS (Acropora, Montipora, Stylophora), LPS (Hammer, Torch, Frogspawn, Brain, Acan), Soft corals (Mushroom, Zoa, Toadstool, Leather, Xenia), and Anemones.
-Return ONLY valid JSON (no markdown):
-{
-  "type": "coral",
-  "name": "common name (e.g. Hammer Coral, Zoanthid, Green Star Polyp)",
-  "scientific_name": "scientific name (e.g. Euphyllia ancora)",
-  "brand": null,
-  "category": "SPS | LPS | Soft | Anemone",
-  "confidence": 0.0-1.0,
-  "details": "brief description including light/flow needs and placement"
-}`,
+Identify ALL corals visible in this image. Distinguish SPS, LPS, Soft corals, and Anemones.
+${BASE_RULES}
+Single: {"type":"coral","name":"common name","scientific_name":"scientific name","brand":null,"category":"SPS|LPS|Soft|Anemone","confidence":0.9,"details":"brief with light/flow needs"}
+Multiple: [{"type":"coral","name":"name1","scientific_name":"sci1","brand":null,"category":"SPS","confidence":0.9,"details":"brief"},{"type":"coral","name":"name2","scientific_name":"sci2","brand":null,"category":"LPS","confidence":0.8,"details":"brief"}]`,
 
   invertebrate: `You are ReefOS AI, a marine biologist expert at identifying reef invertebrates.
-Identify the invertebrate in this image.
-Return ONLY valid JSON (no markdown):
-{
-  "type": "invertebrate",
-  "name": "common name (e.g. Cleaner Shrimp, Emerald Crab, Turbo Snail)",
-  "scientific_name": "scientific name",
-  "brand": null,
-  "category": "Shrimp | Crab | Snail | Urchin | Starfish | other",
-  "confidence": 0.0-1.0,
-  "details": "brief description including reef safety"
-}`,
+Identify ALL invertebrates visible in this image.
+${BASE_RULES}
+Single: {"type":"invertebrate","name":"common name","scientific_name":"scientific name","brand":null,"category":"Shrimp|Crab|Snail|Urchin|Starfish|other","confidence":0.9,"details":"brief with reef safety"}
+Multiple: [{"type":"invertebrate","name":"name1","scientific_name":"sci1","brand":null,"category":"cat1","confidence":0.9,"details":"brief"},{"type":"invertebrate","name":"name2","scientific_name":"sci2","brand":null,"category":"cat2","confidence":0.8,"details":"brief"}]`,
 };
 
 export async function POST(req: NextRequest) {
@@ -175,7 +150,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'AI returned invalid JSON', raw: rawText.slice(0, 300) }, { status: 500 });
       }
     }
-    return NextResponse.json(result);
+    // Always return { items: [...] } — normalize single object to array
+    const items = Array.isArray(result) ? result : [result];
+    return NextResponse.json({ items });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('Identify error:', msg);

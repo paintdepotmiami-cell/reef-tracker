@@ -383,25 +383,29 @@ export default function SetupWizard() {
       if (!res.ok) {
         console.error('Gear scan API error:', data);
         setError(`Photo scan failed: ${data.error || res.statusText}. Try selecting from the category list below.`);
-      } else if (data.name && data.type !== 'unknown') {
-        const photoName = data.brand ? `${data.brand} ${data.name}` : data.name;
-        setScannedGear(prev => {
-          const existing = prev.findIndex(g => g.name === photoName);
-          if (existing >= 0) { const updated = [...prev]; updated[existing] = { ...updated[existing], qty: updated[existing].qty + 1 }; return updated; }
-          return [...prev, { name: photoName, brand: data.brand, category: data.category, confidence: data.confidence, qty: 1 }];
-        });
-        // Also mark in equipment checklist
-        setEquipment(prev => prev.map(eq => {
-          const cat = eq.category.toLowerCase();
-          const dataCat = (data.category || '').toLowerCase();
-          if (cat === dataCat || eq.name.toLowerCase().includes(dataCat)) {
-            return { ...eq, status: 'have' };
-          }
-          return eq;
-        }));
-        setError('');
       } else {
-        setError('Could not identify this item. Try a closer photo or select from the categories below.');
+        // Handle new multi-item format: { items: [...] }
+        const items = data.items || (data.name ? [data] : []);
+        const validItems = items.filter((d: any) => d.name && d.type !== 'unknown');
+        if (validItems.length === 0) {
+          setError('Could not identify this item. Try a closer photo or select from the categories below.');
+        } else {
+          for (const item of validItems) {
+            const photoName = item.brand ? `${item.brand} ${item.name}` : item.name;
+            setScannedGear(prev => {
+              const existing = prev.findIndex(g => g.name === photoName);
+              if (existing >= 0) { const updated = [...prev]; updated[existing] = { ...updated[existing], qty: updated[existing].qty + 1 }; return updated; }
+              return [...prev, { name: photoName, brand: item.brand, category: item.category, confidence: item.confidence, qty: 1 }];
+            });
+            setEquipment(prev => prev.map(eq => {
+              const cat = eq.category.toLowerCase();
+              const dataCat = (item.category || '').toLowerCase();
+              if (cat === dataCat || eq.name.toLowerCase().includes(dataCat)) return { ...eq, status: 'have' };
+              return eq;
+            }));
+          }
+          setError('');
+        }
       }
     } catch (err) { console.error('Gear scan failed:', err); setError('Photo scan failed. Try selecting from the category list below.'); }
     finally { setScanningGear(false); e.target.value = ''; }
@@ -413,7 +417,6 @@ export default function SetupWizard() {
     setScanningLivestock(true);
     try {
       const base64 = await compressImage(file);
-      // Send the active tab as context so AI focuses on the right type
       const res = await fetch('/api/identify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -421,51 +424,54 @@ export default function SetupWizard() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.name) {
-          // If AI returned a different type than selected tab, skip it
-          // (e.g., user on "coral" tab but photo has a fish — ignore the fish)
-          const validType = data.type === livestockTab;
-          if (!validType && ['fish', 'coral', 'invertebrate'].includes(data.type)) {
-            alert(`Detected a ${data.type} (${data.name}), but you're adding ${livestockTab}s. Switch tabs or try a closer photo.`);
-            return;
-          }
+        // Handle multi-item format: { items: [...] }
+        const items = data.items || (data.name ? [data] : []);
+
+        for (const item of items) {
+          if (!item.name) continue;
+          // Filter by matching type (skip mismatched types)
+          const validType = item.type === livestockTab;
+          if (!validType && ['fish', 'coral', 'invertebrate'].includes(item.type)) continue;
 
           // Try to match against species database for full data
-          const aiName = (data.name || '').toLowerCase().trim();
-          const aiSci = (data.scientific_name || '').toLowerCase().trim();
+          const aiName = (item.name || '').toLowerCase().trim();
+          const aiSci = (item.scientific_name || '').toLowerCase().trim();
           const dbMatch = speciesDb.find(s => {
             const dbName = (s.common_name || '').toLowerCase();
             const dbSci = (s.scientific_name || '').toLowerCase();
-            // Exact match first
             if (dbName === aiName || dbSci === aiSci) return true;
-            // Partial match
             if (aiName.length > 3 && (dbName.includes(aiName) || aiName.includes(dbName))) return true;
             if (aiSci.length > 3 && (dbSci.includes(aiSci) || aiSci.includes(dbSci))) return true;
             return false;
           });
 
-          setScannedLivestock(prev => [...prev, {
-            name: dbMatch?.common_name || data.name,
-            scientific_name: dbMatch?.scientific_name || data.scientific_name,
-            type: dbMatch?.category?.toLowerCase() || data.type || livestockTab,
-            category: dbMatch?.subcategory || data.category,
-            confidence: data.confidence,
-            details: dbMatch
-              ? `${dbMatch.difficulty} difficulty. ${data.details || ''}`
-              : (data.details || ''),
-            difficulty: dbMatch?.difficulty || null,
-            light_need: dbMatch?.light_need || null,
-            flow_need: dbMatch?.flow_need || null,
-            aggression: dbMatch?.aggression || null,
-            growth_speed: dbMatch?.growth_speed || null,
-            min_distance_inches: dbMatch?.min_distance_inches ?? null,
-            placement_zone: dbMatch?.placement_zone || null,
-            reef_safe: dbMatch?.reef_safe || null,
-            care_notes: dbMatch?.care_notes || null,
-            warnings: dbMatch?.warnings || null,
-            photo_url: dbMatch?.photo_url || null,
-            description: dbMatch?.description || data.details || null,
-          }]);
+          setScannedLivestock(prev => {
+            const name = dbMatch?.common_name || item.name;
+            if (prev.some(l => l.name === name)) return prev; // skip duplicates
+            return [...prev, {
+              name,
+              scientific_name: dbMatch?.scientific_name || item.scientific_name,
+              type: dbMatch?.category?.toLowerCase() || item.type || livestockTab,
+              category: dbMatch?.subcategory || item.category,
+              confidence: item.confidence,
+              details: dbMatch ? `${dbMatch.difficulty} difficulty. ${item.details || ''}` : (item.details || ''),
+              difficulty: dbMatch?.difficulty || null,
+              light_need: dbMatch?.light_need || null,
+              flow_need: dbMatch?.flow_need || null,
+              aggression: dbMatch?.aggression || null,
+              growth_speed: dbMatch?.growth_speed || null,
+              min_distance_inches: dbMatch?.min_distance_inches ?? null,
+              placement_zone: dbMatch?.placement_zone || null,
+              reef_safe: dbMatch?.reef_safe || null,
+              care_notes: dbMatch?.care_notes || null,
+              warnings: dbMatch?.warnings || null,
+              photo_url: dbMatch?.photo_url || null,
+              description: dbMatch?.description || item.details || null,
+            }];
+          });
+        }
+        if (items.filter((d: any) => d.name).length === 0) {
+          setError('Could not identify animals in this photo. Try a closer shot.');
         }
       }
     } catch (err) { console.error('Livestock scan failed:', err); }
