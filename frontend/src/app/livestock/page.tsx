@@ -19,10 +19,31 @@ const TABS = [
 const CATEGORY_MAP: Record<string, string> = { fish: 'fish', coral: 'coral', invertebrate: 'invertebrate' };
 
 const BADGE_COLORS: Record<string, string> = {
+  // Coral
   Soft: 'bg-[#2ff801]/10 text-[#2ff801]',
   LPS: 'bg-[#FF7F50]/10 text-[#FF7F50]',
   SPS: 'bg-red-500/10 text-red-400',
+  Zoanthid: 'bg-[#a855f7]/10 text-[#a855f7]',
+  Mushroom: 'bg-[#ec4899]/10 text-[#ec4899]',
+  Gorgonian: 'bg-[#f97316]/10 text-[#f97316]',
+  NPS: 'bg-[#eab308]/10 text-[#eab308]',
+  // Invertebrate
   Anemone: 'bg-purple-500/10 text-purple-400',
+  Shrimp: 'bg-[#fb7185]/10 text-[#fb7185]',
+  Crab: 'bg-[#f97316]/10 text-[#f97316]',
+  'Hermit Crab': 'bg-[#f97316]/10 text-[#f97316]',
+  Snail: 'bg-[#84cc16]/10 text-[#84cc16]',
+  Clam: 'bg-[#06b6d4]/10 text-[#06b6d4]',
+  Urchin: 'bg-[#8b5cf6]/10 text-[#8b5cf6]',
+  Starfish: 'bg-[#eab308]/10 text-[#eab308]',
+  Conch: 'bg-[#d97706]/10 text-[#d97706]',
+  'Sea Cucumber': 'bg-[#059669]/10 text-[#059669]',
+  'Feather Duster': 'bg-[#7c3aed]/10 text-[#7c3aed]',
+  Lobster: 'bg-[#dc2626]/10 text-[#dc2626]',
+  Nudibranch: 'bg-[#c084fc]/10 text-[#c084fc]',
+  Scallop: 'bg-[#f43f5e]/10 text-[#f43f5e]',
+  Sponge: 'bg-[#0ea5e9]/10 text-[#0ea5e9]',
+  // Fish (generic)
   fish: 'bg-[#4cd6fb]/10 text-[#4cd6fb]',
   invertebrate: 'bg-[#ffb59c]/10 text-[#ffb59c]',
 };
@@ -52,6 +73,7 @@ export default function LivestockPage() {
   const [addQty, setAddQty] = useState('1');
   const [adding, setAdding] = useState(false);
   const [addSuccess, setAddSuccess] = useState(false);
+  const [subFilter, setSubFilter] = useState<string | null>(null);
 
   // AI Camera
   const [showCamera, setShowCamera] = useState(false);
@@ -98,6 +120,7 @@ export default function LivestockPage() {
     setAddName('');
     setAddQty('1');
     setAddSuccess(false);
+    setSubFilter(null);
     if (speciesList.length === 0) {
       const species = await getSpecies();
       const filtered = species.filter(s => s.category !== 'pest');
@@ -106,17 +129,21 @@ export default function LivestockPage() {
     }
   };
 
-  const filteredSpecies = speciesList
-    .filter(s => {
-      const catMap: Record<string, string> = { fish: 'fish', coral: 'coral', invertebrate: 'invertebrate' };
-      return s.category === catMap[tab];
-    })
+  const categorySpecies = speciesList.filter(s => s.category === (CATEGORY_MAP[tab] || tab));
+
+  const subcategories = useMemo(() => {
+    const subs = [...new Set(categorySpecies.map(s => s.subcategory).filter(Boolean))] as string[];
+    return subs.sort();
+  }, [tab, categorySpecies.length]);
+
+  const filteredSpecies = categorySpecies
+    .filter(s => !subFilter || s.subcategory === subFilter)
     .filter(s => !speciesSearch ||
       s.common_name.toLowerCase().includes(speciesSearch.toLowerCase()) ||
       s.scientific_name?.toLowerCase().includes(speciesSearch.toLowerCase()) ||
       s.subcategory?.toLowerCase().includes(speciesSearch.toLowerCase())
     )
-    .slice(0, 50);
+    .slice(0, 100);
 
   const selectSpecies = (sp: Species) => {
     setSelectedSpecies(sp);
@@ -451,7 +478,7 @@ export default function LivestockPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-[family-name:var(--font-headline)] font-bold text-white">Add Livestock</h2>
-                  <p className="text-xs text-[#c5c6cd] mt-0.5">Search from 160+ species</p>
+                  <p className="text-xs text-[#c5c6cd] mt-0.5">Search from 250+ species</p>
                 </div>
                 <button onClick={() => setShowAdd(false)} className="w-8 h-8 rounded-full bg-[#1c2a41] flex items-center justify-center">
                   <span className="material-symbols-outlined text-[#c5c6cd] text-sm">close</span>
@@ -471,7 +498,7 @@ export default function LivestockPage() {
                 {TABS.map(t => (
                   <button
                     key={t.key}
-                    onClick={() => { setTab(t.key); setSelectedSpecies(null); setSpeciesSearch(''); }}
+                    onClick={() => { setTab(t.key); setSelectedSpecies(null); setSpeciesSearch(''); setSubFilter(null); }}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
                       tab === t.key ? 'bg-[#FF7F50] text-white' : 'bg-[#1c2a41] text-[#c5c6cd]'
                     }`}
@@ -496,6 +523,34 @@ export default function LivestockPage() {
                       autoFocus
                     />
                   </div>
+
+                  {/* Subcategory Filter Chips */}
+                  {subcategories.length > 1 && (
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+                      <button
+                        onClick={() => setSubFilter(null)}
+                        className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all ${
+                          !subFilter ? 'bg-[#FF7F50] text-white' : 'bg-[#1c2a41] text-[#c5c6cd] hover:bg-[#27354c]'
+                        }`}
+                      >
+                        All ({categorySpecies.length})
+                      </button>
+                      {subcategories.map(sub => {
+                        const count = categorySpecies.filter(s => s.subcategory === sub).length;
+                        return (
+                          <button
+                            key={sub}
+                            onClick={() => setSubFilter(subFilter === sub ? null : sub)}
+                            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all ${
+                              subFilter === sub ? 'bg-[#FF7F50] text-white' : (BADGE_COLORS[sub] || 'bg-[#1c2a41] text-[#c5c6cd]') + ' hover:opacity-80'
+                            }`}
+                          >
+                            {sub} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Species Results */}
                   <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
