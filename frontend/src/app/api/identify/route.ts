@@ -120,13 +120,11 @@ export async function POST(req: NextRequest) {
     console.log('[identify] cleaned:', text.slice(0, 400));
 
     // Try parsing the full text first (might be clean JSON)
-    let result;
+    let parsed;
     try {
-      const parsed = JSON.parse(text);
-      // If it's an array, take the first item
-      result = Array.isArray(parsed) ? parsed[0] : parsed;
+      parsed = JSON.parse(text);
     } catch {
-      // Extract JSON object or array from text
+      // Extract JSON array or object from text
       const arrayMatch = text.match(/\[[\s\S]*\]/);
       const objMatch = text.match(/\{[\s\S]*\}/);
       const jsonStr = arrayMatch?.[0] || objMatch?.[0];
@@ -143,15 +141,14 @@ export async function POST(req: NextRequest) {
         .replace(/\t/g, ' ');
 
       try {
-        const parsed = JSON.parse(cleaned);
-        result = Array.isArray(parsed) ? parsed[0] : parsed;
+        parsed = JSON.parse(cleaned);
       } catch {
         console.error('[identify] Invalid JSON:', cleaned.slice(0, 400));
         return NextResponse.json({ error: 'AI returned invalid JSON', raw: rawText.slice(0, 300) }, { status: 500 });
       }
     }
-    // Always return { items: [...] } — normalize single object to array
-    const items = Array.isArray(result) ? result : [result];
+    // Normalize: always return { items: [...] }
+    const items = Array.isArray(parsed) ? parsed : [parsed];
     return NextResponse.json({ items });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);

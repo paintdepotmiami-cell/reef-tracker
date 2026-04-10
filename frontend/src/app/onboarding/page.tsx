@@ -349,13 +349,15 @@ export default function SetupWizard() {
   /* ── AI Photo Helpers ───────────────────────────────── */
 
   const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.onload = () => {
         const img = new window.Image();
+        img.onerror = () => reject(new Error('Failed to load image'));
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const max = 640; // Smaller for faster Gemini processing
+          const max = 640;
           let w = img.width, h = img.height;
           if (w > max || h > max) { const r = Math.min(max / w, max / h); w *= r; h *= r; }
           canvas.width = w; canvas.height = h;
@@ -422,59 +424,66 @@ export default function SetupWizard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: base64, context: livestockTab }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        // Handle multi-item format: { items: [...] }
-        const items = data.items || (data.name ? [data] : []);
-
-        for (const item of items) {
-          if (!item.name) continue;
-          // Filter by matching type (skip mismatched types)
-          const validType = item.type === livestockTab;
-          if (!validType && ['fish', 'coral', 'invertebrate'].includes(item.type)) continue;
-
-          // Try to match against species database for full data
-          const aiName = (item.name || '').toLowerCase().trim();
-          const aiSci = (item.scientific_name || '').toLowerCase().trim();
-          const dbMatch = speciesDb.find(s => {
-            const dbName = (s.common_name || '').toLowerCase();
-            const dbSci = (s.scientific_name || '').toLowerCase();
-            if (dbName === aiName || dbSci === aiSci) return true;
-            if (aiName.length > 3 && (dbName.includes(aiName) || aiName.includes(dbName))) return true;
-            if (aiSci.length > 3 && (dbSci.includes(aiSci) || aiSci.includes(dbSci))) return true;
-            return false;
-          });
-
-          setScannedLivestock(prev => {
-            const name = dbMatch?.common_name || item.name;
-            if (prev.some(l => l.name === name)) return prev; // skip duplicates
-            return [...prev, {
-              name,
-              scientific_name: dbMatch?.scientific_name || item.scientific_name,
-              type: dbMatch?.category?.toLowerCase() || item.type || livestockTab,
-              category: dbMatch?.subcategory || item.category,
-              confidence: item.confidence,
-              details: dbMatch ? `${dbMatch.difficulty} difficulty. ${item.details || ''}` : (item.details || ''),
-              difficulty: dbMatch?.difficulty || null,
-              light_need: dbMatch?.light_need || null,
-              flow_need: dbMatch?.flow_need || null,
-              aggression: dbMatch?.aggression || null,
-              growth_speed: dbMatch?.growth_speed || null,
-              min_distance_inches: dbMatch?.min_distance_inches ?? null,
-              placement_zone: dbMatch?.placement_zone || null,
-              reef_safe: dbMatch?.reef_safe || null,
-              care_notes: dbMatch?.care_notes || null,
-              warnings: dbMatch?.warnings || null,
-              photo_url: dbMatch?.photo_url || null,
-              description: dbMatch?.description || item.details || null,
-            }];
-          });
-        }
-        if (items.filter((d: any) => d.name).length === 0) {
-          setError('Could not identify animals in this photo. Try a closer shot.');
-        }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Livestock scan API error:', errData);
+        setError(`Photo scan failed: ${errData.error || res.statusText}. Try a closer photo.`);
+        return;
       }
-    } catch (err) { console.error('Livestock scan failed:', err); }
+      const data = await res.json();
+      // Handle multi-item format: { items: [...] }
+      const items = data.items || (data.name ? [data] : []);
+      let added = 0;
+
+      for (const item of items) {
+        if (!item.name) continue;
+        // Filter by matching type (skip mismatched types)
+        if (item.type !== livestockTab && ['fish', 'coral', 'invertebrate'].includes(item.type)) continue;
+
+        // Try to match against species database for full data
+        const aiName = (item.name || '').toLowerCase().trim();
+        const aiSci = (item.scientific_name || '').toLowerCase().trim();
+        const dbMatch = speciesDb.find(s => {
+          const dbName = (s.common_name || '').toLowerCase();
+          const dbSci = (s.scientific_name || '').toLowerCase();
+          if (dbName === aiName || dbSci === aiSci) return true;
+          if (aiName.length > 3 && (dbName.includes(aiName) || aiName.includes(dbName))) return true;
+          if (aiSci.length > 3 && (dbSci.includes(aiSci) || aiSci.includes(dbSci))) return true;
+          return false;
+        });
+
+        setScannedLivestock(prev => {
+          const name = dbMatch?.common_name || item.name;
+          if (prev.some(l => l.name === name)) return prev;
+          return [...prev, {
+            name,
+            scientific_name: dbMatch?.scientific_name || item.scientific_name,
+            type: dbMatch?.category?.toLowerCase() || item.type || livestockTab,
+            category: dbMatch?.subcategory || item.category,
+            confidence: item.confidence || 0,
+            details: dbMatch ? `${dbMatch.difficulty} difficulty. ${item.details || ''}` : (item.details || ''),
+            difficulty: dbMatch?.difficulty || null,
+            light_need: dbMatch?.light_need || null,
+            flow_need: dbMatch?.flow_need || null,
+            aggression: dbMatch?.aggression || null,
+            growth_speed: dbMatch?.growth_speed || null,
+            min_distance_inches: dbMatch?.min_distance_inches ?? null,
+            placement_zone: dbMatch?.placement_zone || null,
+            reef_safe: dbMatch?.reef_safe || null,
+            care_notes: dbMatch?.care_notes || null,
+            warnings: dbMatch?.warnings || null,
+            photo_url: dbMatch?.photo_url || null,
+            description: dbMatch?.description || item.details || null,
+          }];
+        });
+        added++;
+      }
+      if (added === 0) {
+        setError('Could not identify animals in this photo. Try a closer shot.');
+      } else {
+        setError('');
+      }
+    } catch (err) { console.error('Livestock scan failed:', err); setError('Photo scan failed. Please try again.'); }
     finally { setScanningLivestock(false); e.target.value = ''; }
   };
 
@@ -530,15 +539,18 @@ export default function SetupWizard() {
     try {
       const supabase = getSupabase();
 
-      // 1. Update profile (WITHOUT onboarding_completed yet — set it LAST after all data saves)
-      const { error: profileErr } = await supabase.from('reef_profiles').update({
+      // 1. Upsert profile (INSERT if new user, UPDATE if exists)
+      const { error: profileErr } = await supabase.from('reef_profiles').upsert({
+        id: user.id,
+        display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Reefer',
         experience_level: experience,
         location_city: city || null,
         location_state: state || null,
         units,
         language,
+        onboarding_completed: false,
         updated_at: new Date().toISOString(),
-      }).eq('id', user.id);
+      }, { onConflict: 'id' });
 
       if (profileErr) { setError(`Profile: ${profileErr.message}`); setSaving(false); return; }
 
