@@ -280,7 +280,7 @@ export default function LivestockPage() {
             {a.photo_ref && (
               <div className="h-48 overflow-hidden">
                 <img
-                  src={`/reference/${a.photo_ref}`}
+                  src={a.photo_ref.startsWith('http') ? a.photo_ref : `/reference/${a.photo_ref}`}
                   alt={a.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   loading="lazy"
@@ -336,7 +336,7 @@ export default function LivestockPage() {
         <div className="fixed inset-0 bg-black/85 z-[60] flex items-center justify-center p-4" onClick={() => setSelected(null)}>
           <div className="bg-gradient-to-b from-[#112036] to-[#041329] rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-[#ffb59c]/10 shadow-2xl" onClick={e => e.stopPropagation()}>
             {selected.photo_ref && (
-              <img src={`/reference/${selected.photo_ref}`} alt={selected.name} className="w-full h-64 object-cover rounded-t-3xl" />
+              <img src={selected.photo_ref.startsWith('http') ? selected.photo_ref : `/reference/${selected.photo_ref}`} alt={selected.name} className="w-full h-64 object-cover rounded-t-3xl" />
             )}
             <div className="p-6 space-y-4">
               <div>
