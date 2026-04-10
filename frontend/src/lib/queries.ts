@@ -247,8 +247,10 @@ export async function updateAnimal(id: string, updates: Partial<Animal>): Promis
   await getSupabase().from('reef_animals').update(updates).eq('id', id);
 }
 
-export async function deleteAnimal(id: string): Promise<void> {
-  await getSupabase().from('reef_animals').delete().eq('id', id);
+export async function deleteAnimal(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('reef_animals').delete().eq('id', id);
+  if (error) { console.error('deleteAnimal error:', error); return false; }
+  return true;
 }
 
 export async function updateProfile(userId: string, updates: Record<string, unknown>): Promise<void> {

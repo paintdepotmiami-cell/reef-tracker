@@ -194,7 +194,12 @@ export default function LivestockPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteAnimal(id);
+    const success = await deleteAnimal(id);
+    if (!success) {
+      alert('Failed to delete. Please try again.');
+      setConfirmDeleteId(null);
+      return;
+    }
     setAnimals(prev => prev.filter(a => a.id !== id));
     setConfirmDeleteId(null);
     setSelected(null);
