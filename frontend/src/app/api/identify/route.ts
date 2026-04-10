@@ -147,20 +147,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `AI returned no results (blocked: ${blockReason})` }, { status: 500 });
     }
 
-    const text = data.candidates[0]?.content?.parts?.[0]?.text || '';
+    const rawText = data.candidates[0]?.content?.parts?.[0]?.text || '';
 
-    // Parse JSON from response (handle potential markdown wrapping)
+    // Strip markdown code fences (```json ... ```) and trim
+    const text = rawText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim();
+
+    console.log('[identify] cleaned text:', text.slice(0, 300));
+
+    // Parse JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json({ error: 'Could not parse AI response', raw: text }, { status: 500 });
+      return NextResponse.json({ error: 'Could not parse AI response', raw: rawText.slice(0, 300) }, { status: 500 });
     }
 
     let result;
     try {
       result = JSON.parse(jsonMatch[0]);
     } catch {
-      console.error('[identify] Invalid JSON from AI:', jsonMatch[0].slice(0, 200));
-      return NextResponse.json({ error: 'AI returned invalid JSON', raw: text.slice(0, 200) }, { status: 500 });
+      // Try fixing common JSON issues: trailing commas, unquoted keys
+      const cleaned = jsonMatch[0]
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*]/g, ']');
+      try {
+        result = JSON.parse(cleaned);
+      } catch {
+        console.error('[identify] Invalid JSON from AI:', jsonMatch[0].slice(0, 300));
+        return NextResponse.json({ error: 'AI returned invalid JSON', raw: rawText.slice(0, 300) }, { status: 500 });
+      }
     }
     return NextResponse.json(result);
   } catch (error: unknown) {
