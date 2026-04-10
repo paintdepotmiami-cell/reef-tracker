@@ -147,6 +147,7 @@ export default function LivestockPage() {
       description: selectedSpecies.description,
       care_notes: selectedSpecies.care_notes,
       warnings: selectedSpecies.warnings,
+      photo_ref: selectedSpecies.photo_url || null,
       date_added: new Date().toISOString().split('T')[0],
     });
 
