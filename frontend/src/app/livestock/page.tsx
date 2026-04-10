@@ -511,105 +511,114 @@ export default function LivestockPage() {
 
               {!selectedSpecies ? (
                 <>
-                  {/* Species Search */}
+                  {/* Search bar — always visible */}
                   <div className="relative">
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
                     <input
                       type="text"
                       value={speciesSearch}
-                      onChange={e => setSpeciesSearch(e.target.value)}
+                      onChange={e => { setSpeciesSearch(e.target.value); }}
                       className="w-full bg-[#010e24] border border-[#1c2a41] rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#FF7F50]/50 focus:border-transparent transition-all text-sm"
                       placeholder={`Search ${tab === 'fish' ? 'fish' : tab === 'coral' ? 'corals' : 'invertebrates'}...`}
-                      autoFocus
                     />
                   </div>
 
-                  {/* Subcategory Filter Chips */}
-                  {subcategories.length > 1 && (
-                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
-                      <button
-                        onClick={() => setSubFilter(null)}
-                        className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all ${
-                          !subFilter ? 'bg-[#FF7F50] text-white' : 'bg-[#1c2a41] text-[#c5c6cd] hover:bg-[#27354c]'
-                        }`}
-                      >
-                        All ({categorySpecies.length})
-                      </button>
+                  {/* STEP 1: Subcategory Grid (when no filter selected and no search) */}
+                  {!subFilter && !speciesSearch ? (
+                    <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto no-scrollbar">
                       {subcategories.map(sub => {
                         const count = categorySpecies.filter(s => s.subcategory === sub).length;
+                        const badgeClass = BADGE_COLORS[sub] || 'bg-[#1c2a41] text-[#c5c6cd]';
                         return (
                           <button
                             key={sub}
-                            onClick={() => setSubFilter(subFilter === sub ? null : sub)}
-                            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all ${
-                              subFilter === sub ? 'bg-[#FF7F50] text-white' : (BADGE_COLORS[sub] || 'bg-[#1c2a41] text-[#c5c6cd]') + ' hover:opacity-80'
-                            }`}
+                            onClick={() => setSubFilter(sub)}
+                            className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[#0d1c32] hover:bg-[#112036] border border-transparent hover:border-[#FF7F50]/30 transition-all active:scale-95"
                           >
-                            {sub} ({count})
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${badgeClass.split(' ')[0]}`}>
+                              <span className={`material-symbols-outlined text-lg ${badgeClass.split(' ')[1]}`}>
+                                {tab === 'fish' ? 'set_meal' : tab === 'coral' ? 'waves' : 'water_drop'}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-[family-name:var(--font-headline)] font-bold text-white text-center leading-tight">{sub}</span>
+                            <span className="text-[9px] text-[#8f9097]">{count} species</span>
                           </button>
                         );
                       })}
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* STEP 2: Species list (when subcategory is selected or searching) */}
+                      {subFilter && (
+                        <button
+                          onClick={() => { setSubFilter(null); setSpeciesSearch(''); }}
+                          className="flex items-center gap-1.5 text-[#4cd6fb] text-xs font-semibold hover:underline"
+                        >
+                          <span className="material-symbols-outlined text-sm">arrow_back</span>
+                          Back to {tab === 'fish' ? 'Fish' : tab === 'coral' ? 'Coral' : 'Invert'} types
+                          <span className="ml-1 px-2 py-0.5 rounded-full bg-[#FF7F50]/15 text-[#FF7F50] text-[10px] font-bold">{subFilter}</span>
+                        </button>
+                      )}
 
-                  {/* Species Results */}
-                  <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
-                    {filteredSpecies.map(sp => (
-                      <button
-                        key={sp.id}
-                        onClick={() => selectSpecies(sp)}
-                        className="w-full bg-[#0d1c32] hover:bg-[#112036] rounded-xl p-3 flex items-center gap-3 transition-colors text-left"
-                      >
-                        {sp.photo_url ? (
-                          <img
-                            src={sp.photo_url}
-                            alt={sp.common_name}
-                            className="w-12 h-12 rounded-xl object-cover shrink-0"
-                            loading="lazy"
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
-                          />
-                        ) : null}
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${sp.photo_url ? 'hidden' : ''} ${
-                          sp.difficulty === 'Easy' ? 'bg-[#2ff801]/10' :
-                          sp.difficulty === 'Moderate' ? 'bg-[#F1C40F]/10' :
-                          sp.difficulty === 'Hard' ? 'bg-[#FF7F50]/10' :
-                          'bg-[#ffb4ab]/10'
-                        }`}>
-                          <span className={`material-symbols-outlined text-lg ${
-                            sp.difficulty === 'Easy' ? 'text-[#2ff801]' :
-                            sp.difficulty === 'Moderate' ? 'text-[#F1C40F]' :
-                            sp.difficulty === 'Hard' ? 'text-[#FF7F50]' :
-                            'text-[#ffb4ab]'
-                          }`}>
-                            {tab === 'fish' ? 'set_meal' : tab === 'coral' ? 'waves' : 'water_drop'}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-[family-name:var(--font-headline)] text-sm font-semibold text-white truncate">{sp.common_name}</p>
-                          <p className="text-[10px] text-[#FF7F50]/60 italic truncate">{sp.scientific_name}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          {sp.subcategory && (
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${BADGE_COLORS[sp.subcategory] || 'bg-white/5 text-[#c5c6cd]'}`}>
-                              {sp.subcategory}
-                            </span>
-                          )}
-                          <span className={`text-[9px] font-medium ${
-                            sp.difficulty === 'Easy' ? 'text-[#2ff801]' :
-                            sp.difficulty === 'Moderate' ? 'text-[#F1C40F]' :
-                            sp.difficulty === 'Hard' ? 'text-[#FF7F50]' :
-                            'text-[#ffb4ab]'
-                          }`}>{sp.difficulty}</span>
-                        </div>
-                      </button>
-                    ))}
-                    {filteredSpecies.length === 0 && (
-                      <div className="text-center py-8 text-[#c5c6cd] text-sm">
-                        <span className="material-symbols-outlined text-3xl text-[#1c2a41] mb-2 block">search_off</span>
-                        No species found. Try a different search.
+                      <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
+                        {filteredSpecies.map(sp => (
+                          <button
+                            key={sp.id}
+                            onClick={() => selectSpecies(sp)}
+                            className="w-full bg-[#0d1c32] hover:bg-[#112036] rounded-xl p-3 flex items-center gap-3 transition-colors text-left"
+                          >
+                            {sp.photo_url ? (
+                              <img
+                                src={sp.photo_url}
+                                alt={sp.common_name}
+                                className="w-12 h-12 rounded-xl object-cover shrink-0"
+                                loading="lazy"
+                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+                              />
+                            ) : null}
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${sp.photo_url ? 'hidden' : ''} ${
+                              sp.difficulty === 'Easy' ? 'bg-[#2ff801]/10' :
+                              sp.difficulty === 'Moderate' ? 'bg-[#F1C40F]/10' :
+                              sp.difficulty === 'Hard' ? 'bg-[#FF7F50]/10' :
+                              'bg-[#ffb4ab]/10'
+                            }`}>
+                              <span className={`material-symbols-outlined text-lg ${
+                                sp.difficulty === 'Easy' ? 'text-[#2ff801]' :
+                                sp.difficulty === 'Moderate' ? 'text-[#F1C40F]' :
+                                sp.difficulty === 'Hard' ? 'text-[#FF7F50]' :
+                                'text-[#ffb4ab]'
+                              }`}>
+                                {tab === 'fish' ? 'set_meal' : tab === 'coral' ? 'waves' : 'water_drop'}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-[family-name:var(--font-headline)] text-sm font-semibold text-white truncate">{sp.common_name}</p>
+                              <p className="text-[10px] text-[#FF7F50]/60 italic truncate">{sp.scientific_name}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              {sp.subcategory && !subFilter && (
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${BADGE_COLORS[sp.subcategory] || 'bg-white/5 text-[#c5c6cd]'}`}>
+                                  {sp.subcategory}
+                                </span>
+                              )}
+                              <span className={`text-[9px] font-medium ${
+                                sp.difficulty === 'Easy' ? 'text-[#2ff801]' :
+                                sp.difficulty === 'Moderate' ? 'text-[#F1C40F]' :
+                                sp.difficulty === 'Hard' ? 'text-[#FF7F50]' :
+                                'text-[#ffb4ab]'
+                              }`}>{sp.difficulty}</span>
+                            </div>
+                          </button>
+                        ))}
+                        {filteredSpecies.length === 0 && (
+                          <div className="text-center py-8 text-[#c5c6cd] text-sm">
+                            <span className="material-symbols-outlined text-3xl text-[#1c2a41] mb-2 block">search_off</span>
+                            No species found. Try a different search.
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
