@@ -12,30 +12,17 @@ function getGeminiConfig() {
 type IdentifyContext = 'equipment' | 'supplement' | 'fish' | 'coral' | 'invertebrate' | 'auto';
 
 const PROMPTS: Record<IdentifyContext, string> = {
-  auto: `You are ReefOS AI, an expert reef aquarium identifier. Analyze this image and identify what it shows.
+  auto: `You are ReefOS AI, an expert reef aquarium identifier. Analyze this image and identify the SINGLE MOST PROMINENT item.
+If multiple items are visible, pick the one that is most centered or largest in the frame.
 Determine if it's: equipment, supplement/product, fish, coral, or invertebrate.
-Return ONLY valid JSON (no markdown):
-{
-  "type": "equipment" | "supplement" | "fish" | "coral" | "invertebrate" | "unknown",
-  "name": "product/model name or species common name",
-  "brand": "brand name if product, or null",
-  "scientific_name": "scientific name if animal, or null",
-  "category": "specific category (e.g. lighting, filtration, calcium supplement, SPS, LPS, clownfish, etc.)",
-  "confidence": 0.0-1.0,
-  "details": "brief description of what you see"
-}`,
+Return ONLY a single valid JSON object with NO markdown formatting, NO code fences, NO backticks:
+{"type":"equipment","name":"product name","brand":"brand or null","scientific_name":"scientific name or null","category":"specific category","confidence":0.9,"details":"brief description"}`,
 
   equipment: `You are ReefOS AI, an expert at identifying reef aquarium equipment.
-Identify the equipment in this image. Recognize brands like Aqua Illumination, EcoTech Marine, Kessil, Neptune, Tunze, Jebao, Reef Octopus, Bubble Magus, etc.
-Return ONLY valid JSON (no markdown):
-{
-  "type": "equipment",
-  "name": "model name (e.g. Hydra 32 HD, Vortech MP40, Nero 5)",
-  "brand": "manufacturer (e.g. Aqua Illumination, EcoTech Marine)",
-  "category": "lighting | circulation | filtration | heating | water_management | testing | controller | sump | accessories",
-  "confidence": 0.0-1.0,
-  "details": "brief description"
-}`,
+Identify the SINGLE MOST PROMINENT piece of equipment in this image. If multiple items are visible, pick the one most centered or largest.
+Recognize brands like Aqua Illumination, EcoTech Marine, Kessil, Neptune, Tunze, Jebao, Reef Octopus, Bubble Magus, etc.
+Return ONLY a single valid JSON object with NO markdown formatting, NO code fences, NO backticks:
+{"type":"equipment","name":"model name","brand":"manufacturer","category":"lighting|circulation|filtration|heating|water_management|testing|controller|sump|accessories","confidence":0.9,"details":"brief description"}`,
 
   supplement: `You are ReefOS AI, an expert at identifying reef aquarium supplements and products.
 Identify the product in this image. Recognize brands like Red Sea, Brightwell, Seachem, Fauna Marin, Fritz, Two Little Fishies, etc.
@@ -149,29 +136,42 @@ export async function POST(req: NextRequest) {
 
     const rawText = data.candidates[0]?.content?.parts?.[0]?.text || '';
 
-    // Strip markdown code fences (```json ... ```) and trim
-    const text = rawText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim();
+    // Aggressively clean AI response
+    let text = rawText
+      .replace(/```(?:json)?\s*/gi, '')  // opening code fences
+      .replace(/```/g, '')               // closing code fences
+      .trim();
 
-    console.log('[identify] cleaned text:', text.slice(0, 300));
+    console.log('[identify] cleaned:', text.slice(0, 400));
 
-    // Parse JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return NextResponse.json({ error: 'Could not parse AI response', raw: rawText.slice(0, 300) }, { status: 500 });
-    }
-
+    // Try parsing the full text first (might be clean JSON)
     let result;
     try {
-      result = JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(text);
+      // If it's an array, take the first item
+      result = Array.isArray(parsed) ? parsed[0] : parsed;
     } catch {
-      // Try fixing common JSON issues: trailing commas, unquoted keys
-      const cleaned = jsonMatch[0]
+      // Extract JSON object or array from text
+      const arrayMatch = text.match(/\[[\s\S]*\]/);
+      const objMatch = text.match(/\{[\s\S]*\}/);
+      const jsonStr = arrayMatch?.[0] || objMatch?.[0];
+
+      if (!jsonStr) {
+        return NextResponse.json({ error: 'Could not parse AI response', raw: rawText.slice(0, 300) }, { status: 500 });
+      }
+
+      // Clean common JSON issues
+      const cleaned = jsonStr
         .replace(/,\s*}/g, '}')
-        .replace(/,\s*]/g, ']');
+        .replace(/,\s*]/g, ']')
+        .replace(/\n/g, ' ')
+        .replace(/\t/g, ' ');
+
       try {
-        result = JSON.parse(cleaned);
+        const parsed = JSON.parse(cleaned);
+        result = Array.isArray(parsed) ? parsed[0] : parsed;
       } catch {
-        console.error('[identify] Invalid JSON from AI:', jsonMatch[0].slice(0, 300));
+        console.error('[identify] Invalid JSON:', cleaned.slice(0, 400));
         return NextResponse.json({ error: 'AI returned invalid JSON', raw: rawText.slice(0, 300) }, { status: 500 });
       }
     }
