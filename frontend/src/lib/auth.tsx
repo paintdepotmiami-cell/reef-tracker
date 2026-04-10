@@ -61,28 +61,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = getSupabase();
 
   const fetchProfile = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from('reef_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      setProfile(data);
-      return data;
-    } catch { return null; }
+    const { data, error } = await supabase
+      .from('reef_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (error) {
+      if (error.code !== 'PGRST116') console.error('fetchProfile error:', error);
+      return null;
+    }
+    setProfile(data);
+    return data;
   };
 
   const fetchTank = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from('reef_tanks')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_primary', true)
-        .maybeSingle();
-      setTank(data);
-      return data;
-    } catch { return null; }
+    const { data, error } = await supabase
+      .from('reef_tanks')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_primary', true)
+      .maybeSingle();
+    if (error) {
+      if (error.code !== 'PGRST116') console.error('fetchTank error:', error);
+      return null;
+    }
+    setTank(data);
+    return data;
   };
 
   useEffect(() => {

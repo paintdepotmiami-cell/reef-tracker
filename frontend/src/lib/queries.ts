@@ -222,11 +222,12 @@ export async function getWishlist(): Promise<WishlistItem[]> {
 export async function addToWishlist(speciesId: string, priority = 'medium', notes?: string): Promise<WishlistItem | null> {
   const { data: { user } } = await getSupabase().auth.getUser();
   if (!user) return null;
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('reef_wishlist')
     .upsert({ user_id: user.id, species_id: speciesId, priority, notes }, { onConflict: 'user_id,species_id' })
     .select()
     .single();
+  if (error) { console.error('addToWishlist error:', error); return null; }
   return data;
 }
 
@@ -287,7 +288,8 @@ export async function getSupplements(): Promise<Supplement[]> {
 }
 
 export async function createEquipment(eq: Partial<Equipment>): Promise<Equipment | null> {
-  const { data } = await getSupabase().from('reef_equipment').insert(eq).select().single();
+  const { data, error } = await getSupabase().from('reef_equipment').insert(eq).select().single();
+  if (error) { console.error('createEquipment error:', error); return null; }
   return data;
 }
 
@@ -302,7 +304,8 @@ export async function deleteEquipment(id: string): Promise<boolean> {
 }
 
 export async function createSupplement(sup: Partial<Supplement>): Promise<Supplement | null> {
-  const { data } = await getSupabase().from('reef_supplements').insert(sup).select().single();
+  const { data, error } = await getSupabase().from('reef_supplements').insert(sup).select().single();
+  if (error) { console.error('createSupplement error:', error); return null; }
   return data;
 }
 
@@ -364,11 +367,12 @@ export async function completeMaintenanceTask(id: string): Promise<MaintenanceTa
 }
 
 export async function createMaintenanceTask(task: Partial<MaintenanceTask>): Promise<MaintenanceTask | null> {
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('reef_maintenance_tasks')
     .insert(task)
     .select()
     .single();
+  if (error) { console.error('createMaintenanceTask error:', error); return null; }
   return data;
 }
 
@@ -517,11 +521,12 @@ export async function getUserProducts(): Promise<UserProduct[]> {
 }
 
 export async function addUserProduct(product_id: string, user_id: string, tank_id?: string): Promise<UserProduct | null> {
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('reef_user_products')
     .insert({ product_id, user_id, tank_id: tank_id || null })
     .select('*, product:reef_products(*)')
     .single();
+  if (error) { console.error('addUserProduct error:', error); return null; }
   return data;
 }
 
@@ -541,11 +546,12 @@ export async function removeUserProduct(id: string): Promise<boolean> {
 }
 
 export async function logDose(product_id: string, user_id: string, amount: number, unit: string, tank_id?: string): Promise<DoseLog | null> {
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('reef_dose_logs')
     .insert({ product_id, user_id, amount, unit, tank_id: tank_id || null })
     .select()
     .single();
+  if (error) { console.error('logDose error:', error); return null; }
   return data;
 }
 
@@ -598,20 +604,22 @@ export async function getDosingConfig(): Promise<DosingConfig | null> {
 }
 
 export async function saveDosingConfig(config: Partial<DosingConfig>): Promise<DosingConfig | null> {
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('reef_dosing_config')
     .upsert({ ...config, updated_at: new Date().toISOString() }, { onConflict: 'id' })
     .select()
     .single();
+  if (error) { console.error('saveDosingConfig error:', error); return null; }
   return data;
 }
 
 export async function createDosingConfig(config: Omit<DosingConfig, 'id' | 'created_at' | 'updated_at'>): Promise<DosingConfig | null> {
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('reef_dosing_config')
     .insert(config)
     .select()
     .single();
+  if (error) { console.error('createDosingConfig error:', error); return null; }
   return data;
 }
 
