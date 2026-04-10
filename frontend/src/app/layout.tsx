@@ -32,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="impact-site-verification" content="0c6a1e88-dbae-43ee-81fa-aa698a60ef9a" />
       </head>
       <body>
         <AuthProvider>
