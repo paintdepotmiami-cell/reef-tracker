@@ -605,8 +605,19 @@ export default function ReefOSLanding() {
             <p className="text-sm text-[#8f9097]">Your reef, intelligently managed.</p>
           </div>
 
+          {/* Contact Email */}
+          <div className="flex justify-center mb-6">
+            <a href="mailto:info@reefos.net" className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-sm text-[#c5c6cd] hover:text-white hover:border-[#4cd6fb]/30 transition-all">
+              <span className="material-symbols-outlined text-[#4cd6fb] text-lg">mail</span>
+              info@reefos.net
+            </a>
+          </div>
+
           {/* Social Links */}
           <div className="flex justify-center gap-5 mb-8">
+            <a href="mailto:info@reefos.net" className="w-10 h-10 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[#c5c6cd] hover:text-[#4cd6fb] hover:border-[#4cd6fb]/30 transition-all" aria-label="Email">
+              <span className="material-symbols-outlined text-xl">mail</span>
+            </a>
             <a href="https://youtube.com/@ReefOS_US" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[#c5c6cd] hover:text-[#FF0000] hover:border-[#FF0000]/30 transition-all" aria-label="YouTube">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
             </a>
@@ -620,6 +631,7 @@ export default function ReefOSLanding() {
             <a href="/login" className="text-[#4cd6fb] hover:text-white transition">App</a>
             <a href="https://reefos-planner.vercel.app" target="_blank" className="text-[#4cd6fb] hover:text-white transition">3D Planner</a>
             <a href="https://youtube.com/@ReefOS_US" target="_blank" className="text-[#4cd6fb] hover:text-white transition">YouTube</a>
+            <a href="mailto:info@reefos.net" className="text-[#4cd6fb] hover:text-white transition">Contact</a>
           </div>
 
           <p className="text-xs text-[#8f9097] text-center">&copy; 2026 ReefOS. Built with care for the reef keeping community.</p>
