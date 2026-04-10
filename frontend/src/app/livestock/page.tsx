@@ -116,7 +116,7 @@ export default function LivestockPage() {
       s.scientific_name?.toLowerCase().includes(speciesSearch.toLowerCase()) ||
       s.subcategory?.toLowerCase().includes(speciesSearch.toLowerCase())
     )
-    .slice(0, 20);
+    .slice(0, 50);
 
   const selectSpecies = (sp: Species) => {
     setSelectedSpecies(sp);
