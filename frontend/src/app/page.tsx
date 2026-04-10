@@ -17,11 +17,11 @@ export default function ReefOSLanding() {
     },
     {
       title: 'Livestock Management',
-      text: 'Manage fish, corals, and inverts with health tracking, compatibility checks, quarantine countdowns, and AI camera identification from a 180+ species database.',
+      text: 'Manage fish, corals, and inverts with health tracking, compatibility checks, quarantine countdowns, and AI camera identification from a 250+ species database.',
       icon: '🐠',
       screenshot: '/screenshots/livestock.png',
       alt: 'ReefOS livestock manager showing fish collection',
-      tag: '180+ Species',
+      tag: '250+ Species',
     },
     {
       title: 'Alerts, Dosing & Maintenance',
@@ -175,9 +175,14 @@ export default function ReefOSLanding() {
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href="#faq" className="transition hover:text-white">FAQ</a>
           </nav>
-          <a href="/login" className="rounded-xl bg-[#FF7F50] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95">
-            Start Free
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="/login" className="text-sm font-semibold text-[#c5c6cd] transition hover:text-white hidden sm:block">
+              Sign In
+            </a>
+            <a href="/login" className="rounded-xl bg-[#FF7F50] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95">
+              Start Free
+            </a>
+          </div>
         </div>
       </header>
 
@@ -197,7 +202,7 @@ export default function ReefOSLanding() {
               {' '}for Tracking, Stability & Growth
             </h1>
             <p className="mt-6 text-lg text-[#c5c6cd] max-w-2xl mx-auto leading-relaxed">
-              Track 8 water parameters, manage 180+ species, get AI-powered recommendations,
+              Track 8 water parameters, manage 250+ species, get AI-powered recommendations,
               and stop guessing what your reef needs. Built by reefers, for reefers.
             </p>
             <p className="mt-4 text-base font-semibold text-[#2ff801]">

@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-const PUBLIC_PATHS = ['/login', '/landing', '/'];
+const PUBLIC_PATHS = ['/login', '/landing', '/', '/reset-password'];
 
 // DEV ONLY: bypass auth for UI preview — REMOVE before deploy
 const DEV_BYPASS = process.env.NODE_ENV === 'development';
@@ -29,6 +29,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace('/dashboard');
       return;
     }
+
+    // Don't redirect away from reset-password — user needs to set new password
+    if (pathname === '/reset-password') return;
 
     // Redirect to onboarding if profile missing or not completed (except on onboarding page itself)
     if (user && pathname !== '/onboarding') {

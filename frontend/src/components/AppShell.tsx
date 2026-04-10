@@ -6,7 +6,7 @@ import TopBar from './TopBar';
 import BottomNav from './BottomNav';
 import AuthGuard from './AuthGuard';
 
-const CHROMELESS_PATHS = ['/login', '/onboarding', '/landing', '/'];
+const CHROMELESS_PATHS = ['/login', '/onboarding', '/landing', '/', '/reset-password'];
 const FULLSCREEN_PATHS = ['/planner'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
