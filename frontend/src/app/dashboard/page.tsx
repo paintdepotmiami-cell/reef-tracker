@@ -297,6 +297,68 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* Getting Started — only shows when user hasn't completed key activation steps */}
+      {(!test || totalSpecimens === 0 || stats.equipment === 0) && (
+        <section className="bg-gradient-to-br from-[#0d1c32] to-[#041329] rounded-2xl p-5 border border-[#FF7F50]/20 shadow-xl">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-[#FF7F50]">rocket_launch</span>
+            <h3 className="font-[family-name:var(--font-headline)] font-bold text-white text-sm">Getting Started</h3>
+            <span className="text-[10px] text-[#8f9097] ml-auto">
+              {[!!test, totalSpecimens > 0, stats.equipment > 0].filter(Boolean).length}/3 done
+            </span>
+          </div>
+          <div className="space-y-2">
+            <Link
+              href="/logs"
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all ${test ? 'bg-[#2ff801]/5 border border-[#2ff801]/20' : 'bg-[#FF7F50]/5 border border-[#FF7F50]/20 hover:bg-[#FF7F50]/10 active:scale-[0.98]'}`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${test ? 'bg-[#2ff801]/15' : 'bg-[#FF7F50]/15'}`}>
+                <span className={`material-symbols-outlined text-base ${test ? 'text-[#2ff801]' : 'text-[#FF7F50]'}`}>
+                  {test ? 'check_circle' : 'science'}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm font-semibold ${test ? 'text-[#2ff801]/70 line-through' : 'text-white'}`}>Log your first water test</p>
+                <p className="text-[10px] text-[#8f9097]">{test ? 'Completed' : 'Snap a photo or enter manually'}</p>
+              </div>
+              {!test && <span className="material-symbols-outlined text-[#FF7F50] text-sm">arrow_forward</span>}
+            </Link>
+
+            <Link
+              href="/livestock"
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all ${totalSpecimens > 0 ? 'bg-[#2ff801]/5 border border-[#2ff801]/20' : 'bg-[#4cd6fb]/5 border border-[#4cd6fb]/20 hover:bg-[#4cd6fb]/10 active:scale-[0.98]'}`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${totalSpecimens > 0 ? 'bg-[#2ff801]/15' : 'bg-[#4cd6fb]/15'}`}>
+                <span className={`material-symbols-outlined text-base ${totalSpecimens > 0 ? 'text-[#2ff801]' : 'text-[#4cd6fb]'}`}>
+                  {totalSpecimens > 0 ? 'check_circle' : 'sailing'}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm font-semibold ${totalSpecimens > 0 ? 'text-[#2ff801]/70 line-through' : 'text-white'}`}>Add your livestock</p>
+                <p className="text-[10px] text-[#8f9097]">{totalSpecimens > 0 ? `${totalSpecimens} specimens added` : 'Fish, corals & invertebrates'}</p>
+              </div>
+              {totalSpecimens === 0 && <span className="material-symbols-outlined text-[#4cd6fb] text-sm">arrow_forward</span>}
+            </Link>
+
+            <Link
+              href="/gear"
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all ${stats.equipment > 0 ? 'bg-[#2ff801]/5 border border-[#2ff801]/20' : 'bg-purple-500/5 border border-purple-500/20 hover:bg-purple-500/10 active:scale-[0.98]'}`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${stats.equipment > 0 ? 'bg-[#2ff801]/15' : 'bg-purple-500/15'}`}>
+                <span className={`material-symbols-outlined text-base ${stats.equipment > 0 ? 'text-[#2ff801]' : 'text-purple-400'}`}>
+                  {stats.equipment > 0 ? 'check_circle' : 'precision_manufacturing'}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm font-semibold ${stats.equipment > 0 ? 'text-[#2ff801]/70 line-through' : 'text-white'}`}>Set up your gear</p>
+                <p className="text-[10px] text-[#8f9097]">{stats.equipment > 0 ? `${stats.equipment} items configured` : 'Lights, skimmer, pumps & more'}</p>
+              </div>
+              {stats.equipment === 0 && <span className="material-symbols-outlined text-purple-400 text-sm">arrow_forward</span>}
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Quick Actions */}
       <section className="grid grid-cols-3 gap-3">
         <Link href="/logs" className="bg-[#004b66] text-[#8ccff5] p-4 rounded-xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_4px_16px_rgba(1,14,36,0.3)]">

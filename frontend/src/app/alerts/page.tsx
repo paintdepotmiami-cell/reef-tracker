@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth';
-import { getAllTests } from '@/lib/queries';
+import { getAllTests, getEquipment } from '@/lib/queries';
 import type { WaterTest } from '@/lib/queries';
 import {
   generateAllAlerts,
@@ -18,6 +18,7 @@ import Link from 'next/link';
 export default function AlertsPage() {
   const { user } = useAuth();
   const [tests, setTests] = useState<WaterTest[]>([]);
+  const [hasRefugium, setHasRefugium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [filterSeverity, setFilterSeverity] = useState<AlertSeverity | 'all'>('all');
@@ -33,6 +34,13 @@ export default function AlertsPage() {
       setTests(data);
       setLoading(false);
     });
+    // Check user's actual equipment for refugium/sump
+    getEquipment().then(eq => {
+      const hasFuge = eq.some(e =>
+        e.category === 'sump' || e.name?.toLowerCase().includes('refugium') || e.name?.toLowerCase().includes('fuge')
+      );
+      setHasRefugium(hasFuge);
+    }).catch(() => {});
   }, [user]);
 
   // Generate alerts
@@ -41,7 +49,7 @@ export default function AlertsPage() {
       (a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime()
     );
     return generateAllAlerts(sorted, {
-      hasRefugium: true,        // Default on — most sumps have refugiums
+      hasRefugium,              // Read from user's actual equipment
       lastRefugiumPrune: null,  // No data yet — will trigger reminder
       lastPumpClean: null,
       lastFilterChange: null,
@@ -50,7 +58,7 @@ export default function AlertsPage() {
       lastHeaterCheck: null,
       lastCoralAudit: null,
     });
-  }, [tests]);
+  }, [tests, hasRefugium]);
 
   // Filtered alerts
   const filtered = useMemo(() => {
