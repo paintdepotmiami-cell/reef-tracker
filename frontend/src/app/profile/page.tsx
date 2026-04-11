@@ -296,8 +296,8 @@ export default function ProfilePage() {
           <p className="text-white text-sm font-medium">ReefOS v4.0</p>
           <p className="text-[#8f9097] text-xs mt-1">AI-powered reef aquarium management</p>
           <div className="flex gap-4 mt-3">
-            <a href="https://reefos.net" target="_blank" rel="noopener" className="text-[#FF7F50] text-xs font-medium active:scale-95 transition-transform">Website</a>
-            <a href="https://youtube.com/@ReefOS_US" target="_blank" rel="noopener" className="text-[#FF7F50] text-xs font-medium active:scale-95 transition-transform">YouTube</a>
+            <a href="https://reefos.net" target="_blank" rel="noopener noreferrer" className="text-[#FF7F50] text-xs font-medium active:scale-95 transition-transform">Website</a>
+            <a href="https://youtube.com/@ReefOS_US" target="_blank" rel="noopener noreferrer" className="text-[#FF7F50] text-xs font-medium active:scale-95 transition-transform">YouTube</a>
           </div>
         </div>
       </div>

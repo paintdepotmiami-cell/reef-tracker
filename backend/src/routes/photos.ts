@@ -29,11 +29,14 @@ photosRouter.post('/upload', upload.single('photo'), async (req: Request, res: R
 
   if (error) return res.status(500).json({ error: error.message });
 
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filename);
+  // Signed URL (1 hour) — never expose public URLs for user content
+  const { data: signedData, error: signErr } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(filename, 3600);
 
   res.json({
     path: data.path,
-    url: urlData.publicUrl,
+    url: signErr ? null : signedData.signedUrl,
     filename: req.file.originalname,
     size: req.file.size,
   });
