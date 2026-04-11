@@ -153,8 +153,9 @@ export default function LogsPage() {
           .upload(path, file, { upsert: true });
         if (error) { console.error('Photo upload error:', error); continue; }
         if (i === 0) {
-          const { data: urlData } = supabase.storage.from('test-photos').getPublicUrl(path);
-          firstUrl = urlData?.publicUrl || null;
+          // Use signed URL (1 hour expiry) instead of public URL for privacy
+          const { data: urlData } = await supabase.storage.from('test-photos').createSignedUrl(path, 3600);
+          firstUrl = urlData?.signedUrl || null;
         }
       }
       return firstUrl;

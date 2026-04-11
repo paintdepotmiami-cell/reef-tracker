@@ -208,9 +208,9 @@ export default function Dashboard() {
         .from('tank-photos')
         .upload(path, file, { upsert: true, contentType: file.type });
       if (uploadErr) throw uploadErr;
-      // Get public URL
-      const { data: urlData } = supabase.storage.from('tank-photos').getPublicUrl(path);
-      const photoUrl = urlData.publicUrl + '?t=' + Date.now(); // cache bust
+      // Use signed URL (24h expiry) for privacy — refreshed on each page load
+      const { data: urlData } = await supabase.storage.from('tank-photos').createSignedUrl(path, 86400);
+      const photoUrl = urlData?.signedUrl || '';
       // Update tank record
       await supabase.from('reef_tanks').update({ photo_url: photoUrl }).eq('id', tank.id);
       await refreshTank();

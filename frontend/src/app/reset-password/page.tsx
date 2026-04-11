@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import { getSupabase } from '@/lib/supabase';
 
 export default function ResetPasswordPage() {
   const { updatePassword } = useAuth();
@@ -12,6 +13,23 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [noSession, setNoSession] = useState(false);
+
+  // Wait for Supabase to hydrate the recovery session from the URL hash
+  useEffect(() => {
+    const check = async () => {
+      // Give Supabase time to detect the recovery token from the URL
+      await new Promise(r => setTimeout(r, 1500));
+      const { data: { session } } = await getSupabase().auth.getSession();
+      if (session) {
+        setSessionReady(true);
+      } else {
+        setNoSession(true);
+      }
+    };
+    check();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +64,39 @@ export default function ResetPasswordPage() {
           </div>
           <h2 className="text-2xl font-[family-name:var(--font-headline)] font-bold text-white">Password updated!</h2>
           <p className="text-[#c5c6cd] text-sm">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Session not yet hydrated — show loading
+  if (!sessionReady && !noSession) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <div className="text-center space-y-4">
+          <span className="material-symbols-outlined text-5xl text-[#FF7F50] animate-pulse">lock_reset</span>
+          <p className="text-[#c5c6cd] text-sm">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No valid recovery session — link expired or invalid
+  if (noSession) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-full bg-[#93000a]/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-4xl text-[#ffb4ab]">link_off</span>
+          </div>
+          <h2 className="text-2xl font-[family-name:var(--font-headline)] font-bold text-white">Link expired</h2>
+          <p className="text-[#c5c6cd] text-sm">This password reset link has expired or is invalid. Please request a new one.</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="w-full bg-[#FF7F50] text-white font-bold py-3 rounded-xl text-sm"
+          >
+            Back to Login
+          </button>
         </div>
       </div>
     );
