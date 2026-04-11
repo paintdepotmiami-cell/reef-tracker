@@ -1,7 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 // Vercel serverless timeout — 10s on Hobby, 60s on Pro
 export const maxDuration = 60;
+
+/** Verify Supabase JWT — returns user or null */
+async function verifyAuth(req: NextRequest) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) return null;
+  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: { user } } = await sb.auth.getUser();
+  return user;
+}
+
+/** Simple in-memory rate limiter — max requests per window */
+const rateLimitMap = new Map<string, { count: number; reset: number }>();
+function checkRateLimit(userId: string, maxReqs = 20, windowMs = 60000): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(userId, { count: 1, reset: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxReqs) return false;
+  entry.count++;
+  return true;
+}
 
 function getGeminiConfig() {
   const key = process.env.GEMINI_API_KEY;
@@ -52,6 +78,13 @@ Multiple: [{"type":"invertebrate","name":"name1","scientific_name":"sci1","brand
 };
 
 export async function POST(req: NextRequest) {
+  // Auth required — prevents anonymous abuse of Gemini API
+  const user = await verifyAuth(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!checkRateLimit(user.id, 30, 60000)) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again in a minute.' }, { status: 429 });
+  }
+
   const { key: GEMINI_API_KEY, url: GEMINI_URL } = getGeminiConfig();
 
   if (!GEMINI_API_KEY) {

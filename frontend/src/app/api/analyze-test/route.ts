@@ -1,6 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export const maxDuration = 60;
+
+/** Verify Supabase JWT — returns user or null */
+async function verifyAuth(req: NextRequest) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) return null;
+  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: { user } } = await sb.auth.getUser();
+  return user;
+}
+
+const rateLimitMap = new Map<string, { count: number; reset: number }>();
+function checkRateLimit(userId: string, maxReqs = 30, windowMs = 60000): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(userId, { count: 1, reset: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxReqs) return false;
+  entry.count++;
+  return true;
+}
 
 const SYSTEM_PROMPT = `You are an aquarium water test reader. You analyze photos of test kit results and extract parameter values.
 
@@ -46,6 +71,13 @@ function getGeminiConfig() {
  * Uses Gemini Flash to read values and return parsed parameters.
  */
 export async function POST(req: NextRequest) {
+  // Auth required — prevents anonymous abuse of Gemini API
+  const user = await verifyAuth(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!checkRateLimit(user.id)) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again in a minute.' }, { status: 429 });
+  }
+
   const { key: GEMINI_KEY, url: GEMINI_URL } = getGeminiConfig();
 
   if (!GEMINI_KEY) {

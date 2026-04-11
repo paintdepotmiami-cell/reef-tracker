@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { getAuthHeaders } from '@/lib/supabase';
 
 export interface IdentifyResult {
   type: 'equipment' | 'supplement' | 'fish' | 'coral' | 'invertebrate' | 'unknown';
@@ -63,9 +64,10 @@ export default function ImageIdentifier({ context = 'auto', onResult, onResults,
     setError(null);
 
     try {
+      const auth = await getAuthHeaders();
       const res = await fetch('/api/identify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ image: preview, context }),
       });
 

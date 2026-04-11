@@ -33,3 +33,17 @@ export function getSupabase(): SupabaseClient {
 export function isSupabasePlaceholder(): boolean {
   return _isPlaceholder;
 }
+
+/**
+ * Get Authorization headers for API calls to our own server routes.
+ * Returns { Authorization: 'Bearer <token>' } or empty object.
+ */
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const { data: { session } } = await getSupabase().auth.getSession();
+    if (session?.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` };
+    }
+  } catch {}
+  return {};
+}

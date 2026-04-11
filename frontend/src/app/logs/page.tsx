@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { getAllTests, createWaterTest } from '@/lib/queries';
 import type { WaterTest } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getAuthHeaders } from '@/lib/supabase';
 import { getCached, setCache } from '@/lib/cache';
 import { analyzeCycle } from '@/lib/cycle-engine';
 import CycleStatusCard from '@/components/CycleStatus';
@@ -76,9 +76,10 @@ export default function LogsPage() {
     setAnalyzingCount(c => c + 1);
     try {
       const base64 = await fileToBase64(file);
+      const auth = await getAuthHeaders();
       const res = await fetch('/api/analyze-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ image: base64, mimeType: file.type || 'image/jpeg' }),
       });
       if (!res.ok) {

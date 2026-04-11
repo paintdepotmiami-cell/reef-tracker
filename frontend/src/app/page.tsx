@@ -418,8 +418,7 @@ export default function ReefOSLanding() {
           <div className="mt-8 text-center">
             <a
               href="https://youtube.com/@ReefOS_US"
-              target="_blank"
-              rel="noopener noreferrer"
+              target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-[#FF0000]/20 bg-[#FF0000]/10 px-6 py-3 text-sm font-bold text-[#FF0000] transition hover:bg-[#FF0000]/20"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
@@ -592,7 +591,7 @@ export default function ReefOSLanding() {
               <Link href="/login" className="rounded-2xl bg-[#FF7F50] px-8 py-4 text-base font-bold text-white shadow-2xl shadow-[#FF7F50]/20 transition hover:scale-[1.03]">
                 Start Free Now
               </Link>
-              <a href="https://reefos-planner.vercel.app" target="_blank" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20">
+              <a href="https://reefos-planner.vercel.app" target="_blank" rel="noopener noreferrer" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20">
                 Try 3D Planner
               </a>
             </div>
@@ -635,8 +634,8 @@ export default function ReefOSLanding() {
           {/* Links */}
           <div className="flex justify-center gap-6 text-sm mb-6">
             <Link href="/login" className="text-[#4cd6fb] hover:text-white transition">App</Link>
-            <a href="https://reefos-planner.vercel.app" target="_blank" className="text-[#4cd6fb] hover:text-white transition">3D Planner</a>
-            <a href="https://youtube.com/@ReefOS_US" target="_blank" className="text-[#4cd6fb] hover:text-white transition">YouTube</a>
+            <a href="https://reefos-planner.vercel.app" target="_blank" rel="noopener noreferrer" className="text-[#4cd6fb] hover:text-white transition">3D Planner</a>
+            <a href="https://youtube.com/@ReefOS_US" target="_blank" rel="noopener noreferrer" className="text-[#4cd6fb] hover:text-white transition">YouTube</a>
             <a href="mailto:info@reefos.net" className="text-[#4cd6fb] hover:text-white transition">Contact</a>
           </div>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getAuthHeaders } from '@/lib/supabase';
 import { createEquipment, createMaintenanceTask, createWaterTest, createDosingConfig, getSpecies, getProducts } from '@/lib/queries';
 import type { DosingChannel } from '@/lib/queries';
 
@@ -376,9 +376,10 @@ export default function SetupWizard() {
     setScanningGear(true);
     try {
       const base64 = await compressImage(file);
+      const auth = await getAuthHeaders();
       const res = await fetch('/api/identify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ image: base64, context: 'equipment' }),
       });
       const data = await res.json();
@@ -419,9 +420,10 @@ export default function SetupWizard() {
     setScanningLivestock(true);
     try {
       const base64 = await compressImage(file);
+      const auth = await getAuthHeaders();
       const res = await fetch('/api/identify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ image: base64, context: livestockTab }),
       });
       if (!res.ok) {
@@ -493,9 +495,10 @@ export default function SetupWizard() {
     setScanningParams(true);
     try {
       const base64 = await compressImage(file);
+      const authH = await getAuthHeaders();
       const res = await fetch('/api/analyze-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authH },
         body: JSON.stringify({ image: base64 }),
       });
       if (res.ok) {
