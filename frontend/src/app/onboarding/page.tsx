@@ -626,7 +626,7 @@ export default function SetupWizard() {
             care_notes: animal.care_notes,
             warnings: animal.warnings,
             photo_ref: animal.photo_url,
-          }));
+          }) as unknown as Promise<unknown>);
         }
 
         // 3c. Save initial water test if params exist
@@ -666,6 +666,11 @@ export default function SetupWizard() {
           method: 'pump',
           channels: activeChannels,
           notes: 'Configured during onboarding',
+          ato_enabled: false,
+          ato_model: null,
+          ato_brand: null,
+          ato_kalkwasser: false,
+          ato_kalk_tsp_per_gal: null,
         }));
       }
 

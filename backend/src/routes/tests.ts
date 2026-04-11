@@ -23,14 +23,14 @@ testsRouter.get('/latest', async (req: Request, res: Response) => {
     .select('*')
     .eq('user_id', req.user!.id)
     .order('test_date', { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
 
   if (error) return res.status(500).json({ error: error.message });
+  if (!data || data.length === 0) return res.json({ test: null, recommendations: [] });
 
-  // Generate recommendations based on values
-  const recs = generateRecommendations(data);
-  res.json({ test: data, recommendations: recs });
+  const latest = data[0];
+  const recs = generateRecommendations(latest);
+  res.json({ test: latest, recommendations: recs });
 });
 
 // Create new test

@@ -6,14 +6,19 @@ export const photosRouter = Router();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+// Allowed upload folders — prevents arbitrary path traversal
+const ALLOWED_FOLDERS = ['general', 'tank', 'livestock', 'test', 'equipment', 'coral', 'fish'];
+
 // Upload photo to Supabase Storage (scoped to authenticated user)
 photosRouter.post('/upload', upload.single('photo'), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const bucket = 'reef-photos';
   const userFolder = req.user!.id;
-  const subfolder = String(req.body.folder || 'general');
-  const filename = `${userFolder}/${subfolder}/${Date.now()}_${req.file.originalname}`;
+  const rawFolder = String(req.body.folder || 'general').replace(/[^a-zA-Z0-9_-]/g, '');
+  const subfolder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : 'general';
+  const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filename = `${userFolder}/${subfolder}/${Date.now()}_${safeName}`;
 
   const { data, error } = await supabase.storage
     .from(bucket)

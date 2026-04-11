@@ -24,7 +24,10 @@ inventoryRouter.get('/:id', async (req: Request, res: Response) => {
     .eq('user_id', req.user!.id)
     .single();
 
-  if (error) return res.status(404).json({ error: 'Not found' });
+  if (error) {
+    const status = error.code === 'PGRST116' ? 404 : 500;
+    return res.status(status).json({ error: status === 404 ? 'Not found' : error.message });
+  }
   res.json(data);
 });
 
