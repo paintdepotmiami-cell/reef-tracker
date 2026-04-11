@@ -47,3 +47,21 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
   } catch {}
   return {};
 }
+
+/**
+ * Resolve a storage path to a signed URL.
+ * If the value is already a full URL (legacy), return as-is.
+ * If it's a path (new format), generate a 1-hour signed URL.
+ */
+export async function resolvePhotoUrl(bucket: string, pathOrUrl: string | null): Promise<string | null> {
+  if (!pathOrUrl) return null;
+  // Already a full URL (legacy or external) — return as-is
+  if (pathOrUrl.startsWith('http')) return pathOrUrl;
+  // It's a storage path — generate signed URL
+  try {
+    const { data } = await getSupabase().storage.from(bucket).createSignedUrl(pathOrUrl, 3600);
+    return data?.signedUrl || null;
+  } catch {
+    return null;
+  }
+}

@@ -48,6 +48,7 @@ export default function LogsPage() {
   const [showExtra, setShowExtra] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Multi-photo state
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
@@ -153,9 +154,8 @@ export default function LogsPage() {
           .upload(path, file, { upsert: true });
         if (error) { console.error('Photo upload error:', error); continue; }
         if (i === 0) {
-          // Use signed URL (1 hour expiry) instead of public URL for privacy
-          const { data: urlData } = await supabase.storage.from('test-photos').createSignedUrl(path, 3600);
-          firstUrl = urlData?.signedUrl || null;
+          // Store stable path in DB — signed URLs are generated on read
+          firstUrl = path;
         }
       }
       return firstUrl;
@@ -167,6 +167,7 @@ export default function LogsPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       // Upload photo with 8s timeout — don't block save if upload hangs
       let photoUrl: string | null = null;
@@ -197,10 +198,11 @@ export default function LogsPage() {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       } else {
-        console.error('createWaterTest returned null');
+        setSaveError('Failed to save test. Please try again.');
       }
     } catch (err) {
       console.error('Save failed:', err);
+      setSaveError('Connection error. Please check your internet and try again.');
     } finally {
       setSaving(false);
     }
@@ -251,6 +253,17 @@ export default function LogsPage() {
         <div className="bg-[#2ff801]/10 border border-[#2ff801]/20 rounded-xl p-4 flex items-center gap-3">
           <span className="material-symbols-outlined text-[#2ff801]">check_circle</span>
           <span className="text-[#2ff801] font-semibold text-sm">Parameters saved successfully!</span>
+        </div>
+      )}
+
+      {/* Error */}
+      {saveError && (
+        <div className="bg-[#93000a]/20 border border-[#ffb4ab]/20 rounded-xl p-4 flex items-center gap-3">
+          <span className="material-symbols-outlined text-[#ffb4ab]">error</span>
+          <span className="text-[#ffb4ab] font-semibold text-sm">{saveError}</span>
+          <button onClick={() => setSaveError(null)} className="ml-auto text-[#ffb4ab]/60 hover:text-[#ffb4ab]">
+            <span className="material-symbols-outlined text-sm">close</span>
+          </button>
         </div>
       )}
 

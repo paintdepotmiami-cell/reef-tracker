@@ -6,7 +6,7 @@ import type { Animal, WaterTest, ActionItem, MaintenanceTask } from '@/lib/queri
 import { getCached, setCache } from '@/lib/cache';
 import { useAuth } from '@/lib/auth';
 import { analyzeTrends } from '@/lib/trend-analysis';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, resolvePhotoUrl } from '@/lib/supabase';
 import Link from 'next/link';
 import ParamGauge from '@/components/ParamGauge';
 import ConsumableGauge from '@/components/ConsumableGauge';
@@ -41,6 +41,14 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
 export default function Dashboard() {
   const { user, tank, profile, refreshTank } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [tankPhotoUrl, setTankPhotoUrl] = useState<string | null>(null);
+
+  // Resolve tank photo: convert stored path to signed URL on each load
+  useEffect(() => {
+    if (tank?.photo_url) {
+      resolvePhotoUrl('tank-photos', tank.photo_url).then(url => setTankPhotoUrl(url));
+    }
+  }, [tank?.photo_url]);
 
   const [test, setTest] = useState<WaterTest | null>(getCached<WaterTest | null>('latestTest'));
   const [feed, setFeed] = useState<ActionItem[]>(getCached<ActionItem[]>('todayFeed') || []);
@@ -208,11 +216,8 @@ export default function Dashboard() {
         .from('tank-photos')
         .upload(path, file, { upsert: true, contentType: file.type });
       if (uploadErr) throw uploadErr;
-      // Use signed URL (24h expiry) for privacy — refreshed on each page load
-      const { data: urlData } = await supabase.storage.from('tank-photos').createSignedUrl(path, 86400);
-      const photoUrl = urlData?.signedUrl || '';
-      // Update tank record
-      await supabase.from('reef_tanks').update({ photo_url: photoUrl }).eq('id', tank.id);
+      // Store stable path in DB (not signed URL) — signed URLs are generated on read
+      await supabase.from('reef_tanks').update({ photo_url: path }).eq('id', tank.id);
       await refreshTank();
     } catch (err) {
       console.error('Upload failed:', err);
@@ -237,10 +242,10 @@ export default function Dashboard() {
       {/* HERO — Tank Viewport */}
       <section className="relative -mx-4 -mt-4 h-56 md:h-72 rounded-b-3xl overflow-hidden shadow-2xl group">
         {/* Background: photo or gradient */}
-        {tank?.photo_url ? (
+        {tankPhotoUrl ? (
           <img
-            src={tank.photo_url}
-            alt={tank.name}
+            src={tankPhotoUrl}
+            alt={tank?.name || 'Tank'}
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (

@@ -691,13 +691,22 @@ export default function SetupWizard() {
       // Run all inserts in parallel (use allSettled so one failure doesn't block others)
       const results = await Promise.allSettled(promises);
       const rejected = results.filter(r => r.status === 'rejected');
-      // Also detect null returns (helpers return null on failure instead of throwing)
       const nullResults = results.filter(r => r.status === 'fulfilled' && r.value === null);
-      if (rejected.length > 0 || nullResults.length > 0) {
+      const failCount = rejected.length + nullResults.length;
+
+      if (failCount > 0) {
         console.warn(`Inserts: ${rejected.length} rejected, ${nullResults.length} returned null out of ${results.length} total`);
+        // If more than half of inserts failed, block completion and show error
+        if (failCount > results.length / 2) {
+          setError(`Setup partially failed (${failCount}/${results.length} items). Please check your connection and try again.`);
+          setSaving(false);
+          return;
+        }
+        // Minor failures: proceed but warn the user
+        setError(`Some items couldn't be saved (${failCount} of ${results.length}). You can add them later from the dashboard.`);
       }
 
-      // 6. FINAL STEP: Mark onboarding complete ONLY after all data is saved
+      // Mark onboarding complete
       const { error: completeErr } = await supabase.from('reef_profiles').update({
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
