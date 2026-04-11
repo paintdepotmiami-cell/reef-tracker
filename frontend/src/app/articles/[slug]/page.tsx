@@ -23,11 +23,23 @@ const CATEGORY_LABELS: Record<string, string> = {
   troubleshooting: 'Troubleshooting',
 };
 
-/* ── Simple Markdown Renderer ──────────────────────────────── */
+/* ── Simple Markdown Renderer (XSS-safe) ──────────────────── */
+
+/** Strip HTML tags and event handlers to prevent XSS */
+function sanitize(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function renderMarkdown(md: string): string {
-  return md
-    // Tables
+  // Sanitize ALL input first — then apply markdown formatting
+  const safe = sanitize(md);
+  return safe
+    // Tables (already sanitized content)
     .replace(/\n\|(.+)\|\n\|[-| :]+\|\n((\|.+\|\n?)+)/g, (_match, header, body) => {
       const headers = header.split('|').map((h: string) => h.trim()).filter(Boolean);
       const rows = body.trim().split('\n').map((r: string) =>

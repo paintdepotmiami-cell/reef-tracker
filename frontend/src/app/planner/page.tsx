@@ -16,14 +16,8 @@ export default function PlannerPage() {
       const base = 'https://reefos-planner.vercel.app';
       const params = new URLSearchParams();
 
-      // Pass auth token if available
-      try {
-        const { data } = await getSupabase().auth.getSession();
-        if (data?.session) {
-          params.set('token', data.session.access_token);
-          params.set('refresh', data.session.refresh_token);
-        }
-      } catch {}
+      // Auth tokens are passed via postMessage AFTER iframe loads — never in URL
+      // This prevents token leakage via logs, referers, analytics, and browser history
 
       // Pass tank gallons if available (dimensions not stored yet)
       if (tank?.size_gallons) {
@@ -40,6 +34,21 @@ export default function PlannerPage() {
 
     buildUrl();
   }, [user, tank]);
+
+  // Send auth tokens securely via postMessage after iframe loads
+  const handleIframeLoad = async () => {
+    if (!iframeRef.current?.contentWindow) return;
+    try {
+      const { data } = await getSupabase().auth.getSession();
+      if (data?.session) {
+        iframeRef.current.contentWindow.postMessage({
+          type: 'REEFOS_AUTH',
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        }, 'https://reefos-planner.vercel.app');
+      }
+    } catch {}
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -67,7 +76,11 @@ export default function PlannerPage() {
           </button>
           <button
             onClick={() => {
-              if (iframeUrl) window.open(iframeUrl.replace('embed=1', ''), '_blank');
+              if (iframeUrl) {
+                // Open without tokens — planner must handle its own auth in standalone mode
+                const cleanUrl = iframeUrl.replace('embed=1', '').replace(/[?&]$/, '');
+                window.open(cleanUrl, '_blank');
+              }
             }}
             className="w-8 h-8 rounded-full flex items-center justify-center text-[#c5c6cd]/60 hover:text-white hover:bg-[#1c2a41] transition-colors"
           >
@@ -116,6 +129,7 @@ export default function PlannerPage() {
           className="w-full h-full border-0"
           allow="accelerometer; gyroscope"
           title="ReefOS 3D Planner"
+          onLoad={handleIframeLoad}
         />
       )}
     </div>

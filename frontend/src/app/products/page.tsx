@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
+import { getSupabase } from '@/lib/supabase';
 import { getProducts, getUserProducts, addUserProduct, removeUserProduct, searchProducts } from '@/lib/queries';
 import type { Product, UserProduct } from '@/lib/queries';
 import Link from 'next/link';
@@ -113,10 +114,14 @@ export default function ProductsPage() {
     if (!user || aiLoaded || aiLoading) return;
     setAiLoading(true);
     try {
+      const { data: { session } } = await getSupabase().auth.getSession();
       const res = await fetch('/api/recommendations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({}),
       });
       if (res.ok) {
         const data = await res.json();

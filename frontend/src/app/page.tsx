@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function ReefOSLanding() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -176,12 +177,12 @@ export default function ReefOSLanding() {
             <a href="#faq" className="transition hover:text-white">FAQ</a>
           </nav>
           <div className="flex items-center gap-3">
-            <a href="/login" className="text-sm font-semibold text-[#c5c6cd] transition hover:text-white hidden sm:block">
+            <Link href="/login" className="text-sm font-semibold text-[#c5c6cd] transition hover:text-white hidden sm:block">
               Sign In
-            </a>
-            <a href="/login" className="rounded-xl bg-[#FF7F50] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95">
+            </Link>
+            <Link href="/login" className="rounded-xl bg-[#FF7F50] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95">
               Start Free
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -209,10 +210,10 @@ export default function ReefOSLanding() {
               Stop guessing. Start running your reef like a system.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="/login" className="rounded-2xl bg-[#FF7F50] px-8 py-4 text-base font-bold text-white shadow-2xl shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2">
+              <Link href="/login" className="rounded-2xl bg-[#FF7F50] px-8 py-4 text-base font-bold text-white shadow-2xl shadow-[#FF7F50]/20 transition hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-lg">rocket_launch</span>
                 Start Free
-              </a>
+              </Link>
               <a href="#videos" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20 hover:bg-white/10 flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-lg">play_circle</span>
                 Watch Videos
@@ -511,9 +512,9 @@ export default function ReefOSLanding() {
                 </div>
               ))}
             </div>
-            <a href="/login" className="block w-full rounded-xl bg-[#FF7F50] py-4 text-center text-base font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.02] active:scale-95">
+            <Link href="/login" className="block w-full rounded-xl bg-[#FF7F50] py-4 text-center text-base font-bold text-white shadow-lg shadow-[#FF7F50]/20 transition hover:scale-[1.02] active:scale-95">
               Get Started Free
-            </a>
+            </Link>
           </div>
         </section>
 
@@ -588,9 +589,9 @@ export default function ReefOSLanding() {
               Join reefers who track smarter, not harder. Free forever.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="/login" className="rounded-2xl bg-[#FF7F50] px-8 py-4 text-base font-bold text-white shadow-2xl shadow-[#FF7F50]/20 transition hover:scale-[1.03]">
+              <Link href="/login" className="rounded-2xl bg-[#FF7F50] px-8 py-4 text-base font-bold text-white shadow-2xl shadow-[#FF7F50]/20 transition hover:scale-[1.03]">
                 Start Free Now
-              </a>
+              </Link>
               <a href="https://reefos-planner.vercel.app" target="_blank" className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:border-white/20">
                 Try 3D Planner
               </a>
@@ -633,7 +634,7 @@ export default function ReefOSLanding() {
 
           {/* Links */}
           <div className="flex justify-center gap-6 text-sm mb-6">
-            <a href="/login" className="text-[#4cd6fb] hover:text-white transition">App</a>
+            <Link href="/login" className="text-[#4cd6fb] hover:text-white transition">App</Link>
             <a href="https://reefos-planner.vercel.app" target="_blank" className="text-[#4cd6fb] hover:text-white transition">3D Planner</a>
             <a href="https://youtube.com/@ReefOS_US" target="_blank" className="text-[#4cd6fb] hover:text-white transition">YouTube</a>
             <a href="mailto:info@reefos.net" className="text-[#4cd6fb] hover:text-white transition">Contact</a>
