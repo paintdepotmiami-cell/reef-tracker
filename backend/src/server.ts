@@ -4,14 +4,18 @@ import { healthRouter } from './routes/health';
 import { testsRouter } from './routes/tests';
 import { inventoryRouter, equipmentRouter, supplementsRouter, maintenanceRouter } from './routes/inventory';
 import { photosRouter } from './routes/photos';
+import { requireAuth } from './middleware/auth';
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Check required env vars
+// Validate env vars at startup (before lazy Supabase init)
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
-  console.log('Starting in degraded mode...');
+  console.error('⚠️  Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  console.log('Starting in degraded mode — API routes will fail until configured.');
+}
+if (!process.env.SUPABASE_ANON_KEY) {
+  console.error('⚠️  Missing SUPABASE_ANON_KEY — auth middleware will reject all requests');
 }
 
 // Middleware
@@ -24,14 +28,16 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Routes
+// Public routes (no auth required)
 app.use('/health', healthRouter);
-app.use('/api/tests', testsRouter);
-app.use('/api/animals', inventoryRouter);
-app.use('/api/equipment', equipmentRouter);
-app.use('/api/supplements', supplementsRouter);
-app.use('/api/maintenance', maintenanceRouter);
-app.use('/api/photos', photosRouter);
+
+// Protected routes (require valid Supabase JWT)
+app.use('/api/tests', requireAuth, testsRouter);
+app.use('/api/animals', requireAuth, inventoryRouter);
+app.use('/api/equipment', requireAuth, equipmentRouter);
+app.use('/api/supplements', requireAuth, supplementsRouter);
+app.use('/api/maintenance', requireAuth, maintenanceRouter);
+app.use('/api/photos', requireAuth, photosRouter);
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

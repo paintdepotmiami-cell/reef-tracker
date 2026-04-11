@@ -98,16 +98,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Safety timeout — never hang
+    // Safety timeout — never hang (3s for slow connections)
     const timeout = setTimeout(() => {
       if (!initialized.current) {
         console.warn('Auth timeout — forcing load');
         initialized.current = true;
         setLoading(false);
       }
-    }, 1500);
+    }, 3000);
 
-    // Use onAuthStateChange for reactive updates
+    // Step 1: Eagerly check existing session (prevents flash redirect)
+    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
+      if (existingSession?.user && !initialized.current) {
+        setSession(existingSession);
+        setUser(existingSession.user);
+        await Promise.allSettled([
+          fetchProfile(existingSession.user.id),
+          fetchTank(existingSession.user.id),
+        ]);
+        initialized.current = true;
+        clearTimeout(timeout);
+        setLoading(false);
+      }
+    });
+
+    // Step 2: Subscribe to reactive auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);

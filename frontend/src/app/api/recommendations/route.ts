@@ -3,10 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 
 export const maxDuration = 60;
 
-function getSupabaseAdmin() {
+/**
+ * Create a Supabase client authenticated with the user's JWT.
+ * This ensures queries respect RLS and the user can only access their own data.
+ */
+function getSupabaseForUser(token: string) {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 }
 
@@ -40,19 +45,36 @@ IMPORTANT: Return ONLY the JSON array, no markdown, no explanation.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { user_id } = await req.json();
+    // Extract and verify JWT from Authorization header
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
-    if (!user_id) {
-      return NextResponse.json({ error: 'No user_id provided' }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
     }
+
+    // Verify token and get authenticated user
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+
+    if (authError || !authUser) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    }
+
+    // Use verified user_id from JWT — never trust body
+    const user_id = authUser.id;
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
     }
 
-    // Gather all user context in parallel
-    const supabase = getSupabaseAdmin();
+    // Gather all user context in parallel (using authenticated client)
+    const supabase = getSupabaseForUser(token);
     const [animalsRes, testRes, userProductsRes, catalogRes, equipmentRes] = await Promise.all([
       supabase
         .from('reef_animals')

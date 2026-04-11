@@ -3,11 +3,12 @@ import { supabase } from '../services/supabase';
 
 export const testsRouter = Router();
 
-// Get all water tests (newest first)
-testsRouter.get('/', async (_req: Request, res: Response) => {
+// Get all water tests for authenticated user (newest first)
+testsRouter.get('/', async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('reef_water_tests')
     .select('*')
+    .eq('user_id', req.user!.id)
     .order('test_date', { ascending: false })
     .limit(50);
 
@@ -15,11 +16,12 @@ testsRouter.get('/', async (_req: Request, res: Response) => {
   res.json(data);
 });
 
-// Get latest test
-testsRouter.get('/latest', async (_req: Request, res: Response) => {
+// Get latest test for authenticated user
+testsRouter.get('/latest', async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('reef_water_tests')
     .select('*')
+    .eq('user_id', req.user!.id)
     .order('test_date', { ascending: false })
     .limit(1)
     .single();
@@ -37,7 +39,7 @@ testsRouter.post('/', async (req: Request, res: Response) => {
 
   const { data, error } = await supabase
     .from('reef_water_tests')
-    .insert({ test_date, calcium, alkalinity, magnesium, ph, phosphate, nitrate, nitrite, ammonia, salinity, temperature, photo_url, notes })
+    .insert({ test_date, calcium, alkalinity, magnesium, ph, phosphate, nitrate, nitrite, ammonia, salinity, temperature, photo_url, notes, user_id: req.user!.id })
     .select()
     .single();
 

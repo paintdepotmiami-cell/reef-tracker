@@ -6,13 +6,14 @@ export const photosRouter = Router();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Upload photo to Supabase Storage
+// Upload photo to Supabase Storage (scoped to authenticated user)
 photosRouter.post('/upload', upload.single('photo'), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const bucket = 'reef-photos';
-  const folder = String(req.body.folder || 'general');
-  const filename = `${folder}/${Date.now()}_${req.file.originalname}`;
+  const userFolder = req.user!.id;
+  const subfolder = String(req.body.folder || 'general');
+  const filename = `${userFolder}/${subfolder}/${Date.now()}_${req.file.originalname}`;
 
   const { data, error } = await supabase.storage
     .from(bucket)
@@ -33,11 +34,12 @@ photosRouter.post('/upload', upload.single('photo'), async (req: Request, res: R
   });
 });
 
-// List photos in a folder
+// List photos in a folder (scoped to authenticated user)
 photosRouter.get('/:folder', async (req: Request, res: Response) => {
+  const userPath = `${req.user!.id}/${req.params.folder}`;
   const { data, error } = await supabase.storage
     .from('reef-photos')
-    .list(String(req.params.folder), { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+    .list(userPath, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
