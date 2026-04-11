@@ -68,6 +68,24 @@ export default function LoginPage() {
           <p className="text-[#c5c6cd] text-sm leading-relaxed">
             We sent a confirmation link to <strong className="text-white">{email}</strong>. Click it to activate your account.
           </p>
+
+          {/* What's next preview */}
+          <div className="bg-[#0d1c32] rounded-xl p-4 text-left space-y-3">
+            <p className="text-[10px] text-[#FF7F50] uppercase tracking-widest font-bold">What happens next</p>
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#4cd6fb] text-lg">photo_camera</span>
+              <p className="text-xs text-[#c5c6cd]">Take a photo of your tank — AI identifies your gear</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#2ff801] text-lg">science</span>
+              <p className="text-xs text-[#c5c6cd]">Snap your test kit — AI reads the values</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#FF7F50] text-lg">dashboard</span>
+              <p className="text-xs text-[#c5c6cd]">Get your personalized reef dashboard in under 2 minutes</p>
+            </div>
+          </div>
+
           <button
             onClick={() => { setSignupSuccess(false); setMode('login'); }}
             className="text-[#FF7F50] font-semibold text-sm hover:underline"

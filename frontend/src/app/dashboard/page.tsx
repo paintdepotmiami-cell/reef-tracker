@@ -359,8 +359,8 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Quick Actions */}
-      <section className="grid grid-cols-3 gap-3">
+      {/* Quick Actions — hidden when Getting Started is showing to reduce cognitive load */}
+      <section className={`grid grid-cols-3 gap-3 ${(!test || totalSpecimens === 0 || stats.equipment === 0) ? 'hidden' : ''}`}>
         <Link href="/logs" className="bg-[#004b66] text-[#8ccff5] p-4 rounded-xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_4px_16px_rgba(1,14,36,0.3)]">
           <span className="material-symbols-outlined text-2xl">science</span>
           <span className="text-[10px] font-bold uppercase tracking-wider">Test Water</span>

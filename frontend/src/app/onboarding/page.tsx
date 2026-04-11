@@ -275,6 +275,7 @@ export default function SetupWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [setupResult, setSetupResult] = useState<{ total: number; saved: number; failed: string[] } | null>(null);
   const [error, setError] = useState('');
 
   // Flow: new vs existing
@@ -693,17 +694,23 @@ export default function SetupWizard() {
       const rejected = results.filter(r => r.status === 'rejected');
       const nullResults = results.filter(r => r.status === 'fulfilled' && r.value === null);
       const failCount = rejected.length + nullResults.length;
+      const savedCount = results.length - failCount;
 
+      // Build list of what failed for the summary
+      const failedItems: string[] = [];
       if (failCount > 0) {
         console.warn(`Inserts: ${rejected.length} rejected, ${nullResults.length} returned null out of ${results.length} total`);
-        // If more than half of inserts failed, block completion and show error
         if (failCount > results.length / 2) {
           setError(`Setup partially failed (${failCount}/${results.length} items). Please check your connection and try again.`);
           setSaving(false);
           return;
         }
-        // Minor failures: proceed but warn the user
-        setError(`Some items couldn't be saved (${failCount} of ${results.length}). You can add them later from the dashboard.`);
+        // Identify what failed
+        results.forEach((r, i) => {
+          if (r.status === 'rejected' || (r.status === 'fulfilled' && r.value === null)) {
+            failedItems.push(`Item ${i + 1}`);
+          }
+        });
       }
 
       // Mark onboarding complete
@@ -721,7 +728,9 @@ export default function SetupWizard() {
 
       try { await refreshProfile(); } catch (e) { console.warn('refreshProfile failed:', e); }
       try { await refreshTank(); } catch (e) { console.warn('refreshTank failed:', e); }
-      router.push('/dashboard');
+
+      // Show post-save summary instead of going straight to dashboard
+      setSetupResult({ total: results.length, saved: savedCount, failed: failedItems });
     } catch (err: unknown) {
       console.error('Setup error:', err);
       setError(err instanceof Error ? err.message : String(err));
@@ -746,6 +755,62 @@ export default function SetupWizard() {
   const haveCount = adjustedEquipment.filter(e => e.status === 'have').length;
   const needCount = adjustedEquipment.filter(e => e.status === 'need').length;
   const essentialMissing = adjustedEquipment.filter(e => e.essential && e.status !== 'have').length;
+
+  // ── Post-Save Summary Screen ──
+  if (setupResult) {
+    const allGood = setupResult.failed.length === 0;
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <div className="max-w-sm w-full space-y-6 text-center">
+          <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center ${allGood ? 'bg-[#2ff801]/10' : 'bg-[#F1C40F]/10'}`}>
+            <span className={`material-symbols-outlined text-4xl ${allGood ? 'text-[#2ff801]' : 'text-[#F1C40F]'}`}>
+              {allGood ? 'check_circle' : 'info'}
+            </span>
+          </div>
+          <h2 className="text-2xl font-[family-name:var(--font-headline)] font-bold text-white">
+            {allGood ? 'Setup Complete!' : 'Almost There!'}
+          </h2>
+          <p className="text-[#c5c6cd] text-sm">
+            {allGood
+              ? `All ${setupResult.saved} items saved successfully. Your reef dashboard is ready.`
+              : `${setupResult.saved} of ${setupResult.total} items saved. You can add the rest from your dashboard.`
+            }
+          </p>
+
+          {/* Checklist */}
+          <div className="bg-[#0d1c32] rounded-xl p-4 space-y-2 text-left">
+            {[
+              { label: 'Tank profile', done: true },
+              { label: 'Equipment', done: scannedGear.length > 0 || haveCount > 0 },
+              { label: 'Livestock', done: scannedLivestock.length > 0 },
+              { label: 'Water parameters', done: Object.values(params).some(v => v !== null) },
+              { label: 'Dosing config', done: dosingChannels.some(ch => ch.product.trim().length > 0) },
+            ].map(item => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className={`material-symbols-outlined text-sm ${item.done ? 'text-[#2ff801]' : 'text-[#8f9097]'}`}>
+                  {item.done ? 'check_circle' : 'radio_button_unchecked'}
+                </span>
+                <span className={`text-sm ${item.done ? 'text-white' : 'text-[#8f9097]'}`}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {!allGood && setupResult.failed.length > 0 && (
+            <p className="text-[#F1C40F]/70 text-xs">
+              {setupResult.failed.length} item{setupResult.failed.length > 1 ? 's' : ''} couldn&apos;t be saved. You can add them from Gear or Livestock.
+            </p>
+          )}
+
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full bg-gradient-to-br from-[#FF7F50] to-[#d35e32] text-white font-bold py-4 rounded-xl text-sm tracking-widest uppercase shadow-xl shadow-[#FF7F50]/20 active:scale-[0.98] transition-transform"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-between max-w-md mx-auto">
